@@ -61,14 +61,3 @@ class Song:
     bpm = None
     key = None
     tracks = []
-
-note1 = Note(440)
-note2 = Note(330)
-chord1 = Chord([note1, note2], 5, 0)
-chord2  = Chord([], 3, 0)
-track1 = Track([chord1, chord2], 'voice')
-song = Song([track1], 5, "test song")
-song.save("somewhere")
-song1 = Song()
-song1.load("somewhere")
-print(song1.name)
