@@ -3,42 +3,63 @@ import pickle
 class Note:
     """ Stores individual note
     Attributes:
-        freq: frequency, Hz
+        number: MIDI number of note
     """
-    def __init__(self, fr):
-        self.frequency = fr
+    def __init__(self, number):
+        self.number = number
 
     def freq(self):
-        return self.frequency
+        """ Returns frequency in Hz """
+        return 2**((self.number-69)/12.)*440
 
-    frequency = None
+    def __str__(self):
+        return "%s"%(self.number)
+    
+    def __repr__(self):
+        return self.__str__()
+    
+    number = None
 
 class Chord:
     """Stores a chord and its length in 1/128 beats"""
 
-    def __init__(self, notes_list, length, beat_force):
+    def __init__(self, notes_list, duration, velocity):
         self.notes = notes_list[:]
-        self.beat_force = beat_force
-        self.length = length
+        self.velocity = velocity
+        self.duration = duration
 
     def len(self):
-        return self.length
+        return self.duration
 
     def len_in_ms(self, bpm):
         """ Returns length of chord in ms given beats per minute"""
-        return self.length * bpm / (128 * 60 * 1000)
+        return self.duration * bpm / (128 * 60 * 1000)
 
-    length = None   
+    def __str__(self):
+        return "{%s %s %s}"%(self.length, self.beat_force, str(self.notes))
+    
+    def __repr__(self):
+        return self.__str__()
+    
+    duration = None   
     notes = None
-    beat_force = None
+    velocity = None
 
 class Track:
     """ Chords one by one """
-    def __init__(self, chords, instrument):
+    def __init__(self, chords=[], instrument=''):
         self.chords = chords[:]
         self.instrument_name = instrument
-
+    
+    def __str__(self):
+        return "'%s' '%s' %s"%(self.track_name, self.instrument_name, self.program)
+    
+    def __repr__(self):
+        return self.__str__()
+    
+    track_name = None
     instrument_name = None
+    program = None
 
 class Song:
     def __init__(self, tracks=[], bpm=0, name=""):
@@ -49,13 +70,28 @@ class Song:
     def add_track(self, track):
         self.tracks.append(track)
 
+    def dump(self, f):
+        pickle.dump(self, f)
+        
     def save(self, path):
         with open(path, 'wb') as f:        
-            pickle.dump(self, f)
+            self.dump(f)
 
+    def undump(self, f):
+        self.__dict__.update(pickle.load(f).__dict__)
+        
     def load(self, path):
         with open(path, 'rb') as f:
-            self.__dict__.update(pickle.load(f).__dict__)
+            self.undump(f)
+            
+    def __str__(self):
+        ret = "'%s' %s %s\n"%(self.name, len(self.tracks), self.bpm)
+        for t in self.tracks:
+            ret += str(t)+'\n'
+        return ret
+    
+    def __repr__(self):
+        return self.__str__()
 
     name = None
     bpm = None
