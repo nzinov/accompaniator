@@ -36,27 +36,3 @@ def merge_tracks(song):  # соединяет аккорды однотипны�
             for i in range(1, len(indices)):
                 tracks[indices[0]].merge_track(tracks[indices[i]])
                 song.del_track_num(indices[i])
-
-
-
-'''
-note1 = Note(440)
-note2 = Note(330)
-
-chord1 = Chord([note1, note2], 5, 0)
-chord2  = Chord([], 5, 0)
-chord1_ = Chord([note1, note2], 3, 0)
-chord2_  = Chord([], 3, 0)
-chord1_1 = Chord([note1, note2], 5, 0)
-chord2_1  = Chord([], 5, 0)
-
-track1 = Track([chord1, chord2], 'guitar')
-track2 = Track([chord1_, chord2_], 'voice')
-track3 = Track([chord1_1, chord2_1], 'drums')
-
-song = Song([track1, track2, track3], 5, "test song")
-print(song)
-
-merge_tracks(song)
-print(song)
-'''
