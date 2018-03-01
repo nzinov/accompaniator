@@ -39,9 +39,10 @@ class Chord:
         return self.duration * bpm / (128 * 60 * 1000)
 
     def __str__(self):
-        return "{%s %s %s}"%(self.duration, self.velocity, str(self.notes))
-    def __repr__(self):
-        return self.__str__()
+        return "{%s %s %s}" % (self.duration, self.velocity, str(self.notes))
+
+    def __eq__(self, other):
+        return self.duration == other.duration and self.velocity == other.velocity and self.notes == other.notes
 
     def add_notes(self, notes_list):
         self.notes.extend(notes_list)
