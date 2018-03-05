@@ -3,7 +3,7 @@ import numpy as np
 
 
 def uniform_and_mergable(song):  # удаляет неравномерные треки и возвращает массив из дорожек, которые можно смерджить
-    tracks = np.array(song.tracks)
+    tracks = np.array(song.get_tracks())
     durations = np.array([])
     for track in tracks:
         chords = np.array(track.chords)
@@ -29,10 +29,61 @@ def make_indexes(indices):  # создает список списков, объ
 
 def merge_tracks(song):  # соединяет аккорды однотипных дорожек, удаляет лишние дорожки
     indices = uniform_and_mergable(song)
-    tracks = song.tracks
+    tracks = song.get_tracks()
     uni_indices = make_indexes(indices)
     for indices in uni_indices:
         if len(indices) > 1:
             for i in range(1, len(indices)):
                 tracks[indices[0]].merge_track(tracks[indices[i]])
                 song.del_track_num(indices[i])
+    for instrument in song.instruments:
+        if len(instrument.tracks) == 0:
+            song.del_instrument(instrument)
+
+
+def refresh_instruments(song):  # создает новые инструменты с дорожками
+    for instrument in song.instruments:
+        for track in instrument.tracks:
+            if track.instrument != instrument.name:
+                current_instr = song.find_instrument(track.instrument)
+                current_instr.add_track(track)
+                instrument.tracks.remove(track)
+
+
+def join_chords(song):  # соединяет два подряд идущих одинаковых аккорда
+    for track in song.get_tracks():
+        chords = track.chords
+        deleted_indexes = np.array([])
+        for i in np.range(len(chords)-1):
+            if chords[i] == chords[i+1]:
+                deleted_indexes = np.append(deleted_indexes, i+1)
+        track.chords = np.delete(chords, deleted_indexes)
+
+
+def cat_track(song):  # если на дорожке есть закономерность, обрезает дорожку
+    for track in np.array(song.get_tracks()):
+        for i in np.range(len(track)/2 + 1):
+            shaped_track = np.reshape(track, (i, -1))
+            unique, counts = np.unique(shaped_track, return_counts=True)
+            if counts == 1:
+                track = track[:i]
+
+
+def split_song(song):  # делит песню на несколько песен
+    chords_len = np.array([])
+    for track in song.get_tracks():
+        curr_len = 0
+        for chord in track.chords:
+            curr_len += chord.duration
+        chords_len = np.append(chords_len, curr_len)
+    u, indices = np.unique(chords_len, return_inverse=True)
+    uni_indices = make_indexes(indices)
+    songs = []
+    for indices in uni_indices:
+        tracks = song.get_tracks()[indices]
+        new_song = Song()
+        for track in tracks:
+            instr = new_song.find_instrument(track.name)
+            instr.add_track(track)
+        songs.append(new_song)
+    return songs
