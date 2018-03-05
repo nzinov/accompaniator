@@ -57,10 +57,9 @@ class Track:
 
     def __init__(self, chords=[], instrument=''):
         self.chords = chords[:]
-        self.instrument_name = instrument
 
     def __str__(self):
-        return "'%s' '%s' %s" % (self.track_name, self.instrument_name, self.program)
+        return "'%s' %s" % (self.track_name, self.program)
 
     def __repr__(self):
         return self.__str__()
@@ -68,27 +67,34 @@ class Track:
     def merge_track(self, track2):
         for i in range(len(self.chords)):
             self.chords[i].add_notes(track2.chords[i].notes)
-        self.instrument_name += " and " + track2.instrument_name
 
     track_name = None
-    instrument_name = None
     program = None
 
+class Instrument:
+    def __init__(self, tracks=[], name=""):
+        self.tracks = tracks[:]
+        self.name = name
+    
+    def __str__(self):
+        ret = "'%s' of %d tracks" % (self.name, len(self.tracks))
+        for track in self.tracks:
+            ret += str(track) + '\n'
 
 class Song:
-    def __init__(self, tracks=[], bpm=0, name=""):
-        self.tracks = tracks[:]
+    def __init__(self, instruments=[], bpm=0, name=""):
+        self.instruments = instruments[:]
         self.name = name
         self.bpm = bpm
 
-    def add_track(self, track):
-        self.tracks.append(track)
+    def add_instrument(self, instr):
+        self.instruments.append(instr)
 
-    def del_track_num(self, track_number):
-        self.tracks.pop(track_number)
+    def del_instrument_num(self, instr_number):
+        self.instruments.pop(instr_number)
 
-    def del_track(self, track):
-        self.tracks.remove(track)
+    def del_instrument(self, instr):
+        self.instruments.remove(instr)
 
     def dump(self, f):
         pickle.dump(self, f)
@@ -105,9 +111,9 @@ class Song:
             self.undump(f)
 
     def __str__(self):
-        ret = "'%s' %s %s\n" % (self.name, len(self.tracks), self.bpm)
-        for t in self.tracks:
-            ret += str(t) + '\n'
+        ret = "'%s' %s %s\n" % (self.name, len(self.instruments), self.bpm)
+        for t in self.instruments:
+            ret += str(t) + '\n\n'
         return ret
 
     def __repr__(self):
@@ -116,4 +122,4 @@ class Song:
     name = None
     bpm = None
     key = None
-    tracks = []
+    instruments = []
