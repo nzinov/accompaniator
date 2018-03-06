@@ -53,8 +53,6 @@ public class QueueOfNotes implements Parcelable{
     }
 
     public byte[] getFinish(int pointer){
-        Log.e("LOLOLO", Integer.toString(pointer));
-        Log.e("HOHOHO", Integer.toString(notes.size()));
         return notes.get(pointer).finish.bytes;
     }
 

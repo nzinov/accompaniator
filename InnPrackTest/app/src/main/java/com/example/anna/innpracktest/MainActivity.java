@@ -39,9 +39,9 @@ public class MainActivity extends AppCompatActivity implements MidiDriver.OnMidi
     private int pointer = 0;
     //TODO
     private long DIFFERENCE = 10;
-    ////////////
+    //TODO
     public final static int MAXNOTESINTACT = 10;
-    /////////////////////
+    //TODO
     //delete
     private TextView mText;
     QueueOfNotes queue;
@@ -66,11 +66,6 @@ public class MainActivity extends AppCompatActivity implements MidiDriver.OnMidi
     }
 
     private void initGlobalTimer(long counter, final QueueOfNotes queue, final long[] Times, final long[] Lenghts) {
-        ///////////////////////////
-        //What distance should I add?
-        //to be synchronized with clock it's important
-        // but to have a longer period is important too
-
         Log.e("GLOBAL_TIMER", "starting global timer");
         globalTimer = new CountDownTimer(counter, 1) {
             @Override
@@ -78,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements MidiDriver.OnMidi
                 counterForGlobal = millisUntilFinished;
                 searchForNotes(queue, Times, Lenghts, Long.MAX_VALUE - counterForGlobal);
 
-                ////////////////////
+                //TODO
                 //delete
                 mText.setText(Long.toString(Long.MAX_VALUE - counterForGlobal) + "_" + Integer.toString(pointer));
             }
@@ -129,17 +124,14 @@ public class MainActivity extends AppCompatActivity implements MidiDriver.OnMidi
             }
         }
 
-        ///////////
+        //TODO
         //delete
         mText = (TextView) findViewById(R.id.mText);
         mText.setText(Long.toString(counterForGlobal));
     }
 
     void searchForNotes(final QueueOfNotes queue, final long[] Times, long[] Lenghts, long clockTime) {
-        while ((pointer < 4) && (Times[pointer] - DIFFERENCE <= clockTime) && (Times[pointer] + DIFFERENCE >= clockTime)) {
-            //queue.getStart(pointer) != endEvent
-            /////////
-            //What will happend if I stop programme here?
+        while ((queue.getStart(pointer) != endEvent) && (Times[pointer] - DIFFERENCE <= clockTime) && (Times[pointer] + DIFFERENCE >= clockTime)) {
             final Integer tmpPointer = new Integer(pointer);
             localTimers.put(tmpPointer, initLocalTimer(Lenghts[tmpPointer], tmpPointer, queue));
             playNote(queue.getStart(tmpPointer), localTimers.get(tmpPointer));
@@ -166,8 +158,7 @@ public class MainActivity extends AppCompatActivity implements MidiDriver.OnMidi
     protected void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         Log.e("MAIN_ACTIVITY", "Saving state");
-
-        Log.e("YOYOYO", Integer.toString(queue.notes.size())+ "_" + Integer.toString(pointer));
+        Log.e("QUEUE SIZE", Integer.toString(queue.notes.size()));
 
         globalTimer.cancel();
         for (int i = 0; i < localTimers.size(); ++i) {
@@ -196,8 +187,6 @@ public class MainActivity extends AppCompatActivity implements MidiDriver.OnMidi
         timer.start();
     }
 
-    /////////////
-    //what should I do with notes, what are playing
     private void PlaySong(QueueOfNotes queue, long[] Times, long[] Lenghts){
         pointer = 0;
         globalTimer.cancel();
@@ -205,10 +194,10 @@ public class MainActivity extends AppCompatActivity implements MidiDriver.OnMidi
         globalTimer.start();
     }
 
+    //TODO
+    //What should I do for double click?
     @Override
     public void onClick(View v) {
-        ///////////////////////////////////
-        // What should I do if events have different size?
         QueueOfNotes queue = new QueueOfNotes();
 
         Events = new byte[MAXNOTESINTACT + 1][2][3];
