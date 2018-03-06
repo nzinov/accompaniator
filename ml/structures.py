@@ -59,7 +59,7 @@ class Track:
         self.chords = chords[:]
 
     def __str__(self):
-        return "'%s' %s" % (self.track_name, self.program)
+        return "tracks of %d chords" % (len(self.chords))
 
     def __repr__(self):
         return self.__str__()
@@ -67,9 +67,6 @@ class Track:
     def merge_track(self, track2):
         for i in range(len(self.chords)):
             self.chords[i].add_notes(track2.chords[i].notes)
-
-    track_name = None
-    program = None
 
 class Instrument:
     def __init__(self, tracks=[], name=""):
@@ -80,6 +77,9 @@ class Instrument:
         ret = "'%s' of %d tracks" % (self.name, len(self.tracks))
         for track in self.tracks:
             ret += str(track) + '\n'
+        return ret
+
+    name = None
 
 class Song:
     def __init__(self, instruments=[], bpm=0, name=""):
