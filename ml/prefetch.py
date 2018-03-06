@@ -5,8 +5,11 @@ from prestructures import *
 import logging as log
 import unittest
 
+
 class PreSongCorpus:
-    songs = []
+
+    def __init__(self):
+        self.songs = []
 
     @staticmethod
     def get_duration(tpb, time):
@@ -16,7 +19,7 @@ class PreSongCorpus:
         :param time: time in ticks
         :return:
         """
-        return round(time/(tpb/(128/4)))
+        return time/(tpb/(128/4))
 
     @staticmethod
     def is_note_on(message):
@@ -35,24 +38,20 @@ class PreSongCorpus:
             if self.is_note_on(note):
                 cur_duration = 0
 
-                # if note.time != 0:
-                #     # PreNote precedes with pause
-                #     chords += [PreChord([PreNote(-1, self.get_duration(tpb, note.time), 0)])]
-
                 for j in range(i + 1, len(notes_list)):
                     cur_duration += self.get_duration(tpb, notes_list[j].time)
 
                     if notes_list[j].note == note.note and self.is_note_off(notes_list[j]):
+
+                        cur_duration = cur_duration
                         # If note continues chord
-                        if note.time == 0 and self.is_note_on(notes_list[i - 1]):
+                        if self.get_duration(tpb, note.time) == 0 and self.is_note_on(notes_list[i - 1]):
                             chords[-1].notes.append(PreNote(note.note, cur_duration, note.velocity))
                         else:  # If note is the first note of new chord
-                            chords.append(PreChord(cur_chord_duration, [PreNote(note.note, cur_duration, note.velocity)]))
+                            chords.append(
+                                PreChord(cur_chord_duration, [PreNote(note.note, cur_duration, note.velocity)]))
                             cur_chord_duration = 0
                         break
-        # Dummy chord removal (if present)
-        if chords[0] == PreChord(0, []):
-            chords = chords[1:]
         return chords
 
     def process_file(self, filename, to_self=False):
@@ -122,7 +121,7 @@ class PreSongCorpus:
             log.warning(e)
             return None
 
-    def process_recursive_from_directory(self, dirname, to_self=False):
+    def process_recursive_from_directory(self, dirname, to_self=True):
         songs = []
         total = sum([len(files) for r, d, files in os.walk(dirname)])
         pb = tqdm.tqdm(total=total)
@@ -138,10 +137,9 @@ class PreSongCorpus:
         if to_self:
             self.songs += songs
 
-
     def load_from_file(self, filename):
         with open(filename, 'rb') as inf:
-            pb = tqdm.tqdm_notebook(total=128)
+            pb = tqdm.tqdm_notebook()
             while True:
                 try:
                     song = PreSong()
@@ -165,33 +163,58 @@ class PreSongCorpus:
                 for chord in track.chords:
                     print("chord: {}".format(str(chord)))
 
-corpus=PreSongCorpus()
-messages = \
-[mido.Message('note_on', note=1, time=0),
- mido.Message('note_off', note=1, time=48),
- mido.Message('note_on', note=2, time=0),
- mido.Message('note_off', note=2, time=48)]
-print(messages)
-print(corpus.get_chords(notes_list=messages, tpb=192))
 
-# class TestChords(unittest.TestCase):
-#
-#     def test1(self):
-#
-#
-#     def test_upper(self):
-#         self.assertEqual('foo'.upper(), 'FOO')
-#
-#     def test_isupper(self):
-#         self.assertTrue('FOO'.isupper())
-#         self.assertFalse('Foo'.isupper())
-#
-#     def test_split(self):
-#         s = 'hello world'
-#         self.assertEqual(s.split(), ['hello', 'world'])
-#         # check that s.split fails when the separator is not a string
-#         with self.assertRaises(TypeError):
-#             s.split(2)
-#
-# if __name__ == '__main__':
-#     unittest.main()
+class TestChords(unittest.TestCase):
+    corpus = PreSongCorpus()
+
+    def test1(self):
+        messages = \
+            [mido.Message('note_on', note=1, time=0),
+             mido.Message('note_off', note=1, time=48),
+             mido.Message('note_on', note=2, time=0),
+             mido.Message('note_off', note=2, time=48)]
+        self.assertEqual(str(self.corpus.get_chords(notes_list=messages, tpb=192)),
+                         "[{0 [1 8 64]}, {8 [2 8 64]}]")
+
+    def test3(self):
+        messages = \
+            [mido.Message('note_on', note=1, time=0),
+             mido.Message('note_on', note=2, time=0),
+             mido.Message('note_off', note=1, time=48),
+             mido.Message('note_off', note=2, time=0)]
+        self.assertEqual(str(self.corpus.get_chords(notes_list=messages, tpb=192)),
+                         "[{0 [1 8 64, 2 8 64]}]")
+
+    def test4(self):
+        messages = \
+            [mido.Message('note_on', note=1, time=0),
+             mido.Message('note_on', note=2, time=0),
+             mido.Message('note_off', note=1, time=48),
+             mido.Message('note_off', note=2, time=48)]
+        self.assertEqual(str(self.corpus.get_chords(notes_list=messages, tpb=192)),
+                         "[{0 [1 8 64, 2 16 64]}]")
+
+    def test5(self):
+        messages = \
+            [mido.Message('note_on', note=1, time=0),
+             mido.Message('note_on', note=2, time=0),
+             mido.Message('note_on', note=3, time=24),
+             mido.Message('note_off', note=3, time=24),
+             mido.Message('note_off', note=1, time=0),
+             mido.Message('note_off', note=2, time=0)]
+        self.assertEqual(str(self.corpus.get_chords(notes_list=messages, tpb=96)),
+                         "[{0 [1 16 64, 2 16 64]}, {8 [3 8 64]}]")
+
+    def test6(self):
+        messages = \
+            [mido.Message('note_on', note=1, time=0),
+             mido.Message('note_on', note=2, time=0),
+             mido.Message('note_on', note=3, time=24),
+             mido.Message('note_off', note=3, time=24),
+             mido.Message('note_off', note=1, time=48),
+             mido.Message('note_off', note=2, time=48)]
+        self.assertEqual(str(self.corpus.get_chords(notes_list=messages, tpb=96)),
+                         "[{0 [1 32 64, 2 48 64]}, {8 [3 8 64]}]")
+
+if __name__ == '__main__':
+    unittest.main()
