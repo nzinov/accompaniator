@@ -1,11 +1,11 @@
-class HandlerError(Exception):
+class MapperError(Exception):
     """Basic exception for handler"""
     def __init__(self, msg):
         if msg is None:
-            msg = "Handler did not handle a song"
-        super(HandlerError, self).__init__(msg)
+            msg = "Mapper did not handle a song"
+        super(MapperError, self).__init__(msg)
 
-class BaseHandler:
+class BaseMapper:
     def __init__(self, prefix):
         self.stats = {}
         self.prefix = prefix
@@ -22,24 +22,24 @@ class BaseHandler:
     prefix = ""
     stats = {}
 
-class MyHandler(BaseHandler):
+class MyMapper(BaseMapper):
     def process(self, song):
         self.log("len", len(song))
         if len(song) == 0:
-            raise HandlerError("KOROTKOVATO")
+            raise MapperError("KOROTKOVATO")
             #return song
         else:
             return song + " :)"
 
 class Pipeline:
     
-    handlers = []
+    mappers = []
     instance = None
     
-    def __init__(self, handlers):
+    def __init__(self, mappers):
         if not Pipeline.instance:
             Pipeline.instance = True
-            self.handlers = handlers
+            self.mappers = mappers
         else:
             raise ValueError("Pipeline already exists")
 
@@ -50,19 +50,19 @@ class Pipeline:
         #song = midi_to_song(midi_name)
         song = midi_name
         try:
-            for handler in self.handlers:
-                song = handler.process(song)
-        except HandlerError:
-            print("Something went wront with handler")
+            for mapper in self.mappers:
+                song = mapper.process(song)
+        except MapperError as err:
+            print("Something went wront with handler:" + str(err))
         return song
 
     def get_stats(self):
         stats = {}
-        for handler in self.handlers:
-            stats = {**stats, **handler.get_stats()}
+        for mapper in self.mappers:
+            stats = {**stats, **mapper.get_stats()}
         return stats
  
-myhandler = MyHandler("cool_handler")
+myhandler = MyMapper("cool_handler")
 
 pipeline = Pipeline([myhandler])
 print(pipeline)
