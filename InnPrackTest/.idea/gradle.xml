@@ -9,6 +9,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/MidiDriver-1.14" />
+            <option value="$PROJECT_DIR$/TarsosDSP-Android-2.0-bin" />
             <option value="$PROJECT_DIR$/app" />
           </set>
         </option>
