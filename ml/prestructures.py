@@ -65,6 +65,7 @@ class PreSong:
         self.tracks = tracks[:]
         self.name = name
         self.bpm = bpm
+        self.time_signature = None
 
     def add_track(self, track):
         self.tracks.append(track)

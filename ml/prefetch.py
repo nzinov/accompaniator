@@ -3,8 +3,23 @@ import os
 import tqdm
 from prestructures import *
 import logging as log
-import unittest
 
+
+class TimeSignature:
+    def __init__(self, time, numerator, denominator, clocks_per_click, notated_32nd_notes_per_beat):
+        self.time = time
+        self.numerator = numerator
+        self.denominator = denominator
+        self.clocks_per_click = clocks_per_click
+        self.notated_32nd_notes_per_beat = notated_32nd_notes_per_beat
+
+    def __str__(self):
+        return "%s (%s %s %s %s)"%(self.time,
+                                   self.numerator, self.denominator,
+                                   self.clocks_per_click, self.notated_32nd_notes_per_beat)
+
+    def __repr__(self):
+        return self.__str__()
 
 class PreSongCorpus:
 
@@ -17,7 +32,7 @@ class PreSongCorpus:
         Get duration in 128-th notes.
         :param tpb: tick per beat
         :param time: time in ticks
-        :return:
+        :return: float
         """
         return time/(tpb/(128/4))
 
@@ -65,11 +80,48 @@ class PreSongCorpus:
 
             song = PreSong()
             song.name = filename
+            #print(song.name)
             try:
                 song.bpm = int(mido.tempo2bpm(list(filter(lambda msg: msg.type == 'set_tempo', mid))[0].tempo))
             except Exception as e:
-                song.bpm = 196  # TODO: better default value?
+                song.bpm = 120  # Default by MIDI standard
 
+            time_signatures = []
+            time = 0
+            for msg in mid:
+                if hasattr(msg, 'time'):
+                    #print(msg)
+                    time += self.get_duration(tpb, msg.time)
+                if msg.type == 'time_signature':
+                    time_signatures.append(
+                        TimeSignature(time,
+                                      msg.numerator, msg.denominator,
+                                      msg.clocks_per_click, msg.notated_32nd_notes_per_beat))
+                    #print(time_signatures[-1])
+            song.time_signatures = time_signatures
+            # time_signatures = list(filter(lambda msg: msg.type == 'time_signature', mid))
+            # #print(len(time_signatures))
+            # if len(time_signatures) == 0:
+            #     print('NO TIME SIGNATURE')
+            #     pass
+            # elif len(time_signatures) == 1:
+            #     song.time_signature = (time_signatures[0].numerator, time_signatures[0].denominator)
+            #     print('TIME SIGNATURE', song.time_signature)
+            # else:
+            #     split_indices = [index for index, value in enumerate(list(mid)) if value.type == 'time_signature']
+            #     split_fractions = [(ts.numerator, ts.denominator, ts.clocks_per_click, ts.notated_32nd_notes_per_beat) for ts in time_signatures]
+            #     print(split_indices, split_fractions)
+            #
+            #
+            # num = map(lambda ts: ts.numerator, time_signatures)
+            # den = map(lambda ts: ts.denominator, time_signatures)
+            # print(set(num), set(den))
+
+            # if 4 in set(num):
+            #     print('#####################',time_signatures)
+            #     print(set(num), set(den))
+            #     print(list(num), list(den))
+            #     print(set(list(zip(num,den))))
             for mid_track in mid.tracks:
                 try:
                     # Треки с метаданными не обрабатываем
@@ -94,8 +146,6 @@ class PreSongCorpus:
                         track.program = list(filter(lambda msg: msg.type == 'program_change', mid_track))[0].program
                     except Exception:
                         track.program = -1
-                    # if program_change >= 97 or (33 <= program_change <= 40):
-                    #    continue
 
                     try:
                         key_signature = list(filter(lambda msg: msg.type == 'key_signature', mid_track))[0].key
@@ -137,21 +187,23 @@ class PreSongCorpus:
         if to_self:
             self.songs += songs
 
-    def load_from_file(self, filename):
+    def load_from_file(self, filename, with_tqdm=True):
         with open(filename, 'rb') as inf:
-            pb = tqdm.tqdm_notebook()
+            if with_tqdm:
+                pb = tqdm.tqdm_notebook()
             while True:
                 try:
                     song = PreSong()
                     song.undump(inf)
                     self.songs.append(song)
-                    pb.update(n=1)
+                    if with_tqdm:
+                        pb.update(n=1)
                 except Exception as e:
                     log.warning(e)
                     break
 
-    def save_to_file(self, filename):
-        with open(filename, 'wb') as outf:
+    def save_to_file(self, filename, append=True):
+        with open(filename, '%sb'%('a' if append else 'w')) as outf:
             for song in self.songs:
                 song.dump(outf)
 
@@ -162,59 +214,3 @@ class PreSongCorpus:
                 print("track: {}".format(str(track)))
                 for chord in track.chords:
                     print("chord: {}".format(str(chord)))
-
-
-class TestChords(unittest.TestCase):
-    corpus = PreSongCorpus()
-
-    def test1(self):
-        messages = \
-            [mido.Message('note_on', note=1, time=0),
-             mido.Message('note_off', note=1, time=48),
-             mido.Message('note_on', note=2, time=0),
-             mido.Message('note_off', note=2, time=48)]
-        self.assertEqual(str(self.corpus.get_chords(notes_list=messages, tpb=192)),
-                         "[{0 [1 8 64]}, {8 [2 8 64]}]")
-
-    def test3(self):
-        messages = \
-            [mido.Message('note_on', note=1, time=0),
-             mido.Message('note_on', note=2, time=0),
-             mido.Message('note_off', note=1, time=48),
-             mido.Message('note_off', note=2, time=0)]
-        self.assertEqual(str(self.corpus.get_chords(notes_list=messages, tpb=192)),
-                         "[{0 [1 8 64, 2 8 64]}]")
-
-    def test4(self):
-        messages = \
-            [mido.Message('note_on', note=1, time=0),
-             mido.Message('note_on', note=2, time=0),
-             mido.Message('note_off', note=1, time=48),
-             mido.Message('note_off', note=2, time=48)]
-        self.assertEqual(str(self.corpus.get_chords(notes_list=messages, tpb=192)),
-                         "[{0 [1 8 64, 2 16 64]}]")
-
-    def test5(self):
-        messages = \
-            [mido.Message('note_on', note=1, time=0),
-             mido.Message('note_on', note=2, time=0),
-             mido.Message('note_on', note=3, time=24),
-             mido.Message('note_off', note=3, time=24),
-             mido.Message('note_off', note=1, time=0),
-             mido.Message('note_off', note=2, time=0)]
-        self.assertEqual(str(self.corpus.get_chords(notes_list=messages, tpb=96)),
-                         "[{0 [1 16 64, 2 16 64]}, {8 [3 8 64]}]")
-
-    def test6(self):
-        messages = \
-            [mido.Message('note_on', note=1, time=0),
-             mido.Message('note_on', note=2, time=0),
-             mido.Message('note_on', note=3, time=24),
-             mido.Message('note_off', note=3, time=24),
-             mido.Message('note_off', note=1, time=48),
-             mido.Message('note_off', note=2, time=48)]
-        self.assertEqual(str(self.corpus.get_chords(notes_list=messages, tpb=96)),
-                         "[{0 [1 32 64, 2 48 64]}, {8 [3 8 64]}]")
-
-if __name__ == '__main__':
-    unittest.main()
