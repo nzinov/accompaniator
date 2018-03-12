@@ -23,6 +23,7 @@ class Pipeline:
                 song = mapper.process(song)
         except MapperError as err:
             print("Something went wront with handler:" + str(err))
+            return None
         return song
 
     def get_stats(self):
