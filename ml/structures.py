@@ -1,6 +1,5 @@
 import pickle
 
-
 class Note:
     """ Stores individual note
     Attributes:
@@ -57,6 +56,7 @@ class Track:
 
     def __init__(self, chords=[], instrument=''):
         self.chords = chords[:]
+        self.instrument_name = instrument
 
     def __str__(self):
         return "tracks of %d chords" % (len(self.chords))
@@ -68,33 +68,23 @@ class Track:
         for i in range(len(self.chords)):
             self.chords[i].add_notes(track2.chords[i].notes)
 
-class Instrument:
-    def __init__(self, tracks=[], name=""):
-        self.tracks = tracks[:]
-        self.name = name
-    
-    def __str__(self):
-        ret = "'%s' of %d tracks" % (self.name, len(self.tracks))
-        for track in self.tracks:
-            ret += str(track) + '\n'
-        return ret
-
-    name = None
+    instrument_name = None
+    program = None
 
 class Song:
-    def __init__(self, instruments=[], bpm=0, name=""):
-        self.instruments = instruments[:]
+    def __init__(self, tracks=[], bpm=0, name=""):
+        self.tracks = tracks[:]
         self.name = name
         self.bpm = bpm
 
-    def add_instrument(self, instr):
-        self.instruments.append(instr)
+    def add_track(self, track):
+        self.tracks.append(track)
 
-    def del_instrument_num(self, instr_number):
-        self.instruments.pop(instr_number)
+    def del_track_num(self, track):
+        self.tracks.pop(track)
 
-    def del_instrument(self, instr):
-        self.instruments.remove(instr)
+    def del_track(self, track):
+        self.tracks.remove(track)
 
     def dump(self, f):
         pickle.dump(self, f)
@@ -111,8 +101,8 @@ class Song:
             self.undump(f)
 
     def __str__(self):
-        ret = "'%s' %s %s\n" % (self.name, len(self.instruments), self.bpm)
-        for t in self.instruments:
+        ret = "'%s' %s %s\n" % (self.name, len(self.tracks), self.bpm)
+        for t in self.tracks:
             ret += str(t) + '\n\n'
         return ret
 
@@ -122,4 +112,4 @@ class Song:
     name = None
     bpm = None
     key = None
-    instruments = []
+    tracks = []
