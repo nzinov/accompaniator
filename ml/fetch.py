@@ -4,12 +4,14 @@ import tqdm
 from prestructures import *
 from structures import *
 import logging as log
+from pipeline import *
 
 
 class SongCorpus:
 
     def __init__(self):
         self.songs = []
+        self.pipeline = Pipeline([])
 
     @staticmethod
     def get_duration(tpb, time):
@@ -159,6 +161,25 @@ class SongCorpus:
         if outf:
             outf.close()
         return songs
+
+    def apply_pipeline(self, inf_name, outf_name, with_tqdm=True):
+        with open(inf_name, 'rb') as inf, open(outf_name, 'ab+') as outf:
+            if with_tqdm:
+                pb = tqdm.tqdm_notebook()
+            while True:
+                try:
+                    song = Song()
+                    song.undump(inf)
+                    song = self.pipeline.process(song)
+                    if song is not None:
+                        song.dump(outf)
+                    if with_tqdm:
+                        pb.update(n=1)
+                except Exception as e:
+                    log.warning(e)
+                    break
+
+        self.pipeline.get_stats()
 
     def load_from_file(self, filename, with_tqdm=True):
         with open(filename, 'rb') as inf:

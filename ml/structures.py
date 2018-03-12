@@ -79,7 +79,7 @@ class Track:
         self.program = program
 
     def __str__(self):
-        return "tracks of %d chords"%(len(self.chords))
+        return "track of %d chords"%(len(self.chords))
 
     def __repr__(self):
         return self.__str__()

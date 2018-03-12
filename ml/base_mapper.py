@@ -1,12 +1,14 @@
 class MapperError(Exception):
     """Basic exception for handler"""
+
     def __init__(self, msg):
         if msg is None:
             msg = "Mapper did not handle a song"
         super(MapperError, self).__init__(msg)
 
+
 class BaseMapper:
-    def __init__(self, prefix):
+    def __init__(self, prefix=''):
         self.stats = {}
         self.prefix = prefix
 
@@ -18,15 +20,3 @@ class BaseMapper:
 
     def get_stats(self):
         return {(self.prefix, key): self.stats[key] for key in self.stats.keys()}
-
-    prefix = ""
-    stats = {}
-
-class MyMapper(BaseMapper):
-    def process(self, song):
-        self.log("len", len(song))
-        if len(song) == 0:
-            raise MapperError("KOROTKOVATO")
-            #return song
-        else:
-            return song + " :)"

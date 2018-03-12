@@ -1,28 +1,18 @@
 from base_mapper import MapperError
 
+
 class Pipeline:
-    
     mappers = []
-    instance = None
-    
+
     def __init__(self, mappers):
-        if not Pipeline.instance:
-            Pipeline.instance = True
-            self.mappers = mappers
-        else:
-            raise ValueError("Pipeline already exists")
+        self.mappers = mappers
 
-    def midi_to_song(self, midi_name):
-        pass
-
-    def process(self, midi_name):
-        #song = midi_to_song(midi_name)
-        song = midi_name
+    def process(self, song):
         try:
             for mapper in self.mappers:
                 song = mapper.process(song)
         except MapperError as err:
-            print("Something went wront with handler:" + str(err))
+            print("Something went wrong with handler:" + str(err))
             return None
         return song
 

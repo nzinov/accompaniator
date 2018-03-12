@@ -144,5 +144,9 @@ class TimeSignatureMapper(BaseMapper):
             song.time_signature = (song.time_signature[0].numerator, song.time_signature[0].denominator)
             self.stats['one signature'] += 1
         else:
+            new_signatures = []
+            new_signatures.append(self.time_signature[0])
+            for i in range(1, len(self.time_signature)):
+                pass #TODO
             change_times = [sig.time for sig in song.time_signature]
             self.stats['many signatures'] += 1
