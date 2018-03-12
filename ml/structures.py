@@ -1,5 +1,26 @@
 import pickle
 
+
+class TimeSignature:
+    def __init__(self, time, numerator, denominator, clocks_per_click, notated_32nd_notes_per_beat):
+        """
+        :param time: start of this time signature (in 128th notes)
+        """
+        self.time = time
+        self.numerator = numerator
+        self.denominator = denominator
+        self.clocks_per_click = clocks_per_click
+        self.notated_32nd_notes_per_beat = notated_32nd_notes_per_beat
+
+    def __str__(self):
+        return "%s (%s %s %s %s)"%(self.time,
+                                   self.numerator, self.denominator,
+                                   self.clocks_per_click, self.notated_32nd_notes_per_beat)
+
+    def __repr__(self):
+        return self.__str__()
+
+
 class Note:
     """ Stores individual note
     Attributes:
@@ -11,15 +32,13 @@ class Note:
 
     def freq(self):
         """ Returns frequency in Hz """
-        return 2 ** ((self.number - 69) / 12.) * 440
+        return 2**((self.number - 69)/12.)*440
 
     def __str__(self):
-        return "%s" % (self.number)
+        return "%s"%(self.number)
 
     def __repr__(self):
         return self.__str__()
-
-    number = None
 
 
 class Chord:
@@ -35,10 +54,13 @@ class Chord:
 
     def len_in_ms(self, bpm):
         """ Returns length of chord in ms given beats per minute"""
-        return self.duration * bpm / (128 * 60 * 1000)
+        return self.duration*bpm/(128*60*1000)
 
     def __str__(self):
-        return "{%s %s %s}" % (self.duration, self.velocity, str(self.notes))
+        return "{%s %s %s}"%(self.duration, self.velocity, str(self.notes))
+
+    def __repr__(self):
+        return self.__str__()
 
     def __eq__(self, other):
         return self.duration == other.duration and self.velocity == other.velocity and self.notes == other.notes
@@ -46,20 +68,18 @@ class Chord:
     def add_notes(self, notes_list):
         self.notes.extend(notes_list)
 
-    duration = None
-    notes = None
-    velocity = None
-
 
 class Track:
     """ Chords one by one """
 
-    def __init__(self, chords=[], instrument=''):
+    def __init__(self, chords=[], track_name='', instrument_name='', program=-1):
         self.chords = chords[:]
-        self.instrument_name = instrument
+        self.track_name = track_name
+        self.instrument_name = instrument_name
+        self.program = program
 
     def __str__(self):
-        return "tracks of %d chords" % (len(self.chords))
+        return "tracks of %d chords"%(len(self.chords))
 
     def __repr__(self):
         return self.__str__()
@@ -68,14 +88,14 @@ class Track:
         for i in range(len(self.chords)):
             self.chords[i].add_notes(track2.chords[i].notes)
 
-    instrument_name = None
-    program = None
 
 class Song:
     def __init__(self, tracks=[], bpm=0, name=""):
         self.tracks = tracks[:]
         self.name = name
         self.bpm = bpm
+        self.time_signature = None
+        self.key = None
 
     def add_track(self, track):
         self.tracks.append(track)
@@ -101,15 +121,10 @@ class Song:
             self.undump(f)
 
     def __str__(self):
-        ret = "'%s' %s %s\n" % (self.name, len(self.tracks), self.bpm)
+        ret = "'%s' %s %s\n"%(self.name, len(self.tracks), self.bpm)
         for t in self.tracks:
             ret += str(t) + '\n\n'
         return ret
 
     def __repr__(self):
         return self.__str__()
-
-    name = None
-    bpm = None
-    key = None
-    tracks = []

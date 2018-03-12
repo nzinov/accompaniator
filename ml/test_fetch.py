@@ -1,8 +1,10 @@
 import unittest
 from prestructures import *
+from fetch import *
+
 
 class TestChords(unittest.TestCase):
-    corpus = PreSongCorpus()
+    corpus = SongCorpus()
 
     def test1(self):
         messages = \
@@ -52,6 +54,7 @@ class TestChords(unittest.TestCase):
              mido.Message('note_off', note=2, time=48)]
         self.assertEqual(str(self.corpus.get_chords(notes_list=messages, tpb=96)),
                          "[{0 [1 32 64, 2 48 64]}, {8 [3 8 64]}]")
+
 
 if __name__ == '__main__':
     unittest.main()

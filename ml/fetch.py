@@ -1,15 +1,25 @@
 import mido
 import os
 import tqdm
+from prestructures import *
 from structures import *
 import logging as log
 
+
 class SongCorpus:
-    songs = []
+
+    def __init__(self):
+        self.songs = []
 
     @staticmethod
     def get_duration(tpb, time):
-        return round(time/(tpb/(128/4)))
+        """
+        Get duration in 128-th notes.
+        :param tpb: tick per beat
+        :param time: time in ticks
+        :return: float
+        """
+        return time/(tpb/(128/4))
 
     @staticmethod
     def is_note_on(message):
@@ -21,36 +31,31 @@ class SongCorpus:
 
     def get_chords(self, notes_list, tpb):
         # Dummy chord
-        chords = [Chord([], 0, 0)]
+        chords = [PreChord(0, [])]
+
+        cur_chord_duration = 0
         for i, note in enumerate(notes_list):
+            cur_chord_duration += self.get_duration(tpb, note.time)
             if self.is_note_on(note):
                 cur_duration = 0
 
-                if note.time != 0:
-                    # Note precedes with pause
-                    chords += [Chord([], self.get_duration(tpb, note.time), 0)]
-
                 for j in range(i + 1, len(notes_list)):
                     cur_duration += self.get_duration(tpb, notes_list[j].time)
+
                     if notes_list[j].note == note.note and self.is_note_off(notes_list[j]):
+
+                        cur_duration = cur_duration
                         # If note continues chord
-                        if note.time == 0 and self.is_note_on(notes_list[i - 1]):
-                            chords[-1].notes.append(Note(note.note))
-                            # TODO: what if length of notes in chord is different (arpeggio?) ?
-                            # if chords[-1].duration != cur_duration
-                            #    or chords[-1].velocity != note.velocity:
-                            #    log.warning("No")
-                            chords[-1].duration = cur_duration
-                            chords[-1].velocity = note.velocity
+                        if self.get_duration(tpb, note.time) == 0 and self.is_note_on(notes_list[i - 1]):
+                            chords[-1].notes.append(PreNote(note.note, cur_duration, note.velocity))
                         else:  # If note is the first note of new chord
-                            chords.append(Chord([Note(note.note)], cur_duration, note.velocity))
+                            chords.append(
+                                PreChord(cur_chord_duration, [PreNote(note.note, cur_duration, note.velocity)]))
+                            cur_chord_duration = 0
                         break
-        # Dummy chord removal (if present)
-        if chords[0] == Chord([], 0, 0):
-            chords = chords[1:]
         return chords
 
-    def process_file(self, filename, to_self=False):
+    def process_file(self, filename, to_self=False, outf=None):
         try:
             try:
                 mid = mido.MidiFile(filename)
@@ -61,10 +66,24 @@ class SongCorpus:
 
             song = Song()
             song.name = filename
+
             try:
                 song.bpm = int(mido.tempo2bpm(list(filter(lambda msg: msg.type == 'set_tempo', mid))[0].tempo))
-            except Exception as e:
-                song.bpm = 196  # TODO: better default value?
+            except Exception:
+                song.bpm = 120  # Default by MIDI standard
+
+            time_signatures = []
+            time = 0
+            for msg in mid:
+                if hasattr(msg, 'time'):
+                    time += self.get_duration(tpb, msg.time)
+                if msg.type == 'time_signature':
+                    time_signatures.append(
+                        TimeSignature(time,
+                                      msg.numerator, msg.denominator,
+                                      msg.clocks_per_click, msg.notated_32nd_notes_per_beat))
+
+            song.time_signatures = time_signatures
 
             for mid_track in mid.tracks:
                 try:
@@ -90,8 +109,6 @@ class SongCorpus:
                         track.program = list(filter(lambda msg: msg.type == 'program_change', mid_track))[0].program
                     except Exception:
                         track.program = -1
-                    # if program_change >= 97 or (33 <= program_change <= 40):
-                    #    continue
 
                     try:
                         key_signature = list(filter(lambda msg: msg.type == 'key_signature', mid_track))[0].key
@@ -106,49 +123,60 @@ class SongCorpus:
                     song.add_track(track)
 
                 except Exception as e:
-                    log.warning('Track broken', e)
+                    log.warning('PreTracks broken', e)
                     break
 
             if to_self:
                 self.songs.append(song)
+            if outf:
+                song.dump(outf)
             return song
         except Exception as e:
             log.warning('MIDI broken %s'%filename)
             log.warning(e)
             return None
 
-    def process_recursive_from_directory(self, dirname, to_self=False):
+    def process_recursive_from_directory(self, dirname, to_memory=True, to_self=True, outf_filename=None):
+        if outf_filename:
+            outf = open(outf_filename, 'ab')
+        else:
+            outf = None
         songs = []
         total = sum([len(files) for r, d, files in os.walk(dirname)])
         pb = tqdm.tqdm(total=total)
         for root, directories, filenames in os.walk(dirname):
             for filename in filenames:
                 if filename[-4:].lower() == '.mid':
-                    song = self.process_file(os.path.join(root, filename))
+                    song = self.process_file(os.path.join(root, filename), outf=outf)
                     if song is not None:
-                        songs.append(song)
+                        if to_memory:
+                            songs.append(song)
                     pb.update(n=1)
                 else:
                     log.warning("Non-midi file %s"%filename)
         if to_self:
             self.songs += songs
+        if outf:
+            outf.close()
+        return songs
 
-
-    def load_from_file(self, filename):
+    def load_from_file(self, filename, with_tqdm=True):
         with open(filename, 'rb') as inf:
-            pb = tqdm.tqdm_notebook(total=128)
+            if with_tqdm:
+                pb = tqdm.tqdm_notebook()
             while True:
                 try:
                     song = Song()
                     song.undump(inf)
                     self.songs.append(song)
-                    pb.update(n=1)
+                    if with_tqdm:
+                        pb.update(n=1)
                 except Exception as e:
                     log.warning(e)
                     break
 
-    def save_to_file(self, filename):
-        with open(filename, 'wb') as outf:
+    def save_to_file(self, filename, append=True):
+        with open(filename, '%sb'%('a' if append else 'w')) as outf:
             for song in self.songs:
                 song.dump(outf)
 
@@ -159,4 +187,3 @@ class SongCorpus:
                 print("track: {}".format(str(track)))
                 for chord in track.chords:
                     print("chord: {}".format(str(chord)))
-
