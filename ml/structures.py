@@ -70,6 +70,7 @@ class Track:
 
     instrument_name = None
     program = None
+    meter = None
 
 class Song:
     def __init__(self, tracks=[], bpm=0, name=""):
