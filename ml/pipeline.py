@@ -1,5 +1,5 @@
 from base_mapper import MapperError
-
+import json
 
 class Pipeline:
     mappers = []
@@ -8,12 +8,13 @@ class Pipeline:
         self.mappers = mappers
 
     def process(self, song):
-        try:
-            for mapper in self.mappers:
+        for mapper in self.mappers:
+            try:
                 song = mapper.process(song)
-        except MapperError as err:
-            print("Something went wrong with handler:" + str(err))
-            return None
+            except MapperError:
+                return None
+            # except Exception as err:
+            #     print("Mapper %s failed: %s"%(mapper.prefix, str(err)))
         return song
 
     def get_stats(self):
@@ -21,3 +22,6 @@ class Pipeline:
         for mapper in self.mappers:
             stats.update(mapper.get_stats())
         return stats
+
+    def dump_stats(self, outf):
+        json.dump(self.get_stats(), outf)

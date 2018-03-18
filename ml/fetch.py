@@ -5,6 +5,7 @@ from prestructures import *
 from structures import *
 import logging as log
 from pipeline import *
+from multiprocessing import Pool
 
 
 class SongCorpus:
@@ -62,6 +63,8 @@ class SongCorpus:
             try:
                 mid = mido.MidiFile(filename)
                 tpb = mid.ticks_per_beat
+                # print(tpb)
+                # mid.ticks_per_beat = 480
             except Exception as e:
                 log.warning('Broken midi %s: %s'%(filename, e))
                 return
@@ -72,7 +75,7 @@ class SongCorpus:
             try:
                 song.bpm = int(mido.tempo2bpm(list(filter(lambda msg: msg.type == 'set_tempo', mid))[0].tempo))
             except Exception:
-                song.bpm = 120  # Default by MIDI standard
+                song.bpm = 120  # Default by MIDI standard?
 
             time_signatures = []
             time = 0
@@ -85,7 +88,7 @@ class SongCorpus:
                                       msg.numerator, msg.denominator,
                                       msg.clocks_per_click, msg.notated_32nd_notes_per_beat))
 
-            song.time_signatures = time_signatures
+            song.time_signature = time_signatures
 
             for mid_track in mid.tracks:
                 try:
@@ -138,32 +141,24 @@ class SongCorpus:
             log.warning(e)
             return None
 
-    def process_recursive_from_directory(self, dirname, to_memory=True, to_self=True, outf_filename=None):
-        if outf_filename:
-            outf = open(outf_filename, 'ab')
-        else:
-            outf = None
+    def process_recursive_from_directory(self, dirname, to_memory=True, to_self=True, outf=None):
         songs = []
         total = sum([len(files) for r, d, files in os.walk(dirname)])
-        pb = tqdm.tqdm(total=total)
+        pb = tqdm.tqdm_notebook(total=total)
         for root, directories, filenames in os.walk(dirname):
             for filename in filenames:
                 if filename[-4:].lower() == '.mid':
-                    song = self.process_file(os.path.join(root, filename), outf=outf)
+                    song = self.process_file(os.path.join(root, filename), to_self=to_self, outf=outf)
                     if song is not None:
                         if to_memory:
                             songs.append(song)
                     pb.update(n=1)
                 else:
                     log.warning("Non-midi file %s"%filename)
-        if to_self:
-            self.songs += songs
-        if outf:
-            outf.close()
         return songs
 
     def apply_pipeline(self, inf_name, outf_name, with_tqdm=True):
-        with open(inf_name, 'rb') as inf, open(outf_name, 'ab+') as outf:
+        with open(inf_name, 'rb') as inf, open(outf_name, 'wb+') as outf:
             if with_tqdm:
                 pb = tqdm.tqdm_notebook()
             while True:
@@ -179,7 +174,7 @@ class SongCorpus:
                     log.warning(e)
                     break
 
-        self.pipeline.get_stats()
+        return self.pipeline.get_stats()
 
     def load_from_file(self, filename, with_tqdm=True):
         with open(filename, 'rb') as inf:

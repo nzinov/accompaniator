@@ -95,7 +95,7 @@ class Song:
         self.name = name
         self.bpm = bpm
         self.time_signature = None
-        self.key = None
+        self.key_signature = None
 
     def add_track(self, track):
         self.tracks.append(track)

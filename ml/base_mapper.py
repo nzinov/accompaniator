@@ -8,15 +8,30 @@ class MapperError(Exception):
 
 
 class BaseMapper:
-    def __init__(self, prefix=''):
-        self.stats = {}
-        self.prefix = prefix
+    def __init__(self, prefix=None, n_examples=10):
+        self.stats = dict()
+        self.examples = dict()
+        self.n_examples = n_examples
+
+        if prefix is None:
+            self.prefix = self.__class__.__name__
+        else:
+            self.prefix = prefix
+
+    def add_stats(self, stat_names):
+        for stat_name in stat_names:
+            self.stats[stat_name] = 0
+            self.examples[stat_name] = list()
+
+    def add_example(self, name, value):
+        if len(self.examples[name]) < self.n_examples:
+            self.examples[name].append(value)
 
     def process(self, song):
         pass
 
-    def log(self, param, value):
-        self.stats[param] = value
-
     def get_stats(self):
         return {(self.prefix, key): self.stats[key] for key in self.stats.keys()}
+
+    def get_examples(self):
+        return {(self.prefix, key): self.stats[key] for key in self.examples.keys()}
