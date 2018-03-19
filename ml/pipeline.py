@@ -1,6 +1,7 @@
 from base_mapper import MapperError
 import json
 
+
 class Pipeline:
     mappers = []
 
@@ -23,5 +24,11 @@ class Pipeline:
             stats.update(mapper.get_stats())
         return stats
 
+    def get_examples(self):
+        examples = {}
+        for mapper in self.mappers:
+            examples.update(mapper.get_examples())
+        return examples
+
     def dump_stats(self, outf):
-        json.dump(self.get_stats(), outf)
+        json.dump({'stats': self.get_stats(), 'examples': self.get_examples()}, outf)

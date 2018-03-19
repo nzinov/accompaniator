@@ -27,11 +27,15 @@ class BaseMapper:
         if len(self.examples[name]) < self.n_examples:
             self.examples[name].append(value)
 
+    def increment_counter(self, song, name):
+        self.stats[name] += 1
+        self.add_example(name, song.name)
+
     def process(self, song):
         pass
 
     def get_stats(self):
-        return {(self.prefix, key): self.stats[key] for key in self.stats.keys()}
+        return {str((self.prefix, key)): self.stats[key] for key in self.stats.keys()}
 
     def get_examples(self):
-        return {(self.prefix, key): self.stats[key] for key in self.examples.keys()}
+        return {str((self.prefix, key)): self.examples[key] for key in self.examples.keys()}

@@ -9,23 +9,22 @@ import numpy as np
 class BadSongsRemoveMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_stats (['<=1 track', '>1 track'])
+        self.add_stats(['<=1 track', '>1 track'])
 
     def process(self, song):
         if len(song.tracks) <= 1:
-            self.stats['<=1 track'] += 1
-            self.add_example('<=1 track', song.name)
+            self.increment_counter(song, '<=1 track')
             raise MapperError("1 track")
         else:
-            self.stats['>1 track'] += 1
-            self.add_example('>1 track', song.name)
+            self.increment_counter(song, '>1 track')
         return song
 
 
+# Useless
 class SongsWithIntegerDurationsMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.stats = {'not with integer durations': 0, 'with integer durations': 0}
+        self.add_stats(['not with integer durations', 'with integer durations'])
 
     @staticmethod
     def myround(x, base=4):
@@ -37,18 +36,18 @@ class SongsWithIntegerDurationsMapper(BaseMapper):
             # Round notes durations.
             for chord in track.chords:
                 if not np.isclose(self.myround(chord.delta, precision), chord.delta):
-                    #print((self.myround(chord.delta, precision), chord.delta))
+                    # print((self.myround(chord.delta, precision), chord.delta))
                     is_with_integer_durations = False
                     break
                 else:
                     chord.delta = self.myround(chord.delta, precision)
                 for note in chord.notes:
                     if not np.isclose(self.myround(note.duration, precision), note.duration):
-                        #print((self.myround(note.duration, precision), note.duration))
+                        # print((self.myround(note.duration, precision), note.duration))
                         is_with_integer_durations = False
                         break
                     else:
-                        #print("SUCCESS", (self.myround(note.duration, precision), note.duration))
+                        # print("SUCCESS", (self.myround(note.duration, precision), note.duration))
                         note.duration = self.myround(note.duration, precision)
                 if not is_with_integer_durations:
                     break
@@ -69,10 +68,10 @@ class SongsWithIntegerDurationsMapper(BaseMapper):
                 new_chords.pop(0)
             track.chords = new_chords
         if not is_with_integer_durations:
-            self.stats['not with integer durations'] += 1
+            self.increment_counter(song, 'not with integer durations')
             raise MapperError("Not integer duration")
         else:
-            self.stats['with integer durations'] += 1
+            self.increment_counter(song, 'with integer durations')
             return song
 
 
@@ -113,7 +112,7 @@ class NoiseReductionMapper(BaseMapper):
 class UnneededInstrumentsHandler(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.stats = {'sound_effects': 0, 'drums': 0, 'synth': 0, 'normal': 0}
+        self.add_stats(['sound_effects', 'drums', 'synth', 'normal'])
 
     def process(self, song):
         new_tracks = []
@@ -136,7 +135,7 @@ class UnneededInstrumentsHandler(BaseMapper):
 class PreToFinalConvertMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_stats(['same duration', 'different duration'])
+        self.add_stats(['tracks same duration', 'tracks different duration', 'not enough tracks'])
 
     @staticmethod
     def convert_chord(chord):
@@ -168,7 +167,7 @@ class PreToFinalConvertMapper(BaseMapper):
         return new_chords
 
     def process(self, song):
-        new_tracks = []
+        new_tracks = list()
         for track in song.tracks:
             is_same_durations = True
             for chord in track.chords:
@@ -177,13 +176,15 @@ class PreToFinalConvertMapper(BaseMapper):
                     is_same_durations = False
                     break
             if is_same_durations:
-                self.stats['same duration'] += 1
+                self.stats['tracks same duration'] += 1
                 track.chords = self.convert_chords(track.chords)
                 new_tracks.append(track)
             else:
-                self.stats['different duration'] += 1
+                self.stats['tracks different duration'] += 1
         if len(new_tracks) <= 1:
-            raise MapperError("Not enough tracks")
+            self.stats['not enough tracks'] += 1
+            raise MapperError("not enough tracks")
+
         song.tracks = new_tracks
         return song
 
@@ -191,21 +192,21 @@ class PreToFinalConvertMapper(BaseMapper):
 class TimeSignatureMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.stats = {'no signature': 0, 'one signature': 0, 'many signatures': 0,
-                      'different clocks_per_click': 0, 'different notated_32nd_notes_per_beat': 0,
-                      'signature concatenated':0}
+        self.add_stats(['no signature', 'one signature', 'many signatures',
+                        'different clocks_per_click', 'different notated_32nd_notes_per_beat',
+                        'signature concatenated'])
 
     def process(self, song):
         # gather stat
         clocks_per_click = [sig.clocks_per_click for sig in song.time_signature]
         if len(set(clocks_per_click)) > 1:
-            self.stats['different clocks_per_click'] += 1
+            self.increment_counter(song, 'different clocks_per_click')
         notated_32nd_notes_per_beat = [sig.notated_32nd_notes_per_beat for sig in song.time_signature]
         if len(set(notated_32nd_notes_per_beat)) > 1:
-            self.stats['different notated_32nd_notes_per_beat'] += 1
+            self.increment_counter(song, 'different notated_32nd_notes_per_beat')
 
         # merge same
-        new_signatures = []
+        new_signatures = list()
         new_signatures.append(song.time_signature[0])
         for i in range(1, len(song.time_signature)):
             if song.time_signature[i].numerator == new_signatures[-1].numerator and \
@@ -214,17 +215,24 @@ class TimeSignatureMapper(BaseMapper):
             else:
                 new_signatures.append(song.time_signature[i])
         if len(song.time_signature) != len(new_signatures):
-            self.stats['signature concatenated'] += 1
+            self.increment_counter(song, 'signature concatenated')
         song.time_signature = new_signatures
 
         if len(song.time_signature) == 0:
-            self.stats['no signature'] += 1
+            self.increment_counter(song, 'no signature')
             raise MapperError('Bad signature')
         elif len(song.time_signature) == 1:
             song.time_signature = (song.time_signature[0].numerator, song.time_signature[0].denominator)
-            self.stats['one signature'] += 1
+            self.increment_counter(song, 'one signature')
         else:
             # change_times = [sig.time for sig in song.time_signature]
-            self.stats['many signatures'] += 1
+            self.increment_counter(song, 'many signatures')
             raise MapperError('Bad signature')
         return song
+
+# class DumpToDiskMapper:
+#     def __init__(self, **kwargs):
+#         super().__init__(**kwargs)
+#
+#     def process(self, song):
+#
