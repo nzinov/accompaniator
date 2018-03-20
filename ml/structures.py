@@ -1,4 +1,5 @@
 import pickle
+import numpy as np
 
 
 class TimeSignature:
@@ -33,6 +34,10 @@ class Note:
     def freq(self):
         """ Returns frequency in Hz """
         return 2**((self.number - 69)/12.)*440
+
+    @staticmethod
+    def freq_to_number(freq):
+        return 12*np.log2(freq/440)
 
     def __str__(self):
         return "%s"%(self.number)

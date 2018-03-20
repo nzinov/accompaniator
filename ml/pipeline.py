@@ -32,4 +32,4 @@ class Pipeline:
         return examples
 
     def dump_stats(self, outf):
-        json.dump({'stats': self.get_stats(), 'examples': self.get_examples()}, outf)
+        json.dump({'stats': self.get_stats(), 'examples': self.get_examples()}, outf, sort_keys=True)

@@ -9,7 +9,7 @@ import numpy as np
 class BadSongsRemoveMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_stats(['<=1 track', '>1 track'])
+        self.add_counters(['<=1 track', '>1 track'])
 
     def process(self, song):
         if len(song.tracks) <= 1:
@@ -24,7 +24,7 @@ class BadSongsRemoveMapper(BaseMapper):
 class SongsWithIntegerDurationsMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_stats(['not with integer durations', 'with integer durations'])
+        self.add_counters(['not with integer durations', 'with integer durations'])
 
     @staticmethod
     def myround(x, base=4):
@@ -112,7 +112,7 @@ class NoiseReductionMapper(BaseMapper):
 class UnneededInstrumentsMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_stats(['sound_effects', 'drums', 'synth', 'normal', 'not enough tracks'])
+        self.add_counters(['sound_effects', 'drums', 'synth', 'normal', 'not enough tracks'])
 
     def process(self, song):
         new_tracks = []
@@ -136,7 +136,7 @@ class UnneededInstrumentsMapper(BaseMapper):
 class PreToFinalConvertMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_stats(['tracks same duration', 'tracks different duration', 'not enough tracks'])
+        self.add_counters(['tracks same duration', 'tracks different duration', 'not enough tracks'])
 
     @staticmethod
     def convert_chord(chord):
@@ -193,9 +193,9 @@ class PreToFinalConvertMapper(BaseMapper):
 class TimeSignatureMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_stats(['no signature', 'one signature', 'many signatures',
-                        'different clocks_per_click', 'different notated_32nd_notes_per_beat',
-                        'signature concatenated'])
+        self.add_counters(['no signature', 'one signature', 'many signatures',
+                           'different clocks_per_click', 'different notated_32nd_notes_per_beat',
+                           'signature concatenated'])
 
     def process(self, song):
         # gather stat
@@ -235,7 +235,8 @@ class TimeSignatureMapper(BaseMapper):
 # work in progress
 class VoiceDetectionMapper(BaseMapper):
 
-    def is_melody(self, track):
+    @staticmethod
+    def is_melody(track):
         is_one_note_at_time = True
         for chord in track.chords:
             if len(chord.notes) > 1:
@@ -243,9 +244,111 @@ class VoiceDetectionMapper(BaseMapper):
                 break
         return is_one_note_at_time
 
+    # Не очень понятно, зачем это нужно.
+    def is_voice(self, track):
+        low = Note.freq_to_number(80)
+        high = Note.freq_to_number(8000)
+        is_human_frequency = True
+        for chord in track.chords:
+            for note in chord.notes:
+                if not (low <= note.number <= high):
+                    is_human_frequency = False
+                    break
+        return is_human_frequency
+
+    # Во второй кусок попадают ноты, начало которых >= time
+    def split_track_by_time(self, track, time):
+        cur_time = 0
+        i = 0
+        for chord in track.chords:
+            if cur_time >= time:
+                break
+            cur_time += chord.duration
+            i += 1
+        track1 = Track()
+        track1.program, track1.instrument_name, track1.track_name \
+            = track.program, track.instrument_name, track.track_name
+        track1.chords = track.chords[:i]
+        track.chords = track.chords[i:]
+        return track1, track
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_stats([])
+        self.add_counters([])
 
     def process(self, song):
         pass
+
+
+class GetSongStatisticsMapper(BaseMapper):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.stats['tracks count per song'] = dict()
+        self.stats['chord duration'] = dict()
+        self.stats['melody tracks count per song'] = dict()
+        self.stats['chord tracks count per song'] = dict()
+        self.stats['melody and chord'] = dict()
+
+    @staticmethod
+    def majority(a):
+        return np.argmax(np.bincount(a))
+
+    def process(self, song):
+        self.increment_stat(self.stats['tracks count per song'], str(len(song.tracks)))
+        melodies_count = 0
+        for track in song.tracks:
+            self.increment_stat(self.stats['chord duration'],
+                                str(GetSongStatisticsMapper.majority([chord.duration for chord in track.chords])))
+            if VoiceDetectionMapper.is_melody(track):
+                melodies_count += 1
+        chords_count = len(song.tracks) - melodies_count
+        self.increment_stat(self.stats['melody tracks count per song'], str(melodies_count))
+        self.increment_stat(self.stats['chord tracks count per song'], str(chords_count))
+        self.increment_stat(self.stats['melody tracks count per song'], str(melodies_count))
+        self.increment_stat(self.stats['melody and chord'], str((melodies_count, chords_count)))
+
+
+class CutPausesMapper(BaseMapper):
+
+    @staticmethod
+    def get_index_of_time(track, time):
+        cur_time = 0
+        i = 0
+        for chord in track.chords:
+            if cur_time >= time:
+                break
+            cur_time += chord.duration
+            i += 1
+        return i
+
+    def get_split_times(self, track, time):
+        i1 = self.get_index_of_time(track, time)
+        return time, time + track.chords[i1].duration
+
+    # Во второй кусок попадают ноты, начало которых >= time
+    def cut_fragment_by_time(self, track, time1, time2):
+        i1 = self.get_index_of_time(track, time1)
+        i2 = self.get_index_of_time(track, time2)
+
+        # track1 = Track()
+        # track1.program, track1.instrument_name, track1.track_name \
+        #     = track.program, track.instrument_name, track.track_name
+        track.chords = track.chords[i1:i2]
+        return track
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.add_counters([])
+
+    # Неоптимально, но больших пауз мало, и так сойдёт.
+    def process(self, song):
+        changing = True
+        while changing:
+            changing = False
+            for track in song.tracks:
+                for chord in track.chords:
+                    if chord.duration > 128:
+                        time1, time2 = self.get_index_of_time(track, chord.duration)
+                        changing = True
+                        break
+            song.tracks = list(map(lambda track: self.cut_fragment_by_time(track, time1, time2), song.tracks))

@@ -18,7 +18,7 @@ class BaseMapper:
         else:
             self.prefix = prefix
 
-    def add_stats(self, stat_names):
+    def add_counters(self, stat_names):
         for stat_name in stat_names:
             self.stats[stat_name] = 0
             self.examples[stat_name] = list()
@@ -26,6 +26,12 @@ class BaseMapper:
     def add_example(self, name, value):
         if len(self.examples[name]) < self.n_examples:
             self.examples[name].append(value)
+
+    def increment_stat(self, stat_vault, name, count=1):
+        if name in stat_vault:
+            stat_vault[name] += count
+        else:
+            stat_vault[name] = count
 
     def increment_counter(self, song, name):
         self.stats[name] += 1

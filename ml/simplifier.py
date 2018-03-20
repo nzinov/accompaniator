@@ -8,7 +8,7 @@ from base_mapper import BaseMapper, MapperError
 class NonUniformTracksRemoveMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_stats(['non-uniform track', 'uniform track', 'not enough tracks'])
+        self.add_counters(['non-uniform track', 'uniform track', 'not enough tracks'])
 
     def process(self, song):
         tracks = np.array(song.tracks)
@@ -19,7 +19,9 @@ class NonUniformTracksRemoveMapper(BaseMapper):
             for chord in chords:
                 track_durations = np.append(track_durations, chord.duration)
             unique_durations = np.unique(track_durations)
-            unique_durations = unique_durations[unique_durations < 128]  # TODO: так можно не рассматривать паузы.
+
+            # TODO: временное решение, отсекащее большие паузы.
+            unique_durations = unique_durations[unique_durations <= 128]
 
             if len(unique_durations) != 1:
                 self.stats['non-uniform track'] += 1
@@ -39,7 +41,7 @@ class NonUniformTracksRemoveMapper(BaseMapper):
 class MergeTracksMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_stats(['non-uniform track', 'uniform track', 'not enough tracks', 'tracks merged'])
+        self.add_counters(['non-uniform track', 'uniform track', 'not enough tracks', 'tracks merged'])
 
     def process(self, song):
         indices = self.get_mergeable_track_indices(song)
