@@ -2,13 +2,11 @@ from time import sleep
 from structures import Note, Chord
 from multiprocessing.dummy import Queue, Process, Value
 import pyaudio
-import os
 import struct
 import numpy as np
 import time
 from scipy.fftpack import fft
 import wave
-import aubio
 
 CHUNK = 1024
 CHANNELS = 2
