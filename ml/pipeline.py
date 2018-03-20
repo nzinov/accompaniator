@@ -16,6 +16,7 @@ class Pipeline:
                 return None
             # except Exception as err:
             #     print("Mapper %s failed: %s"%(mapper.prefix, str(err)))
+            # TODO: раскомментить в продакшене.
         return song
 
     def get_stats(self):

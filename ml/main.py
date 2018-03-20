@@ -1,8 +1,14 @@
-from pipeline import Pipeline
-from simplifier import NonUniformRemover
+from fetch import *
+from mappers import *
 
-mappers = [NonUniformRemover("non-uniform")]
+corpus = SongCorpus()
 
-pipeline = Pipeline(mappers)
+bsrm = BadSongsRemoveMapper()
+nrm = NoiseReductionMapper()
+tsm = TimeSignatureMapper()
+uim = UnneededInstrumentsMapper()
+ptfcm = PreToFinalConvertMapper()
 
-#process your songs here
+corpus.pipeline.mappers = [bsrm, nrm, tsm, uim, ptfcm]
+
+corpus.apply_pipeline('raw.pickle', 'dataset.pickle')

@@ -5,7 +5,6 @@ from prestructures import *
 from structures import *
 import logging as log
 from pipeline import *
-from multiprocessing import Pool
 
 
 class SongCorpus:

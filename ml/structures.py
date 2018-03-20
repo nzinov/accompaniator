@@ -79,7 +79,8 @@ class Track:
         self.program = program
 
     def __str__(self):
-        return "track of %d chords"%(len(self.chords))
+        return "track '%s' '%s' %s with %d chords"%(
+            self.track_name, self.instrument_name, self.program, len(self.chords))
 
     def __repr__(self):
         return self.__str__()
@@ -123,7 +124,7 @@ class Song:
     def __str__(self):
         ret = "'%s' %s %s\n"%(self.name, len(self.tracks), self.bpm)
         for t in self.tracks:
-            ret += str(t) + '\n\n'
+            ret += str(t) + '\n'
         return ret
 
     def __repr__(self):

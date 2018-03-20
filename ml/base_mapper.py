@@ -1,9 +1,9 @@
 class MapperError(Exception):
     """Basic exception for handler"""
 
-    def __init__(self, msg):
+    def __init__(self, msg=None):
         if msg is None:
-            msg = "Mapper did not handle a song"
+            msg = "Mapper failed to process song"
         super(MapperError, self).__init__(msg)
 
 

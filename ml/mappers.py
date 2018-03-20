@@ -109,10 +109,10 @@ class NoiseReductionMapper(BaseMapper):
         return song
 
 
-class UnneededInstrumentsHandler(BaseMapper):
+class UnneededInstrumentsMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.add_stats(['sound_effects', 'drums', 'synth', 'normal'])
+        self.add_stats(['sound_effects', 'drums', 'synth', 'normal', 'not enough tracks'])
 
     def process(self, song):
         new_tracks = []
@@ -127,6 +127,7 @@ class UnneededInstrumentsHandler(BaseMapper):
                 self.stats['normal'] += 1
                 new_tracks.append(track)
         if len(new_tracks) <= 1:
+            self.stats['not enough tracks'] += 1
             raise MapperError("Not enough tracks")
         song.tracks = new_tracks
         return song
@@ -230,9 +231,21 @@ class TimeSignatureMapper(BaseMapper):
             raise MapperError('Bad signature')
         return song
 
-# class DumpToDiskMapper:
-#     def __init__(self, **kwargs):
-#         super().__init__(**kwargs)
-#
-#     def process(self, song):
-#
+
+# work in progress
+class VoiceDetectionMapper(BaseMapper):
+
+    def is_melody(self, track):
+        is_one_note_at_time = True
+        for chord in track.chords:
+            if len(chord.notes) > 1:
+                is_one_note_at_time = False
+                break
+        return is_one_note_at_time
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.add_stats([])
+
+    def process(self, song):
+        pass
