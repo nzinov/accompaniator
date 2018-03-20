@@ -1,93 +1,91 @@
-# ! sudo pip install time
-# ! sudo pip install pyalsaaudio
-# (перед этим  On  Debian or Ubuntu, install  libasound2 - dev.    On
-# ! Arch, install    alsa - lib.а     если    будут    еще    проблемы,
-#   то    https: // github.com / larsimmisch / pyalsaaudio)
-# ! sudo pip install aubio
-# ! А если еще что-то не понятно, то есть набор примеров, нормальной документации у них нет
-# ! https: // github.com / aubio / aubio / blob / master / python / demos / demo_alsa.py
-# ! Как работает запись: пишется все риалтайме,
-#  так чтобы получить порцию данных запустите первый блок, спойте/поставьте музыку, нажмите на стоп
-
-
+from time import sleep
+from mido import Message, MidiFile, MidiTrack
+from structures import Note, Chord
+from multiprocessing.dummy import Queue, Process, Value
 import alsaaudio
 import numpy as np
 import aubio
 import time
 
-
-silent_midi = -1  # если не слышно или просто ничего не звучит, то выдавать это midi
-
-
-def frequency_to_midi(frequency):
-    if (frequency < 0.1):
-        return silent_midi
-    else:
-        return np.int_(np.round(12 * np.log2(frequency / 440) + 69))
+"""
+Writing in file
+1. playchord()
+2. setupinstrument()
+3. savefile() - to check the correctness of opening and recording
+4. stop()
+"""
 
 
-# constants
-samplerate = 44100
-win_s = 2048
-hop_s = win_s // 2
-framesize = hop_s
+def runqueue(picker, tmp):
+    samplerate = 44100
+    win_s = 2048
+    hop_s = win_s // 2
+    framesize = hop_s
 
-# установка микрофона
-recorder = alsaaudio.PCM(type=alsaaudio.PCM_CAPTURE)
-recorder.setperiodsize(framesize)
-recorder.setrate(samplerate)
-recorder.setformat(alsaaudio.PCM_FORMAT_FLOAT_LE)
-recorder.setchannels(1)
+    # установка микрофона
+    recorder = alsaaudio.PCM(type=alsaaudio.PCM_CAPTURE)
+    recorder.setperiodsize(framesize)
+    recorder.setrate(samplerate)
+    recorder.setformat(alsaaudio.PCM_FORMAT_FLOAT_LE)
+    recorder.setchannels(1)
 
-# create aubio pitch detection (first argument is method, "default" is
-# "yinfft", can also be "yin", "mcomb", fcomb", "schmitt").
-pitcher = aubio.pitch("default", win_s, hop_s, samplerate)
-# set output unit (can be 'midi', 'cent', 'Hz', ...)
-pitcher.set_unit("Hz")
-# ignore frames under this level (dB)
-pitcher.set_silence(-20)  # изначально стоит -40,
-#  но из-за этого пишутся лишние шумы, я поставил на -20 может еще поднять
+    # create aubio pitch detection (first argument is method, "default" is
+    # "yinfft", can also be "yin", "mcomb", fcomb", "schmitt").
+    pitcher = aubio.pitch("fcomb", win_s, hop_s, samplerate)
+    # set output unit (can be 'midi', 'cent', 'Hz', ...)
+    pitcher.set_unit("midi")
+    # ignore frames under this level (dB)
+    pitcher.set_silence(-40)
 
-print("Starting to listen, press Ctrl+C to stop")
+    print("Starting to listen, press Ctrl+C to stop")
 
-freq = np.array([])
-energy = np.array([])
-now = time.time()
-times = np.array([])
-midi = np.array([])
-# поток считывается пока вы не нажмете на стоп
-while True:
-    try:
+    now = time.time()
+    # поток считывается пока вы не нажмете на стоп
+    while picker.runing is True:
         # read data from audio input
         _, data = recorder.read()
         # конвертим data в aubio float samples
         samples = np.fromstring(data, dtype=aubio.float_type)
         # высота нынешнего frame
-        freq_now = pitcher(samples)[0]
+        midi = int(pitcher(samples)[0])
         # они считают магически энергию, по тому что я пробовал, это похоже на громкость
-        energy_now = np.sum(samples ** 2) / len(samples)
+        energy = np.sum(samples ** 2) / len(samples)
+        #print(midi)
         # кидаем в массив частот энергии и времени
-        freq = np.append(freq, freq_now)
-        energy = np.append(energy, energy_now)
-        times = np.append(times, time.time() - now)
-        # я не знаю куда поставить считывание времени потому что если поставлю вначало,
-        #  то очень большой разрыв с реальным временем будет
-        midi = np.append(midi, frequency_to_midi(freq_now))
-
+        picker.queue_in.put(Chord([midi], time.time() - now, 127))
+        
         now = time.time()
-    except KeyboardInterrupt:
-        break
 
-n = len(freq)
 
-chords = [[-1, 0]]
+class PickFromMick:
+    def __init__(self):
+        self.queue_in = Queue()
+        runing = False
 
-cnt = times[0]
-for i in range(1, n):
-    if (abs(midi[i] - midi[i - 1]) < 0.01):
-        cnt += times[i]
-    else:
-        chords.append([midi[i - 1], cnt])
-        cnt = times[i]
+    def run(self):
+        self.runing = True
+        self.process = Process(target=runqueue, args=(self, self.runing))
+        self.process.start()
 
-print(chords)
+    def stop(self):
+        self.runing = False
+        self.process.join()
+
+        self.queue_in = Queue()
+
+    def get(self):
+        if self.queue_in.empty() is False:
+            return self.queue_in.get()
+
+    queue_in = None
+    runing = None
+
+
+if __name__ == '__main__':
+    q = PickFromMick()
+    q.run()
+    sleep(1)
+    a = q.get()
+    print(a)
+    q.stop()
+    print("Stopped")
