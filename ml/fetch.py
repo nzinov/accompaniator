@@ -164,15 +164,18 @@ class SongCorpus:
                 try:
                     song = Song()
                     song.undump(inf)
-                    song = self.pipeline.process(song)
-                    if song is not None:
-                        song.dump(outf)
+                    songs = self.pipeline.process([song])
+                    if songs:
+                        for song in songs:
+                            song.dump(outf)
                     if with_tqdm:
                         pb.update(n=1)
-                except Exception as e:
-                    log.warning(e)
+                except EOFError:
                     break
-
+                # except Exception as e:
+                #     log.warning(e)
+                #     break
+                # TODO: раскомментить в продакшене.
         return self.pipeline.get_stats()
 
     def load_from_file(self, filename, with_tqdm=True):

@@ -307,6 +307,8 @@ class GetSongStatisticsMapper(BaseMapper):
         self.increment_stat(self.stats['melody tracks count per song'], melodies_count)
         self.increment_stat(self.stats['melody and chord'], str((melodies_count, chords_count)))
 
+        return song
+
 
 class CutPausesMapper(BaseMapper):
 
