@@ -233,7 +233,7 @@ class TimeSignatureMapper(BaseMapper):
 
 
 # work in progress
-class VoiceDetectionMapper(BaseMapper):
+class MelodyDetectionMapper(BaseMapper):
 
     @staticmethod
     def is_melody(track):
@@ -291,20 +291,20 @@ class GetSongStatisticsMapper(BaseMapper):
 
     @staticmethod
     def majority(a):
-        return np.argmax(np.bincount(a))
+        return int(np.argmax(np.bincount(a)))
 
     def process(self, song):
-        self.increment_stat(self.stats['tracks count per song'], str(len(song.tracks)))
+        self.increment_stat(self.stats['tracks count per song'], len(song.tracks))
         melodies_count = 0
         for track in song.tracks:
             self.increment_stat(self.stats['chord duration'],
-                                str(GetSongStatisticsMapper.majority([chord.duration for chord in track.chords])))
-            if VoiceDetectionMapper.is_melody(track):
+                                GetSongStatisticsMapper.majority([int(chord.duration) for chord in track.chords]))
+            if MelodyDetectionMapper.is_melody(track):
                 melodies_count += 1
         chords_count = len(song.tracks) - melodies_count
-        self.increment_stat(self.stats['melody tracks count per song'], str(melodies_count))
-        self.increment_stat(self.stats['chord tracks count per song'], str(chords_count))
-        self.increment_stat(self.stats['melody tracks count per song'], str(melodies_count))
+        self.increment_stat(self.stats['melody tracks count per song'], melodies_count)
+        self.increment_stat(self.stats['chord tracks count per song'], chords_count)
+        self.increment_stat(self.stats['melody tracks count per song'], melodies_count)
         self.increment_stat(self.stats['melody and chord'], str((melodies_count, chords_count)))
 
 
@@ -352,3 +352,4 @@ class CutPausesMapper(BaseMapper):
                         changing = True
                         break
             song.tracks = list(map(lambda track: self.cut_fragment_by_time(track, time1, time2), song.tracks))
+

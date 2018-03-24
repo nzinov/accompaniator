@@ -2,6 +2,30 @@ from base_mapper import MapperError
 import json
 
 
+# Can't encode keys in dictionary.
+class ComplexEncoder(json.JSONEncoder):
+    def default(self, o):
+        try:
+            # print('default', type(o), o)
+            return super().default(o)
+        except TypeError:
+            return '"' + str(o) + '"'
+
+    def encode(self, o):
+        try:
+            # print('encode', type(o), o)
+            return super().encode(o)
+        except TypeError:
+            return '"' + str(o) + '"'
+
+    def iterencode(self, o, **kwargs):
+        try:
+            # print('iterencode', type(o), o)
+            return super().iterencode(o)
+        except TypeError:
+            return '"' + str(o) + '"'
+
+
 class Pipeline:
     mappers = []
 
@@ -32,4 +56,5 @@ class Pipeline:
         return examples
 
     def dump_stats(self, outf):
-        json.dump({'stats': self.get_stats(), 'examples': self.get_examples()}, outf, sort_keys=True)
+        json.dump({'stats': self.get_stats(), 'examples': self.get_examples()}, outf, sort_keys=True,
+                  default=str, cls=ComplexEncoder)
