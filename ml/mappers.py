@@ -4,7 +4,7 @@ from fetch import *
 from base_mapper import *
 
 import numpy as np
-
+from copy import deepcopy
 
 class BadSongsRemoveMapper(BaseMapper):
     def __init__(self, **kwargs):
@@ -310,32 +310,45 @@ class GetSongStatisticsMapper(BaseMapper):
         return song
 
 
+# Возможно, будут проблемы, если две больших паузы будут накладываться
 class CutPausesMapper(BaseMapper):
 
     @staticmethod
     def get_index_of_time(track, time):
+        """ Возвращает номер аккорда аккорда, в котором находится момент time, и абсолютное время его начала"""
         cur_time = 0
         i = 0
         for chord in track.chords:
-            if cur_time >= time:
-                break
+            if cur_time + chord.duration > time:
+                return i, cur_time
             cur_time += chord.duration
             i += 1
-        return i
+        return i, cur_time
 
-    def get_split_times(self, track, time):
-        i1 = self.get_index_of_time(track, time)
-        return time, time + track.chords[i1].duration
+    def get_split_times(self, chords, index):
+        time1 = 0
+        for i in range(0, index):
+            time1 += chords[i].duration
+        return time1, time1+chords[index].duration
 
     # Во второй кусок попадают ноты, начало которых >= time
+    # Пользуемся тем, что удаляем самую большую паузу, т. е. начало и конец попадают в разные аккорды.
     def cut_fragment_by_time(self, track, time1, time2):
-        i1 = self.get_index_of_time(track, time1)
-        i2 = self.get_index_of_time(track, time2)
+        i2, chord_beginning_2 = self.get_index_of_time(track, time2)
 
-        # track1 = Track()
-        # track1.program, track1.instrument_name, track1.track_name \
-        #     = track.program, track.instrument_name, track.track_name
-        track.chords = track.chords[i1:i2]
+        if i2 <len(track.chords):
+            duration_after = track.chords[i2].duration - (time2-chord_beginning_2)
+
+            if duration_after != 0:
+                track.chords[i2].duration = duration_after
+
+        i1, chord_beginning_1 = self.get_index_of_time(track, time1)
+        duration_before = time1 - chord_beginning_1
+        if duration_before != 0:
+            track.chords[i1].duration = duration_before
+            i1 += 1
+
+        track.chords = track.chords[:i1]+track.chords[i2:]
         return track
 
     def __init__(self, **kwargs):
@@ -344,14 +357,27 @@ class CutPausesMapper(BaseMapper):
 
     # Неоптимально, но больших пауз мало, и так сойдёт.
     def process(self, song):
+        # Дополняем треки паузами до одинаковой длины.
+        track_durations = [track.duration() for track in song.tracks]
+        max_track_duration = max(track_durations)
+        for i in range(0, len(track_durations)):
+            if track_durations[i] < max_track_duration:
+                song.tracks[i].chords.append(Chord([], max_track_duration-track_durations[i], -1))
+
         changing = True
         while changing:
             changing = False
-            for track in song.tracks:
-                for chord in track.chords:
-                    if chord.duration > 128:
-                        time1, time2 = self.get_index_of_time(track, chord.duration)
+            duration_biggest, times_biggest = 0, None
+            for track_num, track in enumerate(song.tracks):
+                for i, chord in enumerate(track.chords):
+                    if not chord.notes and chord.duration > 128 and chord.duration > duration_biggest:
+                        time1, time2 = self.get_split_times(track.chords, i)
                         changing = True
-                        break
-            song.tracks = list(map(lambda track: self.cut_fragment_by_time(track, time1, time2), song.tracks))
+                        duration_biggest = chord.duration
+                        times_biggest = (time1, time2)
+            if not changing:
+                break
+            song.tracks = list(map(lambda track:
+                                   self.cut_fragment_by_time(track, times_biggest[0], times_biggest[1]), song.tracks))
 
+        return song

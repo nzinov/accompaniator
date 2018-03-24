@@ -94,6 +94,12 @@ class Track:
         for i in range(len(self.chords)):
             self.chords[i].add_notes(track2.chords[i].notes)
 
+    def duration(self):
+        duration = 0
+        for chord in self.chords:
+            duration += chord.duration
+        return duration
+
 
 class Song:
     def __init__(self, tracks=[], bpm=0, name=""):

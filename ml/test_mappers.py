@@ -1,5 +1,6 @@
 import unittest
 from mappers import *
+from copy import deepcopy
 
 
 class TestPreToFinalConvertMapper(unittest.TestCase):
@@ -42,6 +43,45 @@ class TestPreToFinalConvertMapper(unittest.TestCase):
         song.tracks = [Track(equal_durations)]
         with self.assertRaises(MapperError):
             song = mapper.process(song)
+
+
+class TestCutPausesMapper(unittest.TestCase):
+
+    def testCutting(self):
+        chord = Chord([Note(1)], 4, 127)
+        pause = Chord([], 8, 127)
+        big_pause = Chord([], 256, 127)
+
+        chords = [chord, big_pause, chord, pause, chord]
+        track = Track([deepcopy(chord) for chord in chords])
+        song = Song([track])
+
+        cpm = CutPausesMapper()
+        self.assertEqual(cpm.get_index_of_time(track, 0), (0, 0))
+        self.assertEqual(cpm.get_index_of_time(track, 3), (0, 0))
+        self.assertEqual(cpm.get_index_of_time(track, 9), (1, 4))
+
+        self.assertEqual(str(cpm.process(song).tracks[0].chords),
+                         '[{4 127 [1]}, {4 127 [1]}, {8 127 []}, {4 127 [1]}]')
+
+    def testSongCutting(self):
+        chord = Chord([Note(1)], 4, 127)
+        pause = Chord([], 8, 127)
+        big_pause = Chord([], 256, 127)
+        medium_pause = Chord([], 250, 127)
+
+        chords_list = \
+            [[chord, big_pause, chord, pause, chord],
+             [pause, medium_pause, chord, pause, chord]]
+        tracks = [Track([deepcopy(chord) for chord in chords]) for chords in chords_list]
+        song = Song(tracks)
+
+        cpm = CutPausesMapper()
+        processed = cpm.process(song)
+        self.assertEqual(str(processed.tracks[0].chords),
+                         '[{4 127 [1]}, {4 127 [1]}, {8 127 []}, {4 127 [1]}]')
+        self.assertEqual(str(processed.tracks[1].chords),
+                         '[{4 127 []}, {2 127 [1]}, {8 127 []}, {4 127 [1]}, {2 -1 []}]')
 
 
 if __name__ == '__main__':
