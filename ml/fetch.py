@@ -7,6 +7,19 @@ import logging as log
 from pipeline import *
 
 
+def in_ipynb():
+    try:
+        shell = get_ipython().__class__.__name__
+        if shell == 'ZMQInteractiveShell':
+            return True  # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False  # Probably standard Python interpreter
+
+
 class SongCorpus:
 
     def __init__(self):
@@ -156,10 +169,15 @@ class SongCorpus:
                     log.warning("Non-midi file %s"%filename)
         return songs
 
-    def apply_pipeline(self, inf_name, outf_name, with_tqdm=True):
+    def apply_pipeline(self, inf_name, outf_name, max_count=None):
+
         with open(inf_name, 'rb') as inf, open(outf_name, 'wb+') as outf:
-            if with_tqdm:
+            if in_ipynb():
                 pb = tqdm.tqdm_notebook()
+            else:
+                pb = tqdm.tqdm()
+
+            i = 0
             while True:
                 try:
                     song = Song()
@@ -168,8 +186,10 @@ class SongCorpus:
                     if songs:
                         for song in songs:
                             song.dump(outf)
-                    if with_tqdm:
-                        pb.update(n=1)
+                    pb.update(n=1)
+                    i += 1
+                    if max_count is not None and i >= max_count:
+                        break
                 except EOFError:
                     break
                 # except Exception as e:

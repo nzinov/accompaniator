@@ -100,6 +100,24 @@ class Track:
             duration += chord.duration
         return duration
 
+    def nonpause_duration(self):
+        duration = 0
+        for chord in self.chords:
+            if chord.notes:
+                duration += chord.duration
+        return duration
+
+    def pause_duration(self):
+        return self.duration()-self.nonpause_duration()
+
+    def has_one_note_at_time(self):
+        is_one_note_at_time = True
+        for chord in self.chords:
+            if len(chord.notes) > 1:
+                is_one_note_at_time = False
+                break
+        return is_one_note_at_time
+
 
 class Song:
     def __init__(self, tracks=[], bpm=0, name=""):
@@ -108,6 +126,9 @@ class Song:
         self.bpm = bpm
         self.time_signature = None
         self.key_signature = None
+
+    def chord_tracks(self):
+        return [track for track in self.tracks if track.has_one_note_at_time()]
 
     def add_track(self, track):
         self.tracks.append(track)

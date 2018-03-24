@@ -1,5 +1,6 @@
 import unittest
 from mappers import *
+from simplifier import *
 from copy import deepcopy
 
 
@@ -83,6 +84,36 @@ class TestCutPausesMapper(unittest.TestCase):
         self.assertEqual(str(processed.tracks[1].chords),
                          '[{4 127 []}, {2 127 [1]}, {8 127 []}, {4 127 [1]}, {2 -1 []}]')
 
+    def testSongCuttingAtEdges(self):
+        chord = Chord([Note(1)], 250, 127)
+        medium_pause = Chord([], 150, 127)
+
+        chords_list = \
+            [[chord, medium_pause],
+             [medium_pause, chord]]
+        tracks = [Track([deepcopy(chord) for chord in chords]) for chords in chords_list]
+        song = Song(tracks)
+
+        cpm = CutPausesMapper()
+        processed = cpm.process(song)
+        self.assertEqual(str(processed.tracks[0].chords), '[{100 127 [1]}]')
+        self.assertEqual(str(processed.tracks[1].chords), '[{100 127 [1]}]')
+
+class TestMergeTracksMapper(unittest.TestCase):
+    def test1(self):
+        chord1 = Chord([Note(1)], 4, 127)
+        chord2 = Chord([Note(2)], 4, 127)
+        pause = Chord([], 4, 127)
+
+        chords_list = \
+            [[chord1, chord1, chord1, pause, chord1],
+             [pause, chord2, chord2, pause, chord2]]
+        tracks = [Track([deepcopy(chord) for chord in chords]) for chords in chords_list]
+        song = Song(tracks)
+
+        mtm = MergeTracksMapper()
+        self.assertEqual(str(mtm.process(song).tracks[0].chords),
+                         '[{4 127 [1]}, {4 127 [1, 2]}, {4 127 [1, 2]}, {4 127 []}, {4 127 [1, 2]}]')
 
 if __name__ == '__main__':
     unittest.main()
