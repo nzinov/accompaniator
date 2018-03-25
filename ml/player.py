@@ -54,7 +54,7 @@ class Player:
         """ This is necessary to HEAR the music """
         available_ports = self.midiout.get_ports()
         if available_ports:
-            self.midiout.open_port(0)
+            self.midiout.open_port(1)
         else:
             self.midiout.open_virtual_port("Tmp virtual output") 
              
