@@ -33,21 +33,23 @@ class Pipeline:
         self.mappers = mappers
 
     def process(self, songs):
-        new_songs = []
-        for song in songs:
-            successful = True
-            for mapper in self.mappers:
+        if type(songs) is not list:
+            songs = [songs]
+        for mapper in self.mappers:
+            new_songs = []
+            for song in songs:
                 try:
                     song = mapper.process(song)
                 except MapperError:
-                    successful = False
-                    break
+                    continue
                 # except Exception as err:
                 #     print("Mapper %s failed: %s"%(mapper.prefix, str(err)))
-                # TODO: раскомментить в продакшене.
-            if successful:
-                new_songs.append(song)
-        return new_songs
+                # TODO: раскомментить в продакшене, сейчас пусть вылетает наружу.
+                if type(song) is not list:
+                    song = [song]
+                new_songs += song
+            songs = new_songs
+        return songs
 
     def get_stats(self):
         stats = {}

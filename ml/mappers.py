@@ -5,10 +5,11 @@ from simplifier import *
 from base_mapper import *
 
 import numpy as np
-from copy import deepcopy
 
 
 class BadSongsRemoveMapper(BaseMapper):
+    """Removes songs with <=1 track"""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.add_counters(['<=1 track', '>1 track'])
@@ -24,6 +25,8 @@ class BadSongsRemoveMapper(BaseMapper):
 
 # Useless
 class SongsWithIntegerDurationsMapper(BaseMapper):
+    """Was designed to count songs with integer durations of notes. Almost no such songs were found."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.add_counters(['not with integer durations', 'with integer durations'])
@@ -57,18 +60,6 @@ class SongsWithIntegerDurationsMapper(BaseMapper):
             if not is_with_integer_durations:
                 break
 
-            # Concatenate chords.
-            new_chords = [PreChord(0, [])]
-            for chord in track.chords[1:]:
-                if chord.delta != 0:
-                    new_chords.append(chord)
-                else:
-                    new_chords[-1].notes += chord.notes
-
-            # Remove dummy chord.
-            if new_chords[0] == PreChord(0, []):
-                new_chords.pop(0)
-            track.chords = new_chords
         if not is_with_integer_durations:
             self.increment_counter(song, 'not with integer durations')
             raise MapperError("Not integer duration")
@@ -77,11 +68,14 @@ class SongsWithIntegerDurationsMapper(BaseMapper):
             return song
 
 
-# This method is quite rough, and some small notes could be appended to wrong chords.
 class NoiseReductionMapper(BaseMapper):
+    """Rounds durations of notes to 1/32 by default.
+    This method is quite rough, and some small notes could be appended to wrong chords
+    (zero duration notes appear as well)."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.add_counters([])
 
     # rounding to 4/128th note
     @staticmethod
@@ -93,8 +87,12 @@ class NoiseReductionMapper(BaseMapper):
             # Round notes durations.
             for chord in track.chords:
                 chord.delta = self.myround(chord.delta, 4)
+                new_notes = []
                 for note in chord.notes:
                     note.duration = self.myround(note.duration, 4)
+                    new_notes.append(note)
+
+                chord.notes = new_notes
 
             # Concatenate chords.
             new_chords = [PreChord(0, [])]
@@ -112,6 +110,8 @@ class NoiseReductionMapper(BaseMapper):
 
 
 class UnneededInstrumentsMapper(BaseMapper):
+    """Removes strange instruments: sound_effects, drums, synth."""
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.add_counters(['sound_effects', 'drums', 'synth', 'normal', 'not enough tracks'])
@@ -136,10 +136,18 @@ class UnneededInstrumentsMapper(BaseMapper):
 
 
 class PreToFinalConvertMapper(BaseMapper):
+    """ Converts song to inner representation.
+    In: PreChord and PreNote
+    Out: Chord and Note
+
+    Removes tracks with non-uniform chords and notes with zero duration.
+    """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.add_counters(['notes in chords have same duration',
                            'notes in chords have different duration',
+                           'notes in chords have zero duration',
                            'not enough tracks'])
 
     @staticmethod
@@ -176,18 +184,24 @@ class PreToFinalConvertMapper(BaseMapper):
         for track in song.tracks:
 
             is_same_durations = True
+            is_zero_durations = False
             for chord in track.chords:
                 durations = list(map(lambda note: note.duration, chord.notes))
                 if len(set(durations)) > 1:
                     is_same_durations = False
                     break
+                if durations[0] == 0:
+                    is_zero_durations = True
+                    break
 
-            if is_same_durations:
+            if is_zero_durations:
+                self.stats['notes in chords have zero duration'] += 1
+            if not is_same_durations:
+                self.stats['notes in chords have different duration'] += 1
+            else:
                 self.stats['notes in chords have same duration'] += 1
                 track.chords = self.convert_chords(track.chords)
                 new_tracks.append(track)
-            else:
-                self.stats['notes in chords have different duration'] += 1
 
         if len(new_tracks) <= 1:
             self.stats['not enough tracks'] += 1
@@ -239,23 +253,18 @@ class TimeSignatureMapper(BaseMapper):
         return song
 
 
-class UniformChordsMapper(BaseMapper):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def process(self, song):
-        return song
-
-
 class GetSongStatisticsMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.stats['tracks count per song'] = dict()
         self.stats['chord duration'] = dict()
+        self.stats['most frequent chord duration'] = dict()
         self.stats['melody tracks count per song'] = dict()
         self.stats['chord tracks count per song'] = dict()
         self.stats['melody and chord'] = dict()
-        self.stats['tracks nonpause duration'] = dict()
+        self.stats['track nonpause duration'] = dict()
+        self.stats['track duration'] = dict()
+        self.stats['track pause to all ratio'] = dict()
 
     @staticmethod
     def majority(a):
@@ -265,11 +274,18 @@ class GetSongStatisticsMapper(BaseMapper):
         self.increment_stat(self.stats['tracks count per song'], len(song.tracks))
         melodies_count = 0
         for track in song.tracks:
-            self.increment_stat(self.stats['chord duration'],
+            self.increment_stat(self.stats['most frequent chord duration'],
                                 GetSongStatisticsMapper.majority([int(chord.duration) for chord in track.chords]))
+            # Too slow
+            # for chord in track.chords:
+            #     self.increment_stat(self.stats['chord duration'],
+            #                         GetSongStatisticsMapper.majority([int(chord.duration) for chord in track.chords]))
             if track.has_one_note_at_time():
                 melodies_count += 1
-            self.increment_stat(self.stats['tracks nonpause duration'], track.nonpause_duration())
+            self.increment_stat(self.stats['track nonpause duration'], track.nonpause_duration())
+            self.increment_stat(self.stats['track duration'], track.nonpause_duration())
+            if track.duration() != 0:
+                self.increment_stat(self.stats['track pause to all ratio'], track.pause_duration()/track.duration())
         chords_count = len(song.tracks) - melodies_count
         self.increment_stat(self.stats['melody tracks count per song'], melodies_count)
         self.increment_stat(self.stats['chord tracks count per song'], chords_count)
