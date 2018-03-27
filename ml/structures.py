@@ -77,11 +77,12 @@ class Chord:
 class Track:
     """ Chords one by one """
 
-    def __init__(self, chords=[], track_name='', instrument_name='', program=-1):
+    def __init__(self, chords=[], track_name='', instrument_name='', program=-1, is_melody=False):
         self.chords = chords[:]
         self.track_name = track_name
         self.instrument_name = instrument_name
         self.program = program
+        self.is_melody = is_melody
 
     def __str__(self):
         return "track '%s' '%s' %s with %d chords"%(

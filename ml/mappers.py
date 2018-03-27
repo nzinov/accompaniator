@@ -148,7 +148,8 @@ class PreToFinalConvertMapper(BaseMapper):
         self.add_counters(['notes in chords have same duration',
                            'notes in chords have different duration',
                            'notes in chords have zero duration',
-                           'not enough tracks'])
+                           'not enough tracks',
+                           'track has zero duration'])
 
     @staticmethod
     def convert_chord(chord):
@@ -201,7 +202,10 @@ class PreToFinalConvertMapper(BaseMapper):
             else:
                 self.stats['notes in chords have same duration'] += 1
                 track.chords = self.convert_chords(track.chords)
-                new_tracks.append(track)
+                if track.duration() == 0:
+                    self.stats['track has zero duration'] += 1
+                else:
+                    new_tracks.append(track)
 
         if len(new_tracks) <= 1:
             self.stats['not enough tracks'] += 1
@@ -263,6 +267,7 @@ class GetSongStatisticsMapper(BaseMapper):
         self.stats['chord tracks count per song'] = dict()
         self.stats['melody and chord'] = dict()
         self.stats['track nonpause duration'] = dict()
+        self.stats['track pause duration'] = dict()
         self.stats['track duration'] = dict()
         self.stats['track pause to all ratio'] = dict()
 
@@ -283,7 +288,8 @@ class GetSongStatisticsMapper(BaseMapper):
             if track.has_one_note_at_time():
                 melodies_count += 1
             self.increment_stat(self.stats['track nonpause duration'], track.nonpause_duration())
-            self.increment_stat(self.stats['track duration'], track.nonpause_duration())
+            self.increment_stat(self.stats['track pause duration'], track.pause_duration())
+            self.increment_stat(self.stats['track duration'], track.duration())
             if track.duration() != 0:
                 self.increment_stat(self.stats['track pause to all ratio'], track.pause_duration()/track.duration())
         chords_count = len(song.tracks) - melodies_count

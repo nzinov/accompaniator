@@ -119,33 +119,84 @@ class TestCutPausesMapper(unittest.TestCase):
                          str(processed.tracks[1].chords))
 
     def testSongCuttingAtEdges(self):
-        chord = Chord([Note(1)], 250, 127)
-        medium_pause = Chord([], 150, 127)
+        chord = Chord([Note(1)], 100, 127)
+        medium_pause = Chord([], 160, 127)
 
         chords_list = \
-            [[chord, medium_pause],
-             [medium_pause, chord]]
+            [[chord, chord, medium_pause],
+             [medium_pause, chord, chord]]
         tracks = [Track([deepcopy(chord) for chord in chords]) for chords in chords_list]
         song = Song(tracks)
 
         song1, song2 = deepcopy(song), deepcopy(song)
 
-        cpm = CutPausesMapper(strategy='split', good_track_ratio=1)
-        processed = cpm.process(song1)
+        # cpm = CutPausesMapper(strategy='split', good_track_ratio=1)
+        # processed = cpm.process(song1)
+        #
+        # self.assertEqual('[{10 127 [1]}]',
+        #                  str(processed[0].tracks[0].chords))
+        # self.assertEqual('[{10 127 [1]}]',
+        #                  str(processed[0].tracks[1].chords))
 
-        self.assertEqual('[{100 127 [1]}]',
-                         str(processed[0].tracks[0].chords))
-        self.assertEqual('[{100 127 [1]}]',
-                         str(processed[0].tracks[1].chords))
+        cpm = CutPausesMapper(strategy='cat', good_track_ratio=1)
+
+        processed = cpm.process(song2)
+
+        self.assertEqual('[{40 127 [1]}]',
+                         str(processed.tracks[0].chords))
+        self.assertEqual('[{40 127 [1]}]',
+                         str(processed.tracks[1].chords))
+
+    def testPausesInRow(self):
+        chord = Chord([Note(1)], 4, 127)
+        medium_pause = Chord([], 150, 127)
+
+        chords_list = \
+            [[chord, medium_pause, medium_pause],
+             [chord, medium_pause, medium_pause]]
+        tracks = [Track([deepcopy(chord) for chord in chords]) for chords in chords_list]
+        song = Song(tracks)
+
+        song1, song2 = deepcopy(song), deepcopy(song)
+
+        # cpm = CutPausesMapper(strategy='split', good_track_ratio=1)
+        # processed = cpm.process(song1)
+        #
+        # self.assertEqual('[{100 127 [1]}]',
+        #                  str(processed[0].tracks[0].chords))
+        # self.assertEqual('[{100 127 [1]}]',
+        #                  str(processed[0].tracks[1].chords))
 
         cpm = CutPausesMapper(strategy='cat', good_track_ratio=1)
         processed = cpm.process(song2)
 
-        self.assertEqual('[{100 127 [1]}]',
+        self.assertEqual('[{4 127 [1]}]',
                          str(processed.tracks[0].chords))
-        self.assertEqual('[{100 127 [1]}]',
+        self.assertEqual('[{4 127 [1]}]',
                          str(processed.tracks[1].chords))
 
+    def testCutToZero(self):
+        medium_pause = Chord([], 150, 127)
+
+        chords_list = \
+            [[medium_pause, medium_pause],
+             [medium_pause, medium_pause]]
+        tracks = [Track([deepcopy(chord) for chord in chords]) for chords in chords_list]
+        song = Song(tracks)
+
+        song1, song2 = deepcopy(song), deepcopy(song)
+
+        # cpm = CutPausesMapper(strategy='split', good_track_ratio=1)
+        # processed = cpm.process(song1)
+        #
+        # self.assertEqual('[{100 127 [1]}]',
+        #                  str(processed[0].tracks[0].chords))
+        # self.assertEqual('[{100 127 [1]}]',
+        #                  str(processed[0].tracks[1].chords))
+
+        cpm = CutPausesMapper(strategy='cat', good_track_ratio=1)
+        with self.assertRaises(MapperError):
+            processed = cpm.process(song2)
 
 class TestMergeTracksMapper(unittest.TestCase):
     def test1(self):
@@ -156,7 +207,7 @@ class TestMergeTracksMapper(unittest.TestCase):
         chords_list = \
             [[chord1, chord1, chord1, pause, chord1],
              [pause, chord2, chord2, pause, chord2]]
-        tracks = [Track([deepcopy(chord) for chord in chords]) for chords in chords_list]
+        tracks = [Track([deepcopy(chord) for chord in chords], is_melody=False) for chords in chords_list]
         song = Song(tracks)
 
         mtm = MergeTracksMapper()
@@ -174,7 +225,7 @@ class TestSplitChordsToGcdMapper(unittest.TestCase):
         track = Track([chord1, chord2, chord3])
         song = Song([track])
 
-        tscgm = SplitChordsToGcdMapper()
+        tscgm = SplitNonMelodiesToGcdMapper()
         self.assertEqual(
             '[{4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}]',
             str(tscgm.process(song).tracks[0].chords))
