@@ -198,17 +198,18 @@ class SongCorpus:
                 # TODO: раскомментить в продакшене.
         return self.pipeline.get_stats()
 
-    def load_from_file(self, filename, with_tqdm=True):
+    def load_from_file(self, filename):
         with open(filename, 'rb') as inf:
-            if with_tqdm:
+            if in_ipynb():
                 pb = tqdm.tqdm_notebook()
+            else:
+                pb = tqdm.tqdm()
             while True:
                 try:
                     song = Song()
                     song.undump(inf)
                     self.songs.append(song)
-                    if with_tqdm:
-                        pb.update(n=1)
+                    pb.update(n=1)
                 except Exception as e:
                     log.warning(e)
                     break

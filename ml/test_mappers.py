@@ -56,7 +56,7 @@ class TestCutPausesMapper(unittest.TestCase):
         chords = [chord, big_pause, chord, pause, chord]
         track = Track([deepcopy(chord) for chord in chords])
 
-        cpm = CutPausesMapper(good_track_ratio=1)
+        cpm = CutOutLongChordsMapper(good_track_ratio=1)
         self.assertEqual(cpm.get_index_of_time(track, 0), (0, 0))
         self.assertEqual(cpm.get_index_of_time(track, 3), (0, 0))
         self.assertEqual(cpm.get_index_of_time(track, 9), (1, 4))
@@ -72,50 +72,51 @@ class TestCutPausesMapper(unittest.TestCase):
 
         song1, song2 = deepcopy(song), deepcopy(song)
 
-        cpm = CutPausesMapper(strategy='split', good_track_ratio=1)
+        cpm = CutOutLongChordsMapper(strategy='split', good_track_ratio=1, min_track_duration=0)
         processed = cpm.process(song1)
         self.assertEqual('[{4 127 [1]}]',
                          str(processed[0].tracks[0].chords))
         self.assertEqual('[{4 127 [1]}, {8 127 []}, {4 127 [1]}]',
                          str(processed[1].tracks[0].chords))
 
-        cpm = CutPausesMapper(strategy='cat', good_track_ratio=1)
+        cpm = CutOutLongChordsMapper(strategy='cat', good_track_ratio=1, min_track_duration=0)
         processed = cpm.process(song2)
         self.assertEqual('[{4 127 [1]}, {4 127 [1]}, {8 127 []}, {4 127 [1]}]',
                          str(processed.tracks[0].chords))
 
     def testMultipleTracksCutting(self):
         chord = Chord([Note(1)], 4, 127)
+        long_chord = Chord([Note(2)], 8, 127)
         pause = Chord([], 8, 127)
         big_pause = Chord([], 256, 127)
         medium_pause = Chord([], 250, 127)
 
         chords_list = \
             [[chord, big_pause, chord, pause, chord],
-             [pause, medium_pause, chord, pause, chord]]
+             [long_chord, medium_pause, chord, pause, chord]]
         tracks = [Track([deepcopy(chord) for chord in chords]) for chords in chords_list]
         song = Song(tracks)
 
         song1, song2 = deepcopy(song), deepcopy(song)
 
-        cpm = CutPausesMapper(strategy='split', good_track_ratio=1)
+        cpm = CutOutLongChordsMapper(strategy='split', good_track_ratio=1, min_track_duration=0)
         processed = cpm.process(song1)
 
         self.assertEqual('[{4 127 [1]}]',
                          str(processed[0].tracks[0].chords))
         self.assertEqual('[{4 127 [1]}, {8 127 []}, {4 127 [1]}]',
                          str(processed[1].tracks[0].chords))
-        self.assertEqual('[{4 127 []}]',
+        self.assertEqual('[{4 127 [2]}]',
                          str(processed[0].tracks[1].chords))
         self.assertEqual('[{2 127 [1]}, {8 127 []}, {4 127 [1]}, {2 -1 []}]',
                          str(processed[1].tracks[1].chords))
 
-        cpm = CutPausesMapper(strategy='cat', good_track_ratio=1)
+        cpm = CutOutLongChordsMapper(strategy='cat', good_track_ratio=1, min_track_duration=0)
         processed = cpm.process(song2)
 
         self.assertEqual('[{4 127 [1]}, {4 127 [1]}, {8 127 []}, {4 127 [1]}]',
                          str(processed.tracks[0].chords))
-        self.assertEqual('[{4 127 []}, {2 127 [1]}, {8 127 []}, {4 127 [1]}, {2 -1 []}]',
+        self.assertEqual('[{4 127 [2]}, {2 127 [1]}, {8 127 []}, {4 127 [1]}, {2 -1 []}]',
                          str(processed.tracks[1].chords))
 
     def testSongCuttingAtEdges(self):
@@ -130,15 +131,15 @@ class TestCutPausesMapper(unittest.TestCase):
 
         song1, song2 = deepcopy(song), deepcopy(song)
 
-        # cpm = CutPausesMapper(strategy='split', good_track_ratio=1)
-        # processed = cpm.process(song1)
-        #
-        # self.assertEqual('[{10 127 [1]}]',
-        #                  str(processed[0].tracks[0].chords))
-        # self.assertEqual('[{10 127 [1]}]',
-        #                  str(processed[0].tracks[1].chords))
+        cpm = CutOutLongChordsMapper(strategy='split', good_track_ratio=1, min_track_duration=0)
+        processed = cpm.process(song1)
 
-        cpm = CutPausesMapper(strategy='cat', good_track_ratio=1)
+        self.assertEqual('[{40 127 [1]}]',
+                         str(processed[0].tracks[0].chords))
+        self.assertEqual('[{40 127 [1]}]',
+                         str(processed[0].tracks[1].chords))
+
+        cpm = CutOutLongChordsMapper(strategy='cat', good_track_ratio=1, min_track_duration=0)
 
         processed = cpm.process(song2)
 
@@ -159,15 +160,15 @@ class TestCutPausesMapper(unittest.TestCase):
 
         song1, song2 = deepcopy(song), deepcopy(song)
 
-        # cpm = CutPausesMapper(strategy='split', good_track_ratio=1)
-        # processed = cpm.process(song1)
-        #
-        # self.assertEqual('[{100 127 [1]}]',
-        #                  str(processed[0].tracks[0].chords))
-        # self.assertEqual('[{100 127 [1]}]',
-        #                  str(processed[0].tracks[1].chords))
+        cpm = CutOutLongChordsMapper(strategy='split', good_track_ratio=1, min_track_duration=0)
+        processed = cpm.process(song1)
 
-        cpm = CutPausesMapper(strategy='cat', good_track_ratio=1)
+        self.assertEqual('[{4 127 [1]}]',
+                         str(processed[0].tracks[0].chords))
+        self.assertEqual('[{4 127 [1]}]',
+                         str(processed[0].tracks[1].chords))
+
+        cpm = CutOutLongChordsMapper(strategy='cat', good_track_ratio=1, min_track_duration=0)
         processed = cpm.process(song2)
 
         self.assertEqual('[{4 127 [1]}]',
@@ -186,17 +187,15 @@ class TestCutPausesMapper(unittest.TestCase):
 
         song1, song2 = deepcopy(song), deepcopy(song)
 
-        # cpm = CutPausesMapper(strategy='split', good_track_ratio=1)
-        # processed = cpm.process(song1)
-        #
-        # self.assertEqual('[{100 127 [1]}]',
-        #                  str(processed[0].tracks[0].chords))
-        # self.assertEqual('[{100 127 [1]}]',
-        #                  str(processed[0].tracks[1].chords))
+        cpm = CutOutLongChordsMapper(strategy='split', good_track_ratio=1, min_track_duration=0)
+        processed = cpm.process(song1)
+        self.assertEqual('[]',
+                         str(processed))
 
-        cpm = CutPausesMapper(strategy='cat', good_track_ratio=1)
+        cpm = CutOutLongChordsMapper(strategy='cat', good_track_ratio=1, min_track_duration=0)
         with self.assertRaises(MapperError):
             processed = cpm.process(song2)
+
 
 class TestMergeTracksMapper(unittest.TestCase):
     def test1(self):
