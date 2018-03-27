@@ -18,23 +18,26 @@ class BaseMapper:
         else:
             self.prefix = prefix
 
-    def add_counters(self, stat_names):
-        for stat_name in stat_names:
-            self.stats[stat_name] = 0
-            self.examples[stat_name] = list()
+    def add_example(self, name, value, examples_vault=None):
+        if examples_vault is None:
+            examples_vault = self.examples
 
-    def add_example(self, name, value):
-        if len(self.examples[name]) < self.n_examples:
-            self.examples[name].append(value)
+        if name in examples_vault.keys():
+            if len(examples_vault[name]) < self.n_examples:
+                examples_vault[name].append(value)
+        else:
+            examples_vault['name'] = [value]
 
-    def increment_stat(self, stat_vault, name, count=1):
+    def increment_stat(self, name, stat_vault=None, count=1):
+        if stat_vault is None:
+            stat_vault = self.stats
         if name in stat_vault:
             stat_vault[name] += count
         else:
             stat_vault[name] = count
 
-    def increment_counter(self, song, name):
-        self.stats[name] += 1
+    def example_and_increment(self, song, name):
+        self.increment_stat(name)
         self.add_example(name, song.name)
 
     def process(self, song):
