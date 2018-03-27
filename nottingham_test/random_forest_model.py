@@ -31,12 +31,17 @@ X_train, X_test, y_train, y_test = train_test_split(X, y)
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
+import custom_scorers
+from sklearn.metrics import make_scorer
 
 clf = RandomForestClassifier(n_estimators=20)
 clf.fit(X_train, y_train)
 
 print(X_test)
 
-print(accuracy_score(y_test, clf.predict(X_test)))
+abs_dist_score = make_scorer(custom_scorers.chords_dist_error)
+y_pred = clf.predict(X_test)
+print(accuracy_score(y_test, y_pred)) 
+print(abs_dist_score(clf, X_test, y_test))
 
 print(y_test[10], X_test[10,:], clf.predict(X_test)[10])
