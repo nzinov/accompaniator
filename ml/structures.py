@@ -162,3 +162,13 @@ class Song:
 
     def __repr__(self):
         return self.__str__()
+
+    def melodies_track_count(self):
+        melodies_count = 0
+        for track in self.tracks:
+            if track.has_one_note_at_time():
+                melodies_count += 1
+        return melodies_count
+
+    def chords_track_count(self):
+        return len(self.tracks)-self.melodies_track_count()

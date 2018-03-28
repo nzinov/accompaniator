@@ -1,6 +1,6 @@
 import unittest
-from mappers import *
-from simplifier import *
+from mappers_preprocess import *
+from mappers_simplify import *
 from copy import deepcopy
 
 

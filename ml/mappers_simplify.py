@@ -112,6 +112,7 @@ class SplitNonMelodiesToGcdMapper(BaseMapper):
     def process(self, song):
         tracks = np.array(song.tracks)
 
+        gcds = []
         for track in tracks:
             if track.is_melody:
                 continue
@@ -120,9 +121,14 @@ class SplitNonMelodiesToGcdMapper(BaseMapper):
 
             assert track_durations.size != 0
 
-            gcd = self.gcd(track_durations)
-            self.increment_stat(gcd, self.stats['gcd'])
+            track_gcd = self.gcd(track_durations)
+            self.increment_stat(track_gcd, self.stats['gcd'])
+            gcds.append(track_gcd)
 
+        gcd = self.gcd(gcds)
+        for track in tracks:
+            if track.is_melody:
+                continue
             new_chords = []
             for chord in track.chords:
                 chord_duration = chord.duration
@@ -358,4 +364,62 @@ class MergeTracksMapper(BaseMapper):
                     tracks[indices[0]].merge_track(tracks[indices[i]])
             new_tracks.append(tracks[indices[0]])
         song.tracks = new_tracks + [melody] if melody else new_tracks
+        return song
+
+
+class GetResultMapper(BaseMapper):
+    """ Filters only suitable songs. """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def process(self, song):
+        melodies_count = song.melodies_track_count()
+        chords_count = len(song.tracks) - melodies_count
+        if melodies_count == 1 and chords_count == 1:
+            return song
+        else:
+            raise MapperError('melodies and chords not (1,1)')
+
+
+class GetSongStatisticsMapper(BaseMapper):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.stats['tracks count per song'] = dict()
+        # self.stats['chord duration'] = dict()
+        self.stats['most frequent chord duration'] = dict()
+        self.stats['melody tracks count per song'] = dict()
+        self.stats['chord tracks count per song'] = dict()
+        self.stats['melody and chord'] = dict()
+        self.stats['track nonpause duration'] = dict()
+        self.stats['track pause duration'] = dict()
+        self.stats['track duration'] = dict()
+        self.stats['track pause to all ratio'] = dict()
+
+    @staticmethod
+    def majority(a):
+        return int(np.argmax(np.bincount(a)))
+
+    def process(self, song):
+        self.increment_stat(len(song.tracks), self.stats['tracks count per song'])
+        for track in song.tracks:
+            self.increment_stat(GetSongStatisticsMapper.majority([int(chord.duration) for chord in track.chords]),
+                                self.stats['most frequent chord duration'])
+            # Too slow
+            # for chord in track.chords:
+            #     self.increment_stat(self.stats['chord duration'],
+            #                         GetSongStatisticsMapper.majority([int(chord.duration) for chord in track.chords]))
+            self.increment_stat(track.nonpause_duration(), self.stats['track nonpause duration'])
+            self.increment_stat(track.pause_duration(), self.stats['track pause duration'])
+            self.increment_stat(track.duration(), self.stats['track duration'])
+            if track.duration() != 0:
+                self.increment_stat(track.pause_duration()/track.duration(), self.stats['track pause to all ratio'])
+
+        melodies_count = song.melodies_track_count()
+        chords_count = len(song.tracks) - melodies_count
+
+        self.increment_stat(melodies_count, self.stats['melody tracks count per song'])
+        self.increment_stat(chords_count, self.stats['chord tracks count per song'])
+        self.increment_stat(str((melodies_count, chords_count)), self.stats['melody and chord'])
+
         return song

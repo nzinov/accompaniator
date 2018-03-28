@@ -1,7 +1,7 @@
 from prestructures import *
 from structures import *
-from fetch import *
-from simplifier import *
+from corpus import *
+from mappers_simplify import *
 from base_mapper import *
 
 import numpy as np
@@ -242,48 +242,4 @@ class TimeSignatureMapper(BaseMapper):
             # change_times = [sig.time for sig in song.time_signature]
             self.example_and_increment(song, 'many signatures')
             raise MapperError('Bad signature')
-        return song
-
-
-class GetSongStatisticsMapper(BaseMapper):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.stats['tracks count per song'] = dict()
-        self.stats['chord duration'] = dict()
-        self.stats['most frequent chord duration'] = dict()
-        self.stats['melody tracks count per song'] = dict()
-        self.stats['chord tracks count per song'] = dict()
-        self.stats['melody and chord'] = dict()
-        self.stats['track nonpause duration'] = dict()
-        self.stats['track pause duration'] = dict()
-        self.stats['track duration'] = dict()
-        self.stats['track pause to all ratio'] = dict()
-
-    @staticmethod
-    def majority(a):
-        return int(np.argmax(np.bincount(a)))
-
-    def process(self, song):
-        self.increment_stat(len(song.tracks), self.stats['tracks count per song'])
-        melodies_count = 0
-        for track in song.tracks:
-            self.increment_stat(GetSongStatisticsMapper.majority([int(chord.duration) for chord in track.chords]),
-                                self.stats['most frequent chord duration'])
-            # Too slow
-            # for chord in track.chords:
-            #     self.increment_stat(self.stats['chord duration'],
-            #                         GetSongStatisticsMapper.majority([int(chord.duration) for chord in track.chords]))
-            if track.has_one_note_at_time():
-                melodies_count += 1
-            self.increment_stat(track.nonpause_duration(), self.stats['track nonpause duration'])
-            self.increment_stat(track.pause_duration(), self.stats['track pause duration'])
-            self.increment_stat(track.duration(), self.stats['track duration'])
-            if track.duration() != 0:
-                self.increment_stat(track.pause_duration()/track.duration(), self.stats['track pause to all ratio'])
-        chords_count = len(song.tracks) - melodies_count
-        self.increment_stat(melodies_count, self.stats['melody tracks count per song'])
-        self.increment_stat(chords_count, self.stats['chord tracks count per song'])
-        self.increment_stat(melodies_count, self.stats['melody tracks count per song'])
-        self.increment_stat(str((melodies_count, chords_count)), self.stats['melody and chord'])
-
         return song

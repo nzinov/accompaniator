@@ -1,6 +1,6 @@
 import unittest
 from prestructures import *
-from fetch import *
+from corpus import *
 
 
 class TestChords(unittest.TestCase):
