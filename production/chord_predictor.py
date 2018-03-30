@@ -49,20 +49,20 @@ class ChordPredictor:
             num_notes_to_add = round(chord.len() / 8)
             note = chord.notes[0]
             for i in range(num_notes_to_add):
-                np.append(numbers, note.number)
+                numbers = np.append(numbers, note.number)
         # shift midi notes to our notes
         numbers = numbers % 12
         # generate beat
         beat = np.hstack([np.ones(4), np.zeros(12), np.ones(4), np.ones(8)])
         if numbers.size != 28:
-            print("Number of notes is wrong")
+            print("Number of notes is wrong: " + str(numbers_size))
             if numbers.size < 28:
                 numbers = np.hstack([numbers, np.zeros(28 - len(numbers)) + 12])
             else:
                 numbers = numbers[:28]
         #сначала номера, потом биты
         chord = self.model.predict(np.hstack([numbers, beat]).reshape(1, -1))
-        print(chord)
+        #print(chord)
         notes = chord_notes(chord[0])
         list_notes = []
         for note in notes:
