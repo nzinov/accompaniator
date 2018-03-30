@@ -2,33 +2,34 @@ from time import sleep
 from mido import Message, MidiFile, MidiTrack
 from structures import Note, Chord
 from multiprocessing.dummy import Queue, Process, Value
-import alsaaudio
 import numpy as np
 from aubio import notes, onset, tempo
-import time
-import aubio
 
-"""
-Writing in file
-1. playchord()
-2. setupinstrument()
-3. savefile() - to check the correctness of opening and recording
-4. stop()
-"""
+import aubio
+import pyaudio
+
+
+def from_ms_to_our_time(time, bpm):
+    return int(time * (128 * 60 * 1000) / bpm)
 
 
 def runqueue(picker, tmp):
     samplerate = 44100
+    bpm = 124
     win_s = 256
     hop_s = win_s // 2
     framesize = hop_s
+    p = pyaudio.PyAudio()
 
-    # установка микрофона
-    recorder = alsaaudio.PCM(type=alsaaudio.PCM_CAPTURE)
-    recorder.setperiodsize(framesize)
-    recorder.setrate(samplerate)
-    recorder.setformat(alsaaudio.PCM_FORMAT_FLOAT_LE)
-    recorder.setchannels(1)
+    # open stream
+    buffer_size = 128
+    pyaudio_format = pyaudio.paFloat32
+    n_channels = 1
+    stream = p.open(format=pyaudio_format,
+                    channels=n_channels,
+                    rate=samplerate,
+                    input=True,
+                    frames_per_buffer=buffer_size)
 
     notes_o = notes("default", win_s, hop_s, samplerate)
     onset_o = onset("default", win_s, hop_s, samplerate)
@@ -39,25 +40,27 @@ def runqueue(picker, tmp):
 
     print("Starting to listen, press Ctrl+C to stop")
 
-    now = time.time()
     # поток считывается пока вы не нажмете на стоп
     while picker.runing is True:
         # read data from audio input
-        _, data = recorder.read()
-        # конвертим data в aubio float samples
-        samples = np.fromstring(data, dtype=aubio.float_type)
-        # высота нынешнего frame
-        if (onset_o(samples[0])):
-            last_onset = int(onset_o.get_last_ms())
-        if (temp_o(samples[0])):
-            tmp = int(temp_o.get_last_ms())
-            beats.append(tmp - last_beat)
-            last_beat = tmp
-        new_note = notes_o(samples[0])
-        bpm = np.median(beats[-10:])
-        picker.queue_in.put(Chord([new_note[0]], (last_onset / bpm), new_note[1]))
+        #_, data = recorder.read()
+        audiobuffer = stream.read(buffer_size)
+        samples = np.fromstring(audiobuffer, dtype=np.float32)
 
-        now = time.time()
+        if (onset_o(samples)):
+            last_onset = int(onset_o.get_last_ms())
+        if (temp_o(samples)):
+            tmp = int(temp_o.get_last_ms())
+            beats.append(int(tmp - last_beat))
+            last_beat = tmp
+        new_note = notes_o(samples)
+        if (new_note[0] != 0):
+            if (len(beats) != 0):
+                bpm = np.median(beats)
+            #print(new_note[0], last_onset, new_note[1])
+            picker.queue_in.put(Chord([new_note[0]], last_onset, new_note[1]))
+
+
 
 
 class Listener:
