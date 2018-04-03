@@ -58,7 +58,7 @@ class Chord:
         return self.duration
 
     def len_in_ms(self, bpm):
-        """ Returns length of chord in ms given beats per minute"""
+        """ Returns length of chord in ms given beats per minute. """
         return self.duration*bpm/(128*60*1000)
 
     def __str__(self):
@@ -77,12 +77,11 @@ class Chord:
 class Track:
     """ Chords one by one """
 
-    def __init__(self, chords=[], track_name='', instrument_name='', program=-1, is_melody=False):
+    def __init__(self, chords=[], track_name='', instrument_name='', program=-1):
         self.chords = chords[:]
         self.track_name = track_name
         self.instrument_name = instrument_name
         self.program = program
-        self.is_melody = is_melody
 
     def __str__(self):
         return "track '%s' '%s' %s with %d chords"%(
@@ -112,12 +111,23 @@ class Track:
         return self.duration()-self.nonpause_duration()
 
     def has_one_note_at_time(self):
-        is_one_note_at_time = True
+        one_note_at_time = True
         for chord in self.chords:
             if len(chord.notes) > 1:
-                is_one_note_at_time = False
+                one_note_at_time = False
                 break
-        return is_one_note_at_time
+        return one_note_at_time
+
+    def get_index_of_time(self, time):
+        """ Returns the index of chord containing moment `time` and absolute time of its beginning. """
+        cur_time = 0
+        i = 0
+        for chord in self.chords:
+            if cur_time + chord.duration > time:
+                return i, cur_time
+            cur_time += chord.duration
+            i += 1
+        return i, cur_time
 
 
 class Song:
@@ -172,3 +182,11 @@ class Song:
 
     def chords_track_count(self):
         return len(self.tracks)-self.melodies_track_count()
+
+    @property
+    def melody_track(self):
+        return self.tracks[0]
+
+    @property
+    def chord_track(self):
+        return self.tracks[1]

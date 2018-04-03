@@ -1,5 +1,6 @@
 from base_mapper import MapperError
 import json
+import logging as log
 
 
 # Can't encode keys in dictionary.
@@ -42,9 +43,9 @@ class Pipeline:
                     song = mapper.process(song)
                 except MapperError:
                     continue
-                # except Exception as err:
-                #     print("Mapper %s failed: %s"%(mapper.prefix, str(err)))
-                # TODO: раскомментить в продакшене, сейчас пусть вылетает наружу.
+                except Exception as err:
+                    log.warning("Mapper %s failed: %s"%(mapper.prefix, str(err)))
+
                 if type(song) is not list:
                     song = [song]
                 new_songs += song

@@ -5,6 +5,7 @@ from prestructures import *
 from structures import *
 import logging as log
 from pipeline import *
+from multiprocessing.pool import Pool
 
 
 def in_ipynb():
@@ -18,6 +19,13 @@ def in_ipynb():
             return False  # Other type (?)
     except NameError:
         return False  # Probably standard Python interpreter
+
+
+def get_progressbar(**kwargs):
+    if in_ipynb():
+        return tqdm.tqdm_notebook(**kwargs)
+    else:
+        return tqdm.tqdm(**kwargs)
 
 
 class SongCorpus:
@@ -44,24 +52,25 @@ class SongCorpus:
     def is_note_off(message):
         return message.type == 'note_off' or (message.type == 'note_on' and message.velocity == 0)
 
-    def get_chords(self, notes_list, tpb):
+    @staticmethod
+    def get_chords(notes_list, tpb):
         # Dummy chord
         chords = [PreChord(0, [])]
 
         cur_chord_duration = 0
         for i, note in enumerate(notes_list):
-            cur_chord_duration += self.get_duration(tpb, note.time)
-            if self.is_note_on(note):
+            cur_chord_duration += SongCorpus.get_duration(tpb, note.time)
+            if SongCorpus.is_note_on(note):
                 cur_duration = 0
 
                 for j in range(i + 1, len(notes_list)):
-                    cur_duration += self.get_duration(tpb, notes_list[j].time)
+                    cur_duration += SongCorpus.get_duration(tpb, notes_list[j].time)
 
-                    if notes_list[j].note == note.note and self.is_note_off(notes_list[j]):
+                    if notes_list[j].note == note.note and SongCorpus.is_note_off(notes_list[j]):
 
                         cur_duration = cur_duration
                         # If note continues chord
-                        if self.get_duration(tpb, note.time) == 0 and self.is_note_on(notes_list[i - 1]):
+                        if SongCorpus.get_duration(tpb, note.time) == 0 and SongCorpus.is_note_on(notes_list[i - 1]):
                             chords[-1].notes.append(PreNote(note.note, cur_duration, note.velocity))
                         else:  # If note is the first note of new chord
                             chords.append(
@@ -70,13 +79,13 @@ class SongCorpus:
                         break
         return chords
 
-    def process_file(self, filename, to_self=False, outf=None):
+    @staticmethod
+    def process_file(filename, output_file):
         try:
             try:
                 mid = mido.MidiFile(filename)
                 tpb = mid.ticks_per_beat
-                # print(tpb)
-                # mid.ticks_per_beat = 480
+
             except Exception as e:
                 log.warning('Broken midi %s: %s'%(filename, e))
                 return
@@ -93,7 +102,7 @@ class SongCorpus:
             time = 0
             for msg in mid:
                 if hasattr(msg, 'time'):
-                    time += self.get_duration(tpb, msg.time)
+                    time += SongCorpus.get_duration(tpb, msg.time)
                 if msg.type == 'time_signature':
                     time_signatures.append(
                         TimeSignature(time,
@@ -110,32 +119,20 @@ class SongCorpus:
 
                     track = Track()
 
-                    try:
-                        track.track_name = \
-                            list(filter(lambda msg: msg.type == 'track_name', mid_track))[0].name
-                    except Exception:
-                        track.track_name = ''
+                    def get_item_or_default(track, name, func, default=''):
+                        try:
+                            vars(track)[name] = func(list(filter(lambda msg: msg.type == name, mid_track))[0])
+                        except Exception:
+                            vars(track)[name] = default
 
-                    try:
-                        track.instrument_name = \
-                            list(filter(lambda msg: msg.type == 'instrument_name', mid_track))[0].name
-                    except Exception:
-                        track.instrument_name = ''
-
-                    try:
-                        track.program = list(filter(lambda msg: msg.type == 'program_change', mid_track))[0].program
-                    except Exception:
-                        track.program = -1
-
-                    try:
-                        key_signature = list(filter(lambda msg: msg.type == 'key_signature', mid_track))[0].key
-                        song.key_signature = key_signature
-                    except Exception:
-                        song.key_signature = ''
+                    get_item_or_default(track, 'track_name', lambda x: x.name)
+                    get_item_or_default(track, 'instrument_name', lambda x: x.name)
+                    get_item_or_default(track, 'program_change', lambda x: int(x.program), default=-1)
+                    get_item_or_default(track, 'key_signature', lambda x: x.key)
 
                     notes_list = list(filter(lambda msg: msg.type == 'note_on' or msg.type == 'note_off', mid_track))
 
-                    track.chords = self.get_chords(notes_list, tpb)
+                    track.chords = SongCorpus.get_chords(notes_list, tpb)
 
                     song.add_track(track)
 
@@ -143,81 +140,88 @@ class SongCorpus:
                     log.warning('PreTracks broken', e)
                     break
 
-            if to_self:
-                self.songs.append(song)
-            if outf:
-                song.dump(outf)
+            if output_file:
+                song.dump(output_file)
             return song
         except Exception as e:
             log.warning('MIDI broken %s'%filename)
             log.warning(e)
             return None
 
-    def process_recursive_from_directory(self, dirname, to_memory=True, to_self=True, outf=None):
-        songs = []
+    @staticmethod
+    def process_recursive_from_directory(dirname, output_file, with_progressbar=True):
         total = sum([len(files) for r, d, files in os.walk(dirname)])
-        pb = tqdm.tqdm_notebook(total=total)
+        pb = get_progressbar(total=total, disable=not with_progressbar)
         for root, directories, filenames in os.walk(dirname):
             for filename in filenames:
                 if filename[-4:].lower() == '.mid':
-                    song = self.process_file(os.path.join(root, filename), to_self=to_self, outf=outf)
-                    if song is not None:
-                        if to_memory:
-                            songs.append(song)
+                    SongCorpus.process_file(os.path.join(root, filename), output_file)
                     pb.update(n=1)
-                else:
-                    log.warning("Non-midi file %s"%filename)
-        return songs
 
-    def apply_pipeline(self, inf_name, outf_name, max_count=None):
+    @staticmethod
+    def process_subdir(subdir):
+        print(subdir)
+        with open(os.path.join(subdir, 'out.pickle'), 'wb') as output_file:
+            SongCorpus.process_recursive_from_directory(subdir, output_file, with_progressbar=False)
 
-        with open(inf_name, 'rb') as inf, open(outf_name, 'wb+') as outf:
-            if in_ipynb():
-                pb = tqdm.tqdm_notebook()
-            else:
-                pb = tqdm.tqdm()
+    @staticmethod
+    def process_parallel_from_directory(dirname):
+        pool = Pool(None)
+        subdirs = [os.path.join(dirname, subdirname)
+                   for subdirname in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, subdirname))]
+        print('Total:', len(subdirs))
+        pool.map(SongCorpus.process_subdir, subdirs)
+        pool.close()
+        pool.join()
+
+    def apply_pipeline(self, input_file_name, output_file_name, max_count=None):
+
+        with open(input_file_name, 'rb') as input_file, open(output_file_name, 'wb+') as output_file:
+            pb = get_progressbar()
 
             i = 0
             while True:
                 try:
                     song = Song()
-                    song.undump(inf)
+                    song.undump(input_file)
                     songs = self.pipeline.process([song])
                     if songs:
                         for song in songs:
-                            song.dump(outf)
+                            song.dump(output_file)
                     pb.update(n=1)
                     i += 1
                     if max_count is not None and i >= max_count:
                         break
                 except EOFError:
                     break
-                # except Exception as e:
-                #     log.warning(e)
-                #     break
-                # TODO: раскомментить в продакшене.
+                except Exception as e:
+                    log.warning(e)
         return self.pipeline.get_stats()
 
-    def load_from_file(self, filename):
-        with open(filename, 'rb') as inf:
-            if in_ipynb():
-                pb = tqdm.tqdm_notebook()
-            else:
-                pb = tqdm.tqdm()
+    def load_from_file(self, filename, max_count=None):
+        with open(filename, 'rb') as input_file:
+            pb = get_progressbar()
+
+            i = 0
             while True:
                 try:
                     song = Song()
-                    song.undump(inf)
+                    song.undump(input_file)
                     self.songs.append(song)
                     pb.update(n=1)
+                    i += 1
+                    if max_count is not None and i >= max_count:
+                        break
+                except EOFError:
+                    break
                 except Exception as e:
                     log.warning(e)
                     break
 
     def save_to_file(self, filename, append=True):
-        with open(filename, '%sb'%('a' if append else 'w')) as outf:
+        with open(filename, '%sb'%('a' if append else 'w')) as output_file:
             for song in self.songs:
-                song.dump(outf)
+                song.dump(output_file)
 
     def print(self):
         for song in self.songs:

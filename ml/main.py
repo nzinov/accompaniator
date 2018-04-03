@@ -4,25 +4,21 @@ from mappers_simplify import *
 
 corpus = SongCorpus()
 
-# preprocess
-bsrm = BadSongsRemoveMapper()
-nrm = NoiseReductionMapper()
-tsm = TimeSignatureMapper()
-uim = UnneededInstrumentsMapper()
-ptfcm = PreToFinalConvertMapper()
-
-# simplify
-colcm = CutOutLongChordsMapper(strategy='split', min_big_pause_duration=256)
-mdm = MelodyDetectionMapper(strategy='most probable')
-
-sctgm = SplitNonMelodiesToGcdMapper()
-#nuctrm = NonUniformChordsTracksRemoveMapper()
-
-mtm = MergeTracksMapper()
-grm = GetResultMapper()
-gssm = GetSongStatisticsMapper()
-
-corpus.pipeline.mappers = [bsrm, nrm, tsm, uim, ptfcm,
-                           colcm, mdm, sctgm, mtm, grm, gssm]
+corpus.pipeline.mappers = \
+    [
+        # preprocess
+        BadSongsRemoveMapper(),
+        NoiseReductionMapper(),
+        TimeSignatureMapper(),
+        UnneededInstrumentsMapper(),
+        PreToFinalConvertMapper(),
+        # simplify
+        CutOutLongChordsMapper(strategy='split', min_big_pause_duration=256),
+        MelodyDetectionMapper(strategy='most probable'),
+        SplitNonMelodiesToGcdMapper(),  # or NonUniformChordsTracksRemoveMapper()
+        MergeTracksMapper(),
+        GetResultMapper(),
+        GetSongStatisticsMapper()
+    ]
 
 corpus.apply_pipeline('raw.pickle', 'dataset.pickle')

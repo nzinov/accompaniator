@@ -9,6 +9,10 @@ class MapperError(Exception):
 
 class BaseMapper:
     def __init__(self, prefix=None, n_examples=10):
+        """
+        :param prefix: The name of mapper which would be displayed (default is class name)
+        :param n_examples: How many examples should be stored.
+        """
         self.stats = dict()
         self.examples = dict()
         self.n_examples = n_examples
@@ -26,7 +30,7 @@ class BaseMapper:
             if len(examples_vault[name]) < self.n_examples:
                 examples_vault[name].append(value)
         else:
-            examples_vault['name'] = [value]
+            examples_vault[name] = [value]
 
     def increment_stat(self, name, stat_vault=None, count=1):
         if stat_vault is None:
