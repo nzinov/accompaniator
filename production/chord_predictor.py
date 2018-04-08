@@ -33,15 +33,50 @@ def chord_notes(chord):
     else: #major большая терция и чистая квинта
         return [first_note, interval(first_note, 4), interval(first_note, 7)]
 
+def run_queue(predictor):
+    predictor.load_model("rf_nottingham.pkl")
+
+    while predictor.running:
+        if not predictor.queue_in.empty():
+            chord = predictor.try_predict()
+            if chord is not None:
+                queue_out.put(chord) # длительность аккорда выставлять тут
+
+
 class ChordPredictor:
     model = None
 
-    def __init__(self):
-        pass
+    def __init__(self, queue_in, queue_out):
+        self.queue_in = queue_in
+        self.queue_out = queue_out
+        self.running = False
+        self.chords_len = 0
+
+    def run(self):
+        self.running = True
+        self.process = Process(target=run_queue, args=(self))
+        self.process.start()
+
+    def stop(self):
+        self.running = False
+        self.process.join()
 
     def load_model(self, filename):
         with open(filename, 'rb') as fid:
             self.model = pickle.load(fid)
+
+    def try_predict(self):
+        chord = self.queue_in.get() 
+        self.chords_list.append(chord)
+        self.chord_len += chord.duration
+        if self.chord_len > 128 * 2 * 7/8:
+            prediction = self.predict(self.chords_list)
+            self.chords_list.clear()
+            self.chord_len = 0
+            return prediction
+        else:
+            return None
+
 
     def predict(self, chords_list): # передаётся два такта, кроме последней доли (то есть от двух тактов доступно 7/8 или 14/16 информации)
         numbers = np.array([]) # midi numbers!
@@ -67,4 +102,4 @@ class ChordPredictor:
         list_notes = []
         for note in notes:
             list_notes.append(Note(note + 12 * 4))
-        return Chord(list_notes, 128, 1)
+        return Chord(list_notes) 

@@ -2,13 +2,14 @@ import time
 import sys
 import numpy as np
 import aubio
-import pyaudio
+#import pyaudio
 from aubio import notes, onset, tempo
 from time import sleep
 from mido import Message, MidiFile, MidiTrack
-from rtmidi import MidiOut
+#from rtmidi import MidiOut
 from structures import Note, Chord
 from multiprocessing.dummy import Queue, Process, Value
+from chord_predictor import *
 
 default_tempo = 124
 default_instrument = 30
@@ -206,22 +207,26 @@ class Listener:
 class Accompanist:
     def __init__(self):
         self.queue = Queue()
+        self.predictor_queue = Queue()
         self.runing = Value('runing', False)
         self.tempo = Value('tempo', default_tempo)
         self.deadline = Value('deadline', max_time, lock=False)
         
         self.player = Player(self.queue, self.runing, self.tempo, self.deadline)
-        self.listener = Listener(self.queue, self.runing, self.tempo, self.deadline)        
+        self.predictor = ChordPredictor(self.predictor_queue, self.queue)
+        self.listener = Listener(self.predictor_queue, self.runing, self.tempo, self.deadline)        
     
     def run(self):
         self.runing.value = True
         self.listener.run()
         self.player.run()
+        self.predictor.run()
         
     def stop(self):
         self.runing.value = False
         self.player.stop()
-        self.listener.stop()        
+        self.listener.stop()
+        self.predictor.stop()
         self.queue = Queue()
         
     def set_tempo(self, tempo=default_tempo):
@@ -232,6 +237,7 @@ class Accompanist:
          
     player = None
     listener = None
+    predictor = None
     queue = None
     runing = None
     tempo = None
