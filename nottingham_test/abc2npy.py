@@ -7,19 +7,29 @@ def simplify_chord(ch):
         ch = ch[1:]
     if ch[-1] == ')':
         ch = ch[:-1]
-    return ch.split("/")[0]
+    ch = ch.split("/")[0]
+    ch = ch.replace('7', "")
+    ch = ch.replace('6', "")
+    ch = ch.replace('9', "")
+    ch = ch.replace(" ", "")
+    return ch
 
-def cut_song(song): #3 arrays: notes, chords, beat
+def cut_song(song, num_tacts, l_min_note, with_chords=True, delay=4): #3 arrays: notes, chords, beat
+    l_piece = num_tacts * l_min_note
     notes = np.array(song[0])
     chords = np.array([simplify_chord(ch) for ch in song[1]])
     beat = np.array(song[2])
     n = len(song[0])
-    n_items = len(song[0]) // 8 - 1
-    X_notes = notes[:n_items * 8].reshape((n_items, 8))
-    X_chords = chords[:n_items * 8].reshape((n_items, 8))
-    X_beat = beat[:n_items * 8].reshape((n_items, 8))
-    X = np.hstack([X_notes, X_chords, X_beat])
-    y = np.array([chords[8 * (i + 2) - 1] for i in range(n_items)])
+    n_items = len(song[0]) // l_piece - 1
+    X_notes = notes[:n_items * l_piece].reshape((n_items, l_piece))[:,:-delay]
+    X_chords = chords[:n_items * l_piece].reshape((n_items, l_piece))[:,:-delay]
+
+    X_beat = beat[:n_items * l_piece].reshape((n_items, l_piece))[:,:-delay]
+
+    X = np.hstack([X_notes, X_beat])
+    if with_chords:
+        X = np.hstack([X, X_chords])
+    y = np.array([chords[l_piece * (i + 1) + 1] for i in range(n_items)])
     return X, y
 
 def get_notes_numbers(key):
@@ -79,10 +89,14 @@ def prepare(piece, key): #если циферка до слэша, это чис
                 next_mod -= 1
             elif char == '^':
                 next_mod += 1
-            elif 'a' <= char <= 'g':
+            elif 'a' <= char <= 'g' or char == 'z':
                 #print("SEE CHAR " + char) 
-                num_notes_to_add = int((up / down * l) / (1/4))
+                num_notes_to_add = int((up / down * l) / (1/16))
+                #if(up / down * l <= 1/32):
+                #    print(":(")
                 #print("MULTIPLIER FOR PREV NOTE " + str(num_notes_to_add))
+                #if num_notes_to_add == 0:
+                #    print("Alert!")
                 if not first_note:
                     for o in range(num_notes_to_add):
                         res_notes.append(next_note)
@@ -101,6 +115,8 @@ def prepare(piece, key): #если циферка до слэша, это чис
                     up = int(char)
             elif char == '/':
                 sl = True
+            else:
+                print("!!!", char)
         res_chords += [c] * (len(res_notes) - ch_l)
     return res_notes, res_chords
 
@@ -135,12 +151,17 @@ for fname in fnames:
                 current_song[2] += [1] + [0] * (len(tact[0]) - 1)
 
 songs = songs[1:]
-X, y = cut_song(songs[0])
+n_tacts = 2
+X, y = cut_song(songs[0], n_tacts, 16, with_chords=False)
 for song in songs[1:]:
-    if len(song[0]) > 16:
-        X_, y_ = cut_song(song)
-        X = np.vstack([X, X_])
-        y = np.hstack([y, y_])
+    try:
+        if len(song[0]) > 32:
+            X_, y_ = cut_song(song, n_tacts, 16, with_chords=False)
+            X = np.vstack([X, X_])
+            y = np.hstack([y, y_])
+    except ValueError:
+        print("Something wrong:")
+        print(song)
 print(X, y)
 print(X.shape, y.shape)
 np.save("X.npy", X) 
