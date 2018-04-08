@@ -42,11 +42,14 @@ X_cat = X[:,cat_features]
 X_real = np.int_(X[:,num_features])
 print(X_cat[0,:])
 print(X_real[0,:])
+
 from sklearn.preprocessing import LabelEncoder
 
 enc = LabelEncoder()
 enc.fit(X_cat.reshape(X_cat.size))
 for i in range(sum(cat_features)):
+    print(enc.classes_)
+for i in range(8):
     X_cat[:, i] = enc.transform(X_cat[:, i])
 
 X = np.hstack([np.int_(X_cat), X_real])
@@ -63,6 +66,7 @@ from sklearn.metrics import make_scorer
 clf = RandomForestClassifier(n_estimators=20)
 clf.fit(X_train, y_train)
 
+print(X_test)
 
 abs_dist_score = make_scorer(custom_scorers.chords_dist_error)
 y_pred = clf.predict(X_test)
@@ -71,3 +75,4 @@ print(abs_dist_score(clf, X_test, y_test))
 
 with open('rf_nottingham.pkl', 'wb') as fid:
     pickle.dump(clf, fid)  
+print(y_test[10], X_test[10,:], clf.predict(X_test)[10])
