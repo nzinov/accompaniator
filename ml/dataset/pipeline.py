@@ -1,6 +1,5 @@
-from base_mapper import MapperError
+from dataset.base_mapper import MapperError
 import json
-import logging as log
 
 
 # Can't encode keys in dictionary.

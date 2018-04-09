@@ -1,6 +1,5 @@
 import unittest
-from prestructures import *
-from corpus import *
+from dataset.corpus import *
 
 
 class TestChords(unittest.TestCase):

@@ -1,8 +1,6 @@
-from prestructures import *
-from structures import *
-from corpus import *
-from mappers_simplify import *
-from base_mapper import *
+from dataset.corpus import *
+from dataset.mappers_simplify import *
+from dataset.base_mapper import *
 
 import numpy as np
 

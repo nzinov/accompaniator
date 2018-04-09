@@ -1,10 +1,9 @@
 import mido
 import os
 import tqdm
-from prestructures import *
+from dataset.prestructures import *
 from structures import *
-import logging as log
-from pipeline import *
+from dataset.pipeline import *
 from multiprocessing.pool import Pool
 
 
