@@ -11,7 +11,6 @@ from multiprocessing.dummy import Queue, Process, Value
 from structures import Note, Chord
 from listener import Listener
 from player import Player
-from player import default_peak_number
 
 default_tempo = 124
 max_time = sys.float_info.max
@@ -24,11 +23,8 @@ def run_accompanist(accompanist):
     while (accompanist.runing.value):
         if (not accompanist.queue_in.empty()):
             chord = accompanist.queue_in.get()
-            if (chord.notes[0] == default_peak_number):
-                accompanist.latency = time.time() - accompanist.player.start.value
-            else:
-                accompanist.queue_out.put(chord)
-                accompanist.set_deadline(time.time() + accompanist.latency)
+            accompanist.queue_out.put(chord)
+            accompanist.set_deadline(time.time()) 
 
 class Accompanist:
     def __init__(self):
@@ -37,11 +33,9 @@ class Accompanist:
         self.runing = Value('i', False)
         self.tempo = Value('i', default_tempo)
         self.deadline = Value('f', max_time)
-        self.latency = 0
         
         self.player = Player(self.queue_out, self.runing, self.tempo, self.deadline)
-        self.listener = Listener(self.queue_in, self.runing, self.tempo, self.deadline)
-
+        self.listener = Listener(self.queue_in, self.runing, self.tempo, self.deadline)        
     
     def run(self):
         self.runing.value = True
@@ -72,7 +66,6 @@ class Accompanist:
     tempo = None
     deadline = None
     process = None
-    latency = None
 
 if __name__ == '__main__':
     a = Accompanist()
