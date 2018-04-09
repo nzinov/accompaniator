@@ -6,11 +6,13 @@ import pyaudio
 from aubio import notes, onset, tempo
 from time import sleep
 from mido import Message, MidiFile, MidiTrack
+
 from rtmidi import MidiOut
 from multiprocessing.dummy import Queue, Process, Value
 from structures import Note, Chord
 from listener import Listener
 from player import Player
+from chord_predictor import *
 
 default_tempo = 124
 max_time = sys.float_info.max
@@ -30,11 +32,13 @@ class Accompanist:
     def __init__(self):
         self.queue_in = Queue()
         self.queue_out = Queue()
+        self.predictor_queue = Queue()
         self.runing = Value('i', False)
         self.tempo = Value('i', default_tempo)
         self.deadline = Value('f', max_time)
         
         self.player = Player(self.queue_out, self.runing, self.tempo, self.deadline)
+        self.predictor = ChordPredictor(self.predictor_queue, self.queue)
         self.listener = Listener(self.queue_in, self.runing, self.tempo, self.deadline)        
     
     def run(self):
@@ -43,11 +47,13 @@ class Accompanist:
         self.process.start()   
         self.listener.run()
         self.player.run()
+        self.predictor.run()
         
     def stop(self):
         self.runing.value = False
         self.player.stop()
-        self.listener.stop()        
+        self.listener.stop() 
+        self.predictor.stop()
         self.queue_in = Queue()
         self.queue_out = Queue()
         self.process.join()
@@ -60,8 +66,10 @@ class Accompanist:
          
     player = None
     listener = None
+    predictor = None
     queue_in = None
     queue_out = None
+    predictor_queue = None
     runing = None
     tempo = None
     deadline = None
@@ -69,8 +77,9 @@ class Accompanist:
 
 if __name__ == '__main__':
     a = Accompanist()
+    start_time = time.time()
     a.run()
-    sleep(50)
+    sleep(10)
     a.stop()
     '''q = a.player
     start_time = time.time()
@@ -93,5 +102,4 @@ if __name__ == '__main__':
     print("Stopped")
     '''
 
-    
     
