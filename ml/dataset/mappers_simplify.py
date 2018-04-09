@@ -281,13 +281,7 @@ class GetSongStatisticsMapper(BaseMapper):
 
 
 class AdequateCutOutLongChordsMapper(BaseMapper):
-    """Detects long chords and removes it according to strategy. """
-
-    def get_split_times(self, chords, index):
-        time1 = 0
-        for i in range(0, index):
-            time1 += chords[i].duration
-        return time1, time1 + chords[index].duration
+    """Detects long chords and removes it splitting the song. """
 
     def cut_fragment_by_time_(self, track, time1, time2):
         i2, chord_beginning_2 = track.get_index_of_time(time2)
@@ -318,9 +312,8 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
     def __init__(self, min_big_chord_duration=128,
                  min_track_duration=10*128/4, **kwargs):
         """
-        :param good_track_ratio: ratio of long chords duration to track duration in tracks we consider
-        :param min_big_chord_duration: chords from this duration are considered long
-        :param min_track_duration: tracks smaller than that are not considered after split
+        :param min_big_chord_duration (in 1/128th): chords from this duration are considered long
+        :param min_track_duration (in 1/128th): tracks smaller than that are not considered after split
         """
         super().__init__(**kwargs)
         self.min_big_chord_duration = min_big_chord_duration
@@ -346,23 +339,25 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
         return new_songs
 
     def get_times_melody(self, track):
+        time = 0
         for i, chord in enumerate(track.chords):
             if chord.duration > self.min_big_chord_duration:
-                return self.get_split_times(track.chords, i)
+                return time, time + chord.duration
+            time += chord.duration
         return None
 
     def get_times_chords(self, track):
         time = 0
         cur_chord_duration = 0
         time_beginning = 0
-        for i, chord in enumerate(track.chords[:-1]):
+        for i, chord in enumerate(track.chords):
             cur_chord_duration += track.chords[i].duration
             time += track.chords[i].duration
-            if track.chords[i] != track.chords[i + 1]:
+            if i == len(track.chords)-1 or track.chords[i] != track.chords[i + 1]:
                 if cur_chord_duration >= self.min_big_chord_duration:
                     return time_beginning, time_beginning + cur_chord_duration
                 cur_chord_duration = 0
-                time_beginning = time#+track.chords[i].duration
+                time_beginning = time
         return None
 
     def process_split(self, song, track_num):
@@ -392,19 +387,6 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
         return self.clear_songs(songs)
 
     def process(self, song):
-        # if song.melody_track.pause_duration()/song.melody_track.duration() > self.good_track_ratio:
-        #     self.increment_stat('melody track with many pauses')
-        #     raise MapperError('melody track with many pauses')
-        # else:
-        #     self.increment_stat('melody track with normal pauses')
-
         songs = self.process_split(song, 0)
         res = sum([self.process_split(song, 1) for song in songs], [])
-
-        # if song.chord_track.pause_duration()/song.chord_track.duration() > self.good_track_ratio:
-        #     self.increment_stat('chord track with many pauses')
-        #     raise MapperError('chord track with many pauses')
-        # else:
-        #     self.increment_stat('chord track with normal pauses')
-
         return res

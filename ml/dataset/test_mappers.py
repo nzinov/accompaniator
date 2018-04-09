@@ -78,6 +78,7 @@ class TestSplitChordsToGcdMapper(unittest.TestCase):
             '[{4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}]',
             str(tscgm.process(song).tracks[0].chords))
 
+
 class TestAdequateCutOutLongChordsMapper(unittest.TestCase):
     def test_cut_chords(self):
         chord1 = Chord([Note(1)], 4, 127)
@@ -95,14 +96,14 @@ class TestAdequateCutOutLongChordsMapper(unittest.TestCase):
         processed = acolcm.process(song)
 
         self.assertEqual(
-"""Song '', 2 tracks, bpm 0
-Track '', instrument '' , program -1, with 1 chords 
-{4 127 [1]}
-
-Track '', instrument '' , program -1, with 1 chords 
-{4 127 [1]}
-
-""", processed[0].str(with_chords=True))
+            """Song '', 2 tracks, bpm 0
+            Track '', instrument '' , program -1, with 1 chords 
+            {4 127 [1]}
+            
+            Track '', instrument '' , program -1, with 1 chords 
+            {4 127 [1]}
+            
+            """, processed[0].str(with_chords=True))
         self.assertEqual(
             """Song '', 2 tracks, bpm 0
 Track '', instrument '' , program -1, with 1 chords 
@@ -130,25 +131,70 @@ Track '', instrument '' , program -1, with 1 chords
         processed = acolcm.process(song)
 
         self.assertEqual(
-"""Song '', 2 tracks, bpm 0
-Track '', instrument '' , program -1, with 2 chords 
-{2 127 [1]} {4 127 [1]}
-
-Track '', instrument '' , program -1, with 2 chords 
-{2 127 [1]} {4 127 [1]}
-
-""",
+            """Song '', 2 tracks, bpm 0
+            Track '', instrument '' , program -1, with 2 chords 
+            {2 127 [1]} {4 127 [1]}
+            
+            Track '', instrument '' , program -1, with 2 chords 
+            {2 127 [1]} {4 127 [1]}
+            
+            """,
             processed[0].str(with_chords=True))
         self.assertEqual(
-"""Song '', 2 tracks, bpm 0
-Track '', instrument '' , program -1, with 1 chords 
-{4 127 [1]}
-
-Track '', instrument '' , program -1, with 1 chords 
-{4 127 [1]}
-
-""",
+            """Song '', 2 tracks, bpm 0
+            Track '', instrument '' , program -1, with 1 chords 
+            {4 127 [1]}
+            
+            Track '', instrument '' , program -1, with 1 chords 
+            {4 127 [1]}
+            
+            """,
             processed[1].str(with_chords=True))
+
+    def test_cut_melody_at_end(self):
+        chord0 = Chord([Note(1)], 2, 127)
+        chord1 = Chord([Note(1)], 4, 127)
+        chord2 = Chord([Note(2)], 12, 127)
+        pause1 = Chord([], 4, 127)
+        pause2 = Chord([], 8, 127)
+
+        chords_list = \
+            [[chord0, chord1, pause2],
+             [chord0, chord1, pause1, chord1]]
+        tracks = [Track([deepcopy(chord) for chord in chords]) for chords in chords_list]
+        song = Song(tracks)
+
+        acolcm = AdequateCutOutLongChordsMapper(min_track_duration=0, min_big_chord_duration=5)
+        processed = acolcm.process(song)
+        self.assertEqual("""[{2 127 [1]}, {4 127 [1]}]""",
+                         str(processed[0].tracks[0].chords))
+
+    def test_cut_at_end(self):
+        chord0 = Chord([Note(1)], 2, 127)
+        chord1 = Chord([Note(1)], 4, 127)
+        chord2 = Chord([Note(2)], 12, 127)
+        pause1 = Chord([], 4, 127)
+        pause2 = Chord([], 8, 127)
+
+        chords_list = \
+            [[chord0, chord1, pause1, pause1],
+             [chord0, chord1, pause2]]
+        tracks = [Track([deepcopy(chord) for chord in chords]) for chords in chords_list]
+        song = Song(tracks)
+
+        acolcm = AdequateCutOutLongChordsMapper(min_track_duration=0, min_big_chord_duration=5)
+        processed = acolcm.process(song)
+        self.assertEqual("""[{2 127 [1]}, {4 127 [1]}]""",
+                         str(processed[0].tracks[0].chords))
+
+    # def test_fail(self):
+    #     corpus = SongCorpus()
+    #     corpus.load_from_file('gtp_dataset5.pickle', max_count=10)
+    #
+    #     song = corpus.songs[1]
+    #     acolcm = AdequateCutOutLongChordsMapper(min_track_duration=0, min_big_chord_duration=256)
+    #     processed = acolcm.process(song)
+    #     print(processed[0].str(with_chords=True))
 
 
 if __name__ == '__main__':
