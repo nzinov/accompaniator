@@ -11,6 +11,11 @@ class MelodyDetectionMapper(BaseMapper):
     """ Detects a melody according to strategy """
 
     def __init__(self, strategy='most probable', fun=np.min, min_unique_notes=5, **kwargs):
+        """
+        :param strategy: 'most probable' to leave only the most probable melody or 'split' to leave all combinations.
+        :param fun: function of note numbers. The biggest value indicates 'most probable' melody.
+        :param min_unique_notes: minimum number of unique note heights to consider the track a valid melody.
+        """
         super().__init__(**kwargs)
         self.stats['melody tracks count'] = dict()
         self.stats['unique notes in melody track'] = dict()
@@ -69,42 +74,6 @@ class MelodyDetectionMapper(BaseMapper):
             assert False
 
 
-# Useless
-class NonUniformChordsTracksRemoveMapper(BaseMapper):
-    """ Removes tracks with non-uniform chords (where notes have different durations). """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def process(self, song):
-        tracks = np.array(song.tracks)
-        durations = np.array([])
-        for track in tracks:
-            if track.has_one_note_at_time():
-                continue
-            chords = np.array(track.chords)
-            track_durations = np.array([])
-            for chord in chords:
-                track_durations = np.append(track_durations, chord.duration)
-
-            unique_durations = np.unique(track_durations)
-
-            # TODO: временное решение, отсекащее большие паузы.
-            unique_durations = unique_durations[unique_durations <= 128]
-
-            if len(unique_durations) != 1:
-                self.increment_stat('non-uniform track')
-                song.del_track(track)
-            else:
-                self.increment_stat('uniform track')
-                durations = np.append(durations, unique_durations[0])
-
-        if len(song.tracks) <= 1:
-            self.increment_stat('not enough tracks')
-            raise MapperError("Not enough tracks")
-        return song
-
-
 class SplitNonMelodiesToGcdMapper(BaseMapper):
     """Gets the GCD of chords duration and splits all chords longer to pieces."""
 
@@ -128,10 +97,7 @@ class SplitNonMelodiesToGcdMapper(BaseMapper):
 
     def __init__(self, min_gcd=16, **kwargs):
         """
-
-        :param min_big_chord_duration: Minimal duration of chord which will
-
-        :param kwargs:
+        :param min_gcd (in 1/128th): Minimal duration that can be considered as GCD.
         """
         super().__init__(**kwargs)
         self.stats['gcd'] = dict()
@@ -220,21 +186,6 @@ class MergeTracksMapper(BaseMapper):
         song.tracks = ([melody] if melody else new_tracks) + new_tracks
         self.increment_stat(track_groups_per_song, self.stats['merging groups per song'])
         return song
-
-
-class GetResultMapper(BaseMapper):
-    """ Filters only suitable songs. """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def process(self, song):
-        melodies_count = song.melodies_track_count()
-        chords_count = len(song.tracks) - melodies_count
-        if melodies_count == 1 and chords_count == 1:
-            return song
-        else:
-            raise MapperError('melodies and chords not (1,1)')
 
 
 class GetSongStatisticsMapper(BaseMapper):
