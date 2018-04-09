@@ -2,7 +2,7 @@ from structures import *
 import numpy as np
 import pickle
 import time
-from multiprocessing.dummy import Queue, Process, Value
+from multiprocessing import Queue, Process, Value
 
 defualt_predicted_len = 128
 defualt_velocity = 100
@@ -75,13 +75,15 @@ class ChordPredictor:
 
     def try_predict(self):
         chord = self.queue_in.get() 
-        if chord.downbeat == False and second_downbeat == False:
+        print(chord.downbeat)
+        if chord.downbeat == False and self.second_downbeat == False:
             return
+        print("test")
         self.chords_list.append(chord)
         self.chords_len += chord.duration
         if chord.downbeat:
-            if not second_downbeat:
-                second_downbeat = True
+            if not self.second_downbeat:
+                self.second_downbeat = True
             else:
                 self.chords_count_before_4_4 = len(self.chords_list)
                 self.chords_len_before_4_4 = self.chords_len                

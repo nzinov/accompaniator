@@ -8,7 +8,7 @@ from time import sleep
 from mido import Message, MidiFile, MidiTrack
 
 from rtmidi import MidiOut
-from multiprocessing.dummy import Queue, Process, Value
+from multiprocessing import Queue, Process, Value
 from structures import Note, Chord
 from listener import Listener
 from player import Player
@@ -34,7 +34,7 @@ class Accompanist:
         self.queue_out = Queue()
         self.predictor_queue = Queue()
         self.runing = Value('i', False)
-        self.tempo = Value('i', default_tempo)
+        self.tempo = Value('f', default_tempo)
         self.deadline = Value('f', max_time)
         
         self.player = Player(self.queue_out, self.runing, self.tempo, self.deadline)

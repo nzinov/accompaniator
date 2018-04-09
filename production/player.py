@@ -4,7 +4,7 @@ from time import sleep
 from mido import Message, MidiFile, MidiTrack
 from rtmidi import MidiOut
 from structures import Note, Chord
-from multiprocessing.dummy import Queue, Process, Value
+from multiprocessing import Queue, Process, Value
 
 """
 1 beat in bpm is 1/4 of musical beat
@@ -20,10 +20,10 @@ default_peak_velocity = 120
 default_channel = 0
 default_ultrasound_channel = 1
 default_tempo = 124
-default_instrument = 30
-default_ultrasound_instrument = 48
+default_instrument = 0
+default_ultrasound_instrument = 2
 min_velocity = 0
-default_port = 0
+default_port = 1
 delay = 0.000000001
 sec_in_hour = 3600
 max_time = sys.float_info.max

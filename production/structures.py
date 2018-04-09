@@ -25,7 +25,7 @@ class Note:
 class Chord:
     """Stores a chord and its length in 1/128 beats"""
 
-    def __init__(self, notes_list, duration, velocity, downbeat):
+    def __init__(self, notes_list, duration, velocity, downbeat=False):
         self.notes = notes_list[:]
         self.velocity = velocity
         self.duration = duration

@@ -5,7 +5,7 @@ import aubio
 import pyaudio
 from time import sleep
 from mido import Message, MidiFile, MidiTrack
-from multiprocessing.dummy import Queue, Process, Value
+from multiprocessing import Queue, Process, Value
 from aubio import notes, onset, tempo
 from structures import Note, Chord
 
@@ -20,13 +20,12 @@ default_tempo = 124
 max_time = sys.float_info.max
 
 sample_rate = 44100
-win_s = 256
-hop_s = win_s // 2
-framesize = hop_s
-buffer_size = 128
+win_s = 1024
+hop_s = win_s // 4
+buffer_size = hop_s
 
 def from_ms_to_our_time(time, bpm):
-    return time * (32 * bpm) / (60 * 1000)
+    return int(time * (32 * bpm) / (60 * 1000))
 
 
 def run_queue_in(listener):
@@ -41,7 +40,7 @@ def run_queue_in(listener):
                     input=True,
                     frames_per_buffer=buffer_size)
     '''
-    s = aubio.source('Schindler\'sList.mp3', sample_rate, hop_s)
+    s = aubio.source('/home/nikolay/pahanini.mp3', sample_rate, buffer_size)
     
 
     notes_o = notes("default", win_s, hop_s, sample_rate)
@@ -56,36 +55,32 @@ def run_queue_in(listener):
     prev_time = 0
     while (listener.runing.value):
         # read data from audio input
-<<<<<<< HEAD
-        audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
-=======
         audiobuffer, read = s()
+        if read != hop_s:
+            print("bad")
         #audiobuffer = stream.read(buffer_size, exception_on_overflow = False)
->>>>>>> 979492f3922740919a397cdddf1ed39321fb1052
-        samples = np.fromstring(audiobuffer, dtype=np.float32)
+        #samples = np.fromstring(audiobuffer, dtype=np.float32)
+        samples = audiobuffer
 
         if (onset_o(samples)):
             last_onset = onset_o.get_last_ms()
         if (temp_o(samples)):
             tmp = temp_o.get_last_ms()
             beats.append(tmp - last_beat)
-            count_beat = (count_beat + 1) % 4
+            count_beat = (count_beat + 1) % 16
             if (count_beat == 0):
                 last_downbeat = last_beat
             last_beat = tmp
         new_note = notes_o(samples)
         if (new_note[0] != 0):
             if (len(beats) != 0):
-                listener.set_tempo(np.median(beats))
-<<<<<<< HEAD
-            listener.queue_in.put(Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value), int(new_note[1]), count_beat == 0))
-            listener.set_deadline(last_onset + (4 - count_beat) * 60 / listener.tempo.value)
-=======
-            
-            listener.queue_in.put(Chord([Note(int(new_note[0]))], 32, int(new_note[1]))) #from_ms_to_our_time(last_onset - prev_time, listener.tempo.value), int(new_note[1])))
->>>>>>> 979492f3922740919a397cdddf1ed39321fb1052
+                listener.set_tempo(np.median(beats) / 4)
+            chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value), int(new_note[1]), count_beat == 0)
+            #print(chord)
+            listener.queue_in.put(chord)
+            listener.set_deadline(last_downbeat + (16 - count_beat) * 60 / listener.tempo.value)
+            print(listener.tempo.value)
             prev_time = last_onset
-            listener.set_deadline(time.time())
 
 class Listener:
     def __init__(self, queue=Queue(), runing=Value('i', False), tempo=Value('f', default_tempo), deadline=Value('f', max_time)):
