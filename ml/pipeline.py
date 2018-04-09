@@ -43,8 +43,8 @@ class Pipeline:
                     song = mapper.process(song)
                 except MapperError:
                     continue
-                except Exception as err:
-                    log.warning("Mapper %s failed: %s"%(mapper.prefix, str(err)))
+                # except Exception as err:
+                #     log.warning("Mapper %s failed: %s"%(mapper.prefix, str(err)))
 
                 if type(song) is not list:
                     song = [song]
@@ -64,6 +64,6 @@ class Pipeline:
             examples.update(mapper.get_examples())
         return examples
 
-    def dump_stats(self, outf):
-        json.dump({'stats': self.get_stats(), 'examples': self.get_examples()}, outf, sort_keys=True,
+    def dump_stats(self, out_file):
+        json.dump({'stats': self.get_stats(), 'examples': self.get_examples()}, out_file, sort_keys=True, indent=4,
                   default=str, cls=ComplexEncoder)

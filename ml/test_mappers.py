@@ -213,7 +213,7 @@ class TestMergeTracksMapper(unittest.TestCase):
         mtm = MergeTracksMapper()
         self.assertEqual(
             '[{4 127 [1, 1]}, {4 127 [1, 1, 2, 2]}, {4 127 [1, 1, 2, 2]}, {4 127 []}, {4 127 [1, 1, 2, 2]}]',
-            str(mtm.process(song).tracks[0].chords))
+            str(mtm.process(song).tracks[1].chords))
 
 
 class TestSplitChordsToGcdMapper(unittest.TestCase):
@@ -225,10 +225,82 @@ class TestSplitChordsToGcdMapper(unittest.TestCase):
         track = Track([chord1, chord2, chord3])
         song = Song([track, track])
 
-        tscgm = SplitNonMelodiesToGcdMapper()
+        tscgm = SplitNonMelodiesToGcdMapper(min_gcd=1)
         self.assertEqual(
             '[{4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}]',
             str(tscgm.process(song).tracks[0].chords))
+
+class TestAdequateCutOutLongChordsMapper(unittest.TestCase):
+    def test_cut_chords(self):
+        chord1 = Chord([Note(1)], 4, 127)
+        chord2 = Chord([Note(2)], 4, 127)
+        pause1 = Chord([], 4, 127)
+        pause2 = Chord([], 8, 127)
+
+        chords_list = \
+            [[chord1, chord1, chord1, chord2],
+             [chord1, pause1, pause1, chord2]]
+        tracks = [Track([deepcopy(chord) for chord in chords]) for chords in chords_list]
+        song = Song(tracks)
+
+        acolcm = AdequateCutOutLongChordsMapper(min_track_duration=0, min_big_chord_duration=5)
+        processed = acolcm.process(song)
+
+        self.assertEqual(
+"""Song '', 2 tracks, bpm 0
+Track '', instrument '' , program -1, with 1 chords 
+{4 127 [1]}
+
+Track '', instrument '' , program -1, with 1 chords 
+{4 127 [1]}
+
+""", processed[0].str(with_chords=True))
+        self.assertEqual(
+            """Song '', 2 tracks, bpm 0
+Track '', instrument '' , program -1, with 1 chords 
+{4 127 [2]}
+
+Track '', instrument '' , program -1, with 1 chords 
+{4 127 [2]}
+
+""", processed[1].str(with_chords=True))
+
+    def test_cut_melody(self):
+        chord0 = Chord([Note(1)], 2, 127)
+        chord1 = Chord([Note(1)], 4, 127)
+        chord2 = Chord([Note(2)], 12, 127)
+        pause1 = Chord([], 4, 127)
+        pause2 = Chord([], 8, 127)
+
+        chords_list = \
+            [[chord0, chord1, pause2, chord1],
+             [chord0, chord1, pause1, pause1, chord1]]
+        tracks = [Track([deepcopy(chord) for chord in chords]) for chords in chords_list]
+        song = Song(tracks)
+
+        acolcm = AdequateCutOutLongChordsMapper(min_track_duration=0, min_big_chord_duration=5)
+        processed = acolcm.process(song)
+
+        self.assertEqual(
+"""Song '', 2 tracks, bpm 0
+Track '', instrument '' , program -1, with 2 chords 
+{2 127 [1]} {4 127 [1]}
+
+Track '', instrument '' , program -1, with 2 chords 
+{2 127 [1]} {4 127 [1]}
+
+""",
+            processed[0].str(with_chords=True))
+        self.assertEqual(
+"""Song '', 2 tracks, bpm 0
+Track '', instrument '' , program -1, with 1 chords 
+{4 127 [1]}
+
+Track '', instrument '' , program -1, with 1 chords 
+{4 127 [1]}
+
+""",
+            processed[1].str(with_chords=True))
 
 
 if __name__ == '__main__':

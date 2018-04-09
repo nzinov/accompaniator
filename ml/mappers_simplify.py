@@ -10,39 +10,57 @@ from base_mapper import BaseMapper, MapperError
 class MelodyDetectionMapper(BaseMapper):
     """ Detects a melody according to strategy """
 
-    def __init__(self, strategy='most probable', fun=np.min, **kwargs):
+    def __init__(self, strategy='most probable', fun=np.min, min_unique_notes=5, **kwargs):
         super().__init__(**kwargs)
         self.stats['melody tracks count'] = dict()
+        self.stats['unique notes in melody track'] = dict()
         self.fun = fun
         self.strategy = strategy
+        self.min_unique_notes = min_unique_notes
+
+    def is_likely_melody(self, track):
+        if not track.has_one_note_at_time():
+            return False
+
+        notes = sum([[note.number for note in chord.notes] for chord in track.chords], [])
+        unique = set(notes)
+        self.increment_stat(len(unique), self.stats['unique notes in melody track'])
+        if len(unique) < self.min_unique_notes:
+            return False
+
+        return True
+
+    @staticmethod
+    def extract_melody(tracks):
+        melody = tracks[0]
+        not_melody = tracks[1:]
+        return melody, not_melody
 
     def process(self, song):
-        probably_melody = [i for i, track in enumerate(song.tracks) if track.has_one_note_at_time()]
-        if not probably_melody:
-            self.increment_stat(0, self.stats['melody tracks count'])
+        likely_melody = [i for i, track in enumerate(song.tracks) if self.is_likely_melody(track)]
+        self.increment_stat(len(likely_melody), self.stats['melody tracks count'])
+
+        if not likely_melody:
             raise MapperError('no melody tracks')
 
-        if len(probably_melody) == 1:
-            song.tracks[0], song.tracks[probably_melody[0]] = song.tracks[probably_melody[0]], song.tracks[0]
-            self.increment_stat(1, self.stats['melody tracks count'])
+        if len(likely_melody) == 1:
+            song.tracks[0], song.tracks[likely_melody[0]] = song.tracks[likely_melody[0]], song.tracks[0]
             return song
 
-        self.increment_stat(len(probably_melody), self.stats['melody tracks count'])
-
         if self.strategy == 'most probable':
-            vals = []
-            for i in probably_melody:
+            values = []
+            for i in likely_melody:
                 heights = []
                 for chord in song.tracks[i].chords:
                     if chord.notes:
                         heights += list(map(lambda note: note.number, chord.notes))
-                vals.append(self.fun(heights))
-            melody_index = np.argmax(vals)
+                values.append(self.fun(heights))
+            melody_index = np.argmax(values)
             song.tracks[0], song.tracks[melody_index] = song.tracks[melody_index], song.tracks[0]
             return song
         elif self.strategy == 'split':
             songs = []
-            for melody_index in probably_melody:
+            for melody_index in likely_melody:
                 song_res = deepcopy(song)
                 song_res.tracks[0], song_res.tracks[melody_index] = song_res.tracks[melody_index], song_res.tracks[0]
                 songs.append(song_res)
@@ -90,6 +108,15 @@ class NonUniformChordsTracksRemoveMapper(BaseMapper):
 class SplitNonMelodiesToGcdMapper(BaseMapper):
     """Gets the GCD of chords duration and splits all chords longer to pieces."""
 
+    def pad_tracks_to_same_duration(self, song):
+        track_durations = [track.duration() for track in song.tracks]
+        max_track_duration = max(track_durations)
+        for i in range(0, len(track_durations)):
+            if track_durations[i] < max_track_duration:
+                song.tracks[i].chords.append(Chord([], max_track_duration - track_durations[i], -1))
+        assert len(set(track.duration() for track in song.tracks)) == 1
+        return song
+
     @staticmethod
     def gcd(arr, use_unique=True):
         if use_unique:
@@ -97,24 +124,40 @@ class SplitNonMelodiesToGcdMapper(BaseMapper):
         gcd = arr[0]
         for a in arr[1:]:
             gcd = math.gcd(gcd, a)
-        return gcd
+        return int(gcd)
 
-    def __init__(self, **kwargs):
+    def __init__(self, min_gcd=16, **kwargs):
+        """
+
+        :param min_big_chord_duration: Minimal duration of chord which will
+
+        :param kwargs:
+        """
         super().__init__(**kwargs)
         self.stats['gcd'] = dict()
+        self.min_gcd = min_gcd
 
     def process(self, song):
-        tracks = np.array(song.tracks)
+        self.pad_tracks_to_same_duration(song)
+
+        melody, tracks = MelodyDetectionMapper.extract_melody(song.tracks)
 
         gcds = []
-        for track in tracks[1:]:
+        new_tracks = []
+        for track in tracks:
             track_durations = np.array(list(map(lambda chord: chord.duration, track.chords)))
 
             assert track_durations.size != 0
 
             track_gcd = self.gcd(track_durations)
             self.increment_stat(track_gcd, self.stats['gcd'])
-            gcds.append(track_gcd)
+            if track_gcd >= self.min_gcd:
+                new_tracks.append(track)
+                gcds.append(track_gcd)
+        tracks = new_tracks
+
+        if len(gcds) == 0:
+            raise MapperError('not enough tracks')
 
         gcd = self.gcd(gcds)
         for track in tracks:
@@ -125,11 +168,15 @@ class SplitNonMelodiesToGcdMapper(BaseMapper):
                 for i in range(0, int(chord_duration/gcd)):
                     new_chords.append(deepcopy(chord))
             track.chords = new_chords
-        assert song.tracks
+
+        assert tracks
+
+        song.tracks = [melody] + tracks
+
         return song
 
 
-# Возможно, будут проблемы, если две больших паузы будут накладываться
+# Buggy
 class CutOutLongChordsMapper(BaseMapper):
     """Detects long chords and removes it according to strategy. """
 
@@ -218,9 +265,7 @@ class CutOutLongChordsMapper(BaseMapper):
             times = self.get_times(song)
 
             changing = False if times is None else True
-
             if changing:
-
                 song1, song2 = deepcopy(song), deepcopy(song)
                 track_pairs = list(map(lambda track:
                                        self.cut_fragment_by_time_split(track, times[0], times[1]),
@@ -292,41 +337,33 @@ class CutOutLongChordsMapper(BaseMapper):
         song.tracks = new_tracks
         return song
 
-    def pad_tracks_to_same_duration(self, song):
-        track_durations = [track.duration() for track in song.tracks]
-        max_track_duration = max(track_durations)
-        for i in range(0, len(track_durations)):
-            if track_durations[i] < max_track_duration:
-                song.tracks[i].chords.append(Chord([], max_track_duration - track_durations[i], -1))
-        assert len(set(track.duration() for track in song.tracks)) == 1
-        return song
-
-    # Неоптимально, но больших пауз мало, и так сойдёт.
     def process(self, song):
-        self.pad_tracks_to_same_duration(song)
+
+        if song.tracks[0].pause_duration()/song.tracks[0].duration() > self.good_track_ratio:
+            self.increment_stat('melody with many pauses')
+            raise MapperError('melody with many pauses')
+        else:
+            self.increment_stat('melody with normal pauses')
+
         self.remove_tracks_with_lot_of_pauses(song)
 
         if self.strategy == 'drop':
-            return self.process_drop(song)
+            res = self.process_drop(song)
         elif self.strategy == 'cat':
-            return self.process_cat(song)
+            res = self.process_cat(song)
         elif self.strategy == 'split':
-            return self.process_split(song)
+            res = self.process_split(song)
+        else:
+            assert False
+        return res
 
 
 class MergeTracksMapper(BaseMapper):
-    """Соединяет аккорды однотипных дорожек, удаляет лишние дорожки
-    Warning: call after CutOutLongChordsMapper and SplitNonMelodiesToGcdMapper. """
+    """ Merges chord of similar tracks.
+    Warning: call after MelodyDetectionMapper and SplitNonMelodiesToGcdMapper. """
 
-    @staticmethod
-    def extract_melody(tracks):
-        melody = tracks[0]
-        not_melody = tracks[1:]
-        return melody, not_melody
-
-    def get_mergeable_track_indices(self, song):
+    def get_mergeable_track_indices(self, tracks):
         # возвращает массив из дорожек, которые можно смерджить
-        melody, tracks = self.extract_melody(song.tracks)
         durations = np.array([])
         for track in tracks:
             chords = np.array(track.chords)
@@ -344,20 +381,26 @@ class MergeTracksMapper(BaseMapper):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.stats['merging groups per song'] = dict()
+        self.stats['merging group size'] = dict()
 
     def process(self, song):
-        indices = self.get_mergeable_track_indices(song)
-        melody, tracks = self.extract_melody(song.tracks)
+        melody, tracks = MelodyDetectionMapper.extract_melody(song.tracks)
+        indices = self.get_mergeable_track_indices(tracks)
         similar_tracks_indices = self.make_indices_for_merge(indices)
         assert (len(tracks) - len(similar_tracks_indices) >= 0)
         self.increment_stat('tracks merged', count=len(tracks) - len(similar_tracks_indices))
         new_tracks = []
+        track_groups_per_song = 0
         for indices in similar_tracks_indices:
+            self.increment_stat(len(indices), self.stats['merging group size'])
             if len(indices) > 1:
+                track_groups_per_song += 1
                 for i in range(1, len(indices)):
                     tracks[indices[0]].merge_track(tracks[indices[i]])
             new_tracks.append(tracks[indices[0]])
-        song.tracks = new_tracks + [melody] if melody else new_tracks
+        song.tracks = ([melody] if melody else new_tracks) + new_tracks
+        self.increment_stat(track_groups_per_song, self.stats['merging groups per song'])
         return song
 
 
@@ -417,3 +460,133 @@ class GetSongStatisticsMapper(BaseMapper):
         self.increment_stat(str((melodies_count, chords_count)), self.stats['melody and chord'])
 
         return song
+
+
+class AdequateCutOutLongChordsMapper(BaseMapper):
+    """Detects long chords and removes it according to strategy. """
+
+    def get_split_times(self, chords, index):
+        time1 = 0
+        for i in range(0, index):
+            time1 += chords[i].duration
+        return time1, time1 + chords[index].duration
+
+    def cut_fragment_by_time_(self, track, time1, time2):
+        i2, chord_beginning_2 = track.get_index_of_time(time2)
+
+        # TODO: добавить тест-кейсы со входом в эти два if
+        if i2 < len(track.chords):
+            duration_after = track.chords[i2].duration - (time2 - chord_beginning_2)
+
+            if duration_after != 0:
+                track.chords[i2].duration = duration_after
+
+        i1, chord_beginning_1 = track.get_index_of_time(time1)
+        if i1 < len(track.chords):
+            duration_before = time1 - chord_beginning_1
+            if duration_before != 0:
+                track.chords[i1].duration = duration_before
+                i1 += 1
+
+        return track.chords[:i1], track.chords[i2:]
+
+    def cut_fragment_by_time_split(self, track, time1, time2):
+        t1, t2 = self.cut_fragment_by_time_(track, time1, time2)
+        track1, track2 = deepcopy(track), deepcopy(track)
+        track1.chords = t1
+        track2.chords = t2
+        return [track1, track2]
+
+    def __init__(self, min_big_chord_duration=128,
+                 min_track_duration=10*128/4, **kwargs):
+        """
+        :param good_track_ratio: ratio of long chords duration to track duration in tracks we consider
+        :param min_big_chord_duration: chords from this duration are considered long
+        :param min_track_duration: tracks smaller than that are not considered after split
+        """
+        super().__init__(**kwargs)
+        self.min_big_chord_duration = min_big_chord_duration
+        self.min_duration = min_track_duration
+
+    def clear_songs(self, songs):
+        new_songs = []
+        for song in songs:
+            new_tracks = []
+            for track in song.tracks:
+                if track.nonpause_duration() == 0 or track.duration() < self.min_duration:
+                    self.increment_stat('too short cut')
+                    continue
+                else:
+                    new_tracks.append(track)
+            song.tracks = new_tracks
+
+            if len(song.tracks) <= 1:
+                self.increment_stat('not enough tracks')
+            else:
+                new_songs.append(song)
+
+        return new_songs
+
+    def get_times_melody(self, track):
+        for i, chord in enumerate(track.chords):
+            if chord.duration > self.min_big_chord_duration:
+                return self.get_split_times(track.chords, i)
+        return None
+
+    def get_times_chords(self, track):
+        time = 0
+        cur_chord_duration = 0
+        time_beginning = 0
+        for i, chord in enumerate(track.chords[:-1]):
+            cur_chord_duration += track.chords[i].duration
+            time += track.chords[i].duration
+            if track.chords[i] != track.chords[i + 1]:
+                if cur_chord_duration >= self.min_big_chord_duration:
+                    return time_beginning, time_beginning + cur_chord_duration
+                cur_chord_duration = 0
+                time_beginning = time#+track.chords[i].duration
+        return None
+
+    def process_split(self, song, track_num):
+        songs = []
+        changing = True
+        while changing:
+            if track_num == 0:
+                times = self.get_times_melody(song.tracks[track_num])
+            else:
+                times = self.get_times_chords(song.tracks[track_num])
+
+            changing = False if times is None else True
+            if changing:
+                song1, song2 = deepcopy(song), deepcopy(song)
+                track_pairs = list(map(lambda track:
+                                       self.cut_fragment_by_time_split(track, times[0], times[1]),
+                                       song.tracks))
+                song1.tracks = [pair[0] for pair in track_pairs]
+                song2.tracks = [pair[1] for pair in track_pairs]
+                self.increment_stat('total pauses cut')
+                songs += self.clear_songs([song1])
+                song = song2
+            else:
+                songs += self.clear_songs([song])
+                break
+
+        return self.clear_songs(songs)
+
+    def process(self, song):
+        # if song.melody_track.pause_duration()/song.melody_track.duration() > self.good_track_ratio:
+        #     self.increment_stat('melody track with many pauses')
+        #     raise MapperError('melody track with many pauses')
+        # else:
+        #     self.increment_stat('melody track with normal pauses')
+
+        songs = self.process_split(song, 0)
+        res = sum([self.process_split(song, 1) for song in songs], [])
+
+        # if song.chord_track.pause_duration()/song.chord_track.duration() > self.good_track_ratio:
+        #     self.increment_stat('chord track with many pauses')
+        #     raise MapperError('chord track with many pauses')
+        # else:
+        #     self.increment_stat('chord track with normal pauses')
+
+        return res

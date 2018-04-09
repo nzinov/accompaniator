@@ -1,5 +1,6 @@
 import pickle
 import numpy as np
+from functools import total_ordering
 
 
 class TimeSignature:
@@ -22,6 +23,7 @@ class TimeSignature:
         return self.__str__()
 
 
+@total_ordering
 class Note:
     """ Stores individual note
     Attributes:
@@ -44,6 +46,12 @@ class Note:
 
     def __repr__(self):
         return self.__str__()
+
+    def __eq__(self, other):
+        return self.number == other.number
+
+    def __lt__(self, other):
+        return self.number < other.number
 
 
 class Chord:
@@ -83,9 +91,18 @@ class Track:
         self.instrument_name = instrument_name
         self.program = program
 
-    def __str__(self):
-        return "track '%s' '%s' %s with %d chords"%(
+    def str(self, with_chords=False, chords_in_row=5):
+        ret = "Track '%s', instrument '%s' , program %s, with %d chords "%(
             self.track_name, self.instrument_name, self.program, len(self.chords))
+        if with_chords:
+            ret += '\n'
+            for i in range((len(self.chords) - 1)//chords_in_row+1):
+                ret += ' '.join([str(chord) for chord in self.chords[i*chords_in_row:(i + 1)*chords_in_row]])
+                ret += '\n'
+        return ret
+
+    def __str__(self):
+        return self.str()
 
     def __repr__(self):
         return self.__str__()
@@ -108,7 +125,7 @@ class Track:
         return duration
 
     def pause_duration(self):
-        return self.duration()-self.nonpause_duration()
+        return self.duration() - self.nonpause_duration()
 
     def has_one_note_at_time(self):
         one_note_at_time = True
@@ -164,11 +181,14 @@ class Song:
         with open(path, 'rb') as f:
             self.undump(f)
 
-    def __str__(self):
-        ret = "'%s' %s %s\n"%(self.name, len(self.tracks), self.bpm)
+    def str(self, with_chords=False):
+        ret = "Song '%s', %s tracks, bpm %s\n"%(self.name, len(self.tracks), self.bpm)
         for t in self.tracks:
-            ret += str(t) + '\n'
+            ret += t.str(with_chords=with_chords) + '\n'
         return ret
+
+    def __str__(self):
+        return self.str()
 
     def __repr__(self):
         return self.__str__()
@@ -181,7 +201,7 @@ class Song:
         return melodies_count
 
     def chords_track_count(self):
-        return len(self.tracks)-self.melodies_track_count()
+        return len(self.tracks) - self.melodies_track_count()
 
     @property
     def melody_track(self):

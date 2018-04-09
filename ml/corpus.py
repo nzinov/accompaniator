@@ -85,7 +85,6 @@ class SongCorpus:
             try:
                 mid = mido.MidiFile(filename)
                 tpb = mid.ticks_per_beat
-
             except Exception as e:
                 log.warning('Broken midi %s: %s'%(filename, e))
                 return
@@ -95,7 +94,7 @@ class SongCorpus:
 
             try:
                 song.bpm = int(mido.tempo2bpm(list(filter(lambda msg: msg.type == 'set_tempo', mid))[0].tempo))
-            except Exception:
+            except IndexError:
                 song.bpm = 120  # Default by MIDI standard?
 
             time_signatures = []
@@ -122,7 +121,7 @@ class SongCorpus:
                     def get_item_or_default(track, name, func, default=''):
                         try:
                             vars(track)[name] = func(list(filter(lambda msg: msg.type == name, mid_track))[0])
-                        except Exception:
+                        except IndexError:
                             vars(track)[name] = default
 
                     get_item_or_default(track, 'track_name', lambda x: x.name)
@@ -194,8 +193,8 @@ class SongCorpus:
                         break
                 except EOFError:
                     break
-                except Exception as e:
-                    log.warning(e)
+                # except Exception as e:
+                #     log.warning(e)
         return self.pipeline.get_stats()
 
     def load_from_file(self, filename, max_count=None):
@@ -223,10 +222,6 @@ class SongCorpus:
             for song in self.songs:
                 song.dump(output_file)
 
-    def print(self):
-        for song in self.songs:
-            print("song: {}".format(str(song)))
-            for track in song.tracks:
-                print("track: {}".format(str(track)))
-                for chord in track.chords:
-                    print("chord: {}".format(str(chord)))
+    def print(self, **kwargs):
+        for i, song in enumerate(self.songs):
+            print(i, song.str(**kwargs), end='\n')

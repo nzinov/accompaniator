@@ -14,11 +14,20 @@ class BadSongsRemoveMapper(BaseMapper):
         super().__init__(**kwargs)
 
     def process(self, song):
+        new_tracks = []
+        for track in song.tracks:
+            if len(track.chords) != 0:
+                new_tracks.append(track)
+            else:
+                self.increment_stat('track without chords')
+        song.tracks = new_tracks
+
         if len(song.tracks) <= 1:
             self.example_and_increment(song, '<=1 track')
             raise MapperError("1 track")
         else:
             self.example_and_increment(song, '>1 track')
+
         return song
 
 
@@ -175,6 +184,9 @@ class PreToFinalConvertMapper(BaseMapper):
         new_tracks = list()
         for track in song.tracks:
 
+            if len(track.chords) == 0:
+                continue
+
             is_same_durations = True
             is_zero_durations = False
             for chord in track.chords:
@@ -219,6 +231,10 @@ class TimeSignatureMapper(BaseMapper):
         if len(set(notated_32nd_notes_per_beat)) > 1:
             self.example_and_increment(song, 'different notated_32nd_notes_per_beat')
 
+        if len(song.time_signature) == 0:
+            self.example_and_increment(song, 'no signature')
+            raise MapperError('Bad signature')
+
         # merge same
         new_signatures = list()
         new_signatures.append(song.time_signature[0])
@@ -232,10 +248,7 @@ class TimeSignatureMapper(BaseMapper):
             self.example_and_increment(song, 'signature concatenated')
         song.time_signature = new_signatures
 
-        if len(song.time_signature) == 0:
-            self.example_and_increment(song, 'no signature')
-            raise MapperError('Bad signature')
-        elif len(song.time_signature) == 1:
+        if len(song.time_signature) == 1:
             song.time_signature = (song.time_signature[0].numerator, song.time_signature[0].denominator)
             self.example_and_increment(song, 'one signature')
         else:
