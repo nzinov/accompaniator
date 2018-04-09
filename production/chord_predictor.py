@@ -4,6 +4,9 @@ import pickle
 import time
 from multiprocessing.dummy import Queue, Process, Value
 
+defualt_predicted_len = 128
+defualt_velocity = 100
+
 def chord_notes(chord):
 
     def interval(start, interval):             
@@ -24,15 +27,15 @@ def chord_notes(chord):
     elif is_flat:
         first_note -= 1
 
-    if is_minor and is_sept: #major seventh chord
+    if is_minor and is_sept: #minor seventh chord
         return [first_note, interval(first_note, 3), interval(first_note, 7), interval(first_note, 10)]
     elif is_minor:
         return [first_note, interval(first_note, 3), interval(first_note, 7)]
-    elif is_sept: #Ð¼Ð°Ð¶Ð¾Ñ€Ð½Ñ‹Ð¹ Ñ�ÐµÐ¿Ñ‚Ð°ÐºÐºÐ¾Ñ€Ð´
+    elif is_sept: #major seventh chord
         return [first_note, interval(first_note, 4), interval(first_note, 7), interval(first_note, 10)]
-    elif is_sext: #Ð¼Ð°Ð¶Ð¾Ñ€Ð½Ñ‹Ð¹ Ñ�ÐµÐºÑ�Ñ‚Ð°ÐºÐºÐ¾Ñ€Ð´
+    elif is_sext: #major sextracker
         return [first_note, interval(first_note, 4), interval(first_note, 7), interval(first_note, 9)]
-    else: #major Ð±Ð¾Ð»ÑŒÑˆÐ°Ñ� Ñ‚ÐµÑ€Ñ†Ð¸Ñ� Ð¸ Ñ‡Ð¸Ñ�Ñ‚Ð°Ñ� ÐºÐ²Ð¸Ð½Ñ‚Ð°
+    else: #major a major third and a perfect fifth
         return [first_note, interval(first_note, 4), interval(first_note, 7)]
 
 def run_queue(predictor):
@@ -42,7 +45,7 @@ def run_queue(predictor):
         if not predictor.queue_in.empty():
             chord = predictor.try_predict()
             if chord is not None:
-                predictor.queue_out.put(chord) # Ð´Ð»Ð¸Ñ‚ÐµÐ»ÑŒÐ½Ð¾Ñ�Ñ‚ÑŒ Ð°ÐºÐºÐ¾Ñ€Ð´Ð° Ð²Ñ‹Ñ�Ñ‚Ð°Ð²Ð»Ñ�Ñ‚ÑŒ Ñ‚ÑƒÑ‚
+                predictor.queue_out.put(chord, defualt_predicted_len, defualt_velocity)
 
 class ChordPredictor:
     model = None
@@ -51,7 +54,10 @@ class ChordPredictor:
         self.queue_in = queue_in
         self.queue_out = queue_out
         self.running = Value('i', False)
-        self.chord_len = 0
+        self.chords_len = 0
+        self.chords_count_before_4_4 = 0
+        self.chords_len_before_4_4 = 0 
+        self.second_downbeat = False
         self.chords_list = []
 
     def run(self):
@@ -69,18 +75,29 @@ class ChordPredictor:
 
     def try_predict(self):
         chord = self.queue_in.get() 
+        if chord.downbeat == False and second_downbeat == False:
+            return
         self.chords_list.append(chord)
-        self.chord_len += chord.duration
-        if self.chord_len > 128 * 2 * 7/8:
+        self.chords_len += chord.duration
+        if chord.downbeat:
+            if not second_downbeat:
+                second_downbeat = True
+            else:
+                self.chords_count_before_4_4 = len(self.chords_list)
+                self.chords_len_before_4_4 = self.chords_len                
+        if self.chords_len > 128 * 2 * 7/8:
             prediction = self.predict(self.chords_list)
-            self.chords_list.clear()
-            self.chord_len = 0
+            self.chords_list = self.chords_list[self.chords_count_before_4_4:]
+            self.chords_len = self.chords_len - self.chords_len_before_4_4
+            self.chords_len_before_4_4 = self.chords_len
+            self.chords_count_before_4_4 = len(self.chords_list)
             return prediction
         else:
             return None
 
 
-    def predict(self, chords_list): # Ð¿ÐµÑ€ÐµÐ´Ð°Ñ‘Ñ‚Ñ�Ñ� Ð´Ð²Ð° Ñ‚Ð°ÐºÑ‚Ð°, ÐºÑ€Ð¾Ð¼Ðµ Ð¿Ð¾Ñ�Ð»ÐµÐ´Ð½ÐµÐ¹ Ð´Ð¾Ð»Ð¸ (Ñ‚Ð¾ ÐµÑ�Ñ‚ÑŒ Ð¾Ñ‚ Ð´Ð²ÑƒÑ… Ñ‚Ð°ÐºÑ‚Ð¾Ð² Ð´Ð¾Ñ�Ñ‚ÑƒÐ¿Ð½Ð¾ 7/8 Ð¸Ð»Ð¸ 14/16 Ð¸Ð½Ñ„Ð¾Ñ€Ð¼Ð°Ñ†Ð¸Ð¸)
+    def predict(self, chords_list):
+        # passed two beats, except the last 1/8 (from the two beats is available 7/8 or 14/16 of the information)
         numbers = np.array([]) # midi numbers!
         for chord in chords_list:
             num_notes_to_add = round(chord.len() / 8)
@@ -97,11 +114,12 @@ class ChordPredictor:
                 numbers = np.hstack([numbers, np.zeros(28 - len(numbers)) + 12])
             else:
                 numbers = numbers[:28]
-        #Ñ�Ð½Ð°Ñ‡Ð°Ð»Ð° Ð½Ð¾Ð¼ÐµÑ€Ð°, Ð¿Ð¾Ñ‚Ð¾Ð¼ Ð±Ð¸Ñ‚Ñ‹
+        #first numbers, then beats
         chord = self.model.predict(np.hstack([numbers, beat]).reshape(1, -1))
         #print(chord)
         notes = chord_notes(chord[0])
         list_notes = []
         for note in notes:
             list_notes.append(Note(note + 12 * 4))
-        return Chord(list_notes, 32, 100) 
+        #here you need to set the duration of the chord
+        return Chord(list_notes, 128, 100) 
