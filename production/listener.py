@@ -28,6 +28,7 @@ buffer_size = 128
 def from_ms_to_our_time(time, bpm):
     return time * (32 * bpm) / (60 * 1000)
 
+
 def run_queue_in(listener):
     
     p = pyaudio.PyAudio()
@@ -49,13 +50,18 @@ def run_queue_in(listener):
     last_onset = 0
     beats = []
     last_beat = 0
-
+    count_beat = 0
+    last_downbeat = 0
     # the stream is read until you call stop
     prev_time = 0
     while (listener.runing.value):
         # read data from audio input
+<<<<<<< HEAD
+        audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
+=======
         audiobuffer, read = s()
         #audiobuffer = stream.read(buffer_size, exception_on_overflow = False)
+>>>>>>> 979492f3922740919a397cdddf1ed39321fb1052
         samples = np.fromstring(audiobuffer, dtype=np.float32)
 
         if (onset_o(samples)):
@@ -63,13 +69,21 @@ def run_queue_in(listener):
         if (temp_o(samples)):
             tmp = temp_o.get_last_ms()
             beats.append(tmp - last_beat)
+            count_beat = (count_beat + 1) % 4
+            if (count_beat == 0):
+                last_downbeat = last_beat
             last_beat = tmp
         new_note = notes_o(samples)
         if (new_note[0] != 0):
             if (len(beats) != 0):
                 listener.set_tempo(np.median(beats))
+<<<<<<< HEAD
+            listener.queue_in.put(Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value), int(new_note[1]), count_beat == 0))
+            listener.set_deadline(last_onset + (4 - count_beat) * 60 / listener.tempo.value)
+=======
             
             listener.queue_in.put(Chord([Note(int(new_note[0]))], 32, int(new_note[1]))) #from_ms_to_our_time(last_onset - prev_time, listener.tempo.value), int(new_note[1])))
+>>>>>>> 979492f3922740919a397cdddf1ed39321fb1052
             prev_time = last_onset
             listener.set_deadline(time.time())
 
