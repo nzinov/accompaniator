@@ -110,7 +110,7 @@ def prepare(piece, key): #если циферка до слэша, это чис
  
             elif '1' <= char <= '9':
                 if sl:
-                    down = int(char)
+                    down = int(char)x
                 else:
                     up = int(char)
             elif char == '/':
@@ -152,11 +152,12 @@ for fname in fnames:
 
 songs = songs[1:]
 n_tacts = 2
-X, y = cut_song(songs[0], n_tacts, 16, with_chords=False)
+X, y = cut_song(songs[0], n_tacts, 16, with_chords=True)
+
 for song in songs[1:]:
     try:
         if len(song[0]) > 32:
-            X_, y_ = cut_song(song, n_tacts, 16, with_chords=False)
+            X_, y_ = cut_song(song, n_tacts, 16, with_chords=True)
             X = np.vstack([X, X_])
             y = np.hstack([y, y_])
     except ValueError:
