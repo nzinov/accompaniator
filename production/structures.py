@@ -35,7 +35,7 @@ class Chord:
 
     def len_in_ms(self, bpm):
         """ Returns length of chord in ms given beats per minute"""
-        return self.duration * bpm / (128 * 60 * 1000)
+        return self.duration * (60 * 1000) / (bpm * 32)
 
     def __str__(self):
         return "{%s %s %s}" % (self.duration, self.velocity, str(self.notes))
