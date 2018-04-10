@@ -51,13 +51,12 @@ def run_queue_in(listener):
     last_beat = 0
     count_beat = 0
     last_downbeat = 0
+    bar_start = False
     # the stream is read until you call stop
     prev_time = 0
     while (listener.runing.value):
         # read data from audio input
         audiobuffer, read = s()
-        if read != hop_s:
-            print("bad")
         #audiobuffer = stream.read(buffer_size, exception_on_overflow = False)
         #samples = np.fromstring(audiobuffer, dtype=np.float32)
         samples = audiobuffer
@@ -67,19 +66,20 @@ def run_queue_in(listener):
         if (temp_o(samples)):
             tmp = temp_o.get_last_ms()
             beats.append(tmp - last_beat)
-            count_beat = (count_beat + 1) % 16
+            count_beat = (count_beat + 1) % 4
+            last_beat = tmp
             if (count_beat == 0):
                 last_downbeat = last_beat
-            last_beat = tmp
+                bar_start = True
         new_note = notes_o(samples)
         if (new_note[0] != 0):
             if (len(beats) != 0):
-                listener.set_tempo(np.median(beats) / 4)
-            chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value), int(new_note[1]), count_beat == 0)
-            #print(chord)
+                listener.set_tempo(60 * 1000.0 / np.median(beats))
+            chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value), int(new_note[1]), bar_start)
+            bar_start = False
             listener.queue_in.put(chord)
-            listener.set_deadline(last_downbeat + (16 - count_beat) * 60 / listener.tempo.value)
-            print(listener.tempo.value)
+            listener.set_deadline(last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value)
+            #print(listener.tempo.value)
             prev_time = last_onset
 
 class Listener:

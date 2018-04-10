@@ -75,10 +75,8 @@ class ChordPredictor:
 
     def try_predict(self):
         chord = self.queue_in.get() 
-        print(chord.downbeat)
         if chord.downbeat == False and self.second_downbeat == False:
             return
-        print("test")
         self.chords_list.append(chord)
         self.chords_len += chord.duration
         if chord.downbeat:
@@ -118,7 +116,7 @@ class ChordPredictor:
                 numbers = numbers[:28]
         #first numbers, then beats
         chord = self.model.predict(np.hstack([numbers, beat]).reshape(1, -1))
-        #print(chord)
+        print(chord)
         notes = chord_notes(chord[0])
         list_notes = []
         for note in notes:
