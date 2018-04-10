@@ -41,12 +41,10 @@ def run_peak(player):
     
 def run_queue_out(player):
     while (player.runing.value):
-        sleeping_time = player.get_sleeping_time()
-        if sleeping_time < sec_in_hour:
-            if sleeping_time > 0:
-                sleep(sleeping_time)
-            if (not player.queue_out.empty()):
-                player.play_chord()
+        #print(player.deadline.value - time.time())
+        if not player.queue_out.empty() and time.time() > player.deadline.value:
+            player.play_chord()
+        time.sleep(0.01)
 
 class Player:
     def __init__(self, queue=Queue(), runing=Value('i', False), tempo=Value('f', default_tempo), deadline=Value('f', max_time)):

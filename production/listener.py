@@ -54,6 +54,7 @@ def run_queue_in(listener):
     bar_start = False
     # the stream is read until you call stop
     prev_time = 0
+    start_time = time.time()
     while (listener.runing.value):
         # read data from audio input
         audiobuffer, read = s()
@@ -78,7 +79,7 @@ def run_queue_in(listener):
             chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value), int(new_note[1]), bar_start)
             bar_start = False
             listener.queue_in.put(chord)
-            listener.set_deadline(last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value)
+            listener.set_deadline(start_time + (last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0)
             #print(listener.tempo.value)
             prev_time = last_onset
 
