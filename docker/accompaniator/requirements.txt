@@ -1,0 +1,4 @@
+aubio
+pyaudio
+mido
+python-rtmidi
