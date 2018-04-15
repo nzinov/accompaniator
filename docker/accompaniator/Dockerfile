@@ -24,4 +24,4 @@ ADD . /build/
 
 RUN mv asound.conf /etc/asound.conf
 
-git clone https://github.com/nzinov/accompaniator
+# git clone https://github.com/nzinov/accompaniator
