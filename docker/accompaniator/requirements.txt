@@ -2,3 +2,5 @@ aubio
 pyaudio
 mido
 python-rtmidi
+sklearn
+tensorflow

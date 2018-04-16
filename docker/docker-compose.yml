@@ -21,6 +21,7 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /run/dbus/:/run/dbus/:rw
       - /dev/shm:/dev/shm
+      - ./../:/build/accompaniator
 
   accompaniator-prod:
     image: accompaniator-prod
