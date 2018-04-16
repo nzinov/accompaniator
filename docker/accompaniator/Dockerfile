@@ -3,8 +3,8 @@ FROM base/devel
 RUN mkdir /build
 WORKDIR /build
 
-RUN pacman -Sy --noconfirm \
-    && pacman -S --noconfirm alsa-lib alsa-utils alsa-plugins
+RUN pacman -Syu --noconfirm
+RUN pacman -S --noconfirm alsa-lib alsa-utils alsa-plugins
 
 RUN pacman -S --noconfirm fluidsynth soundfont-fluid mpg123
 
@@ -20,8 +20,12 @@ ADD requirements.txt /build/
 RUN pip install --upgrade pip \
     && pip install -r requirements.txt
 
+# move later to more appropriate place
+RUN pacman -S --noconfirm rtmidi htop
+
 ADD . /build/
 
 RUN mv asound.conf /etc/asound.conf
+RUN cat ./.bashrc >> ~/.bashrc
 
-# git clone https://github.com/nzinov/accompaniator
+CMD ./startup.sh
