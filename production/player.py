@@ -1,5 +1,6 @@
 import time
 import sys
+import numpy as np
 from time import sleep
 from mido import Message, MidiFile, MidiTrack
 from rtmidi import MidiOut
