@@ -111,7 +111,7 @@ class Player:
         
         chord = self.queue_out.get()
         print("player get", chord, "vel", chord.velocity, "queue", self.queue_out.qsize(), "time", time.monotonic())
-        arpeggio_by_track(chord.notes, None)
+        chord.notes = arpeggio_by_track(chord.notes, None)
         if chord.velocity > 127:
             chord.velocity = 127
         if chord.duration == 0:
@@ -124,7 +124,7 @@ class Player:
         for note in chord.notes:
             note_on = Message('note_on', note=note.number, velocity=chord.velocity, channel=default_channel).bytes()
             self.midiout.send_message(note_on)
-            sleep(len_in_s(int(chord.duration / 4), self.tempo.value))
+            sleep(len_in_s(int(chord.duration / len(chord.notes)), self.tempo.value))
             note_off = Message('note_off', note=note.number, velocity=min_velocity, channel=default_channel).bytes()
             self.midiout.send_message(note_off)                      
       
