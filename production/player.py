@@ -46,6 +46,14 @@ def run_queue_out(player):
             player.play_chord_arpeggio()
         time.sleep(0.01)
         
+def arpeggio_by_track(notes, track):
+    notes = sorted(notes)
+    if len(notes) == 3:
+        notes.append(Note(notes[0].number + 12))
+    if track == None:
+        track = np.arange(len(notes))    
+    return list(map(lambda x: notes[x], track))
+
 
 class Player:
     def __init__(self, queue=Queue(), running=Value('i', False), tempo=Value('f', default_tempo), deadline=Value('f', 0)):
@@ -70,9 +78,7 @@ class Player:
         
         chord = self.queue_out.get()
         print("player get", chord, "vel", chord.velocity, "queue", self.queue_out.qsize(), "time", time.monotonic())
-        chord.notes = sorted(chord.notes)
-        if len(chord.notes) == 3:
-            chord.notes.append(Note(chord.notes[0].number + 12))
+        
         if chord.velocity > 127:
             chord.velocity = 127
         if chord.duration == 0:
@@ -104,9 +110,7 @@ class Player:
         
         chord = self.queue_out.get()
         print("player get", chord, "vel", chord.velocity, "queue", self.queue_out.qsize(), "time", time.monotonic())
-        chord.notes = sorted(chord.notes)
-        if len(chord.notes) == 3:
-            chord.notes.append(Note(chord.notes[0].number + 12))
+        arpeggio_by_track(chord.notes, None)
         if chord.velocity > 127:
             chord.velocity = 127
         if chord.duration == 0:
