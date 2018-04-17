@@ -5,6 +5,10 @@ import numpy as np
 import math
 
 from dataset.base_mapper import BaseMapper, MapperError
+from dataset.corpus import in_ipynb
+
+if in_ipynb():
+    import matplotlib.pyplot as plt
 
 
 class MelodyDetectionMapper(BaseMapper):
@@ -230,6 +234,14 @@ class GetSongStatisticsMapper(BaseMapper):
 
         return song
 
+    def make_histogram(self, name, plot=True):
+        d = self.stats[name]
+        heights, bins = np.histogram(list(d.keys()), weights=list(d.values()))
+        if plot:
+            plt.plot(bins[:-1], heights)
+        return bins, heights
+        # return dict([(k, v) for k, v in zip(bins, heights)])
+
 
 class AdequateCutOutLongChordsMapper(BaseMapper):
     """Detects long chords and removes it splitting the song. """
@@ -304,7 +316,7 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
         for i, chord in enumerate(track.chords):
             cur_chord_duration += track.chords[i].duration
             time += track.chords[i].duration
-            if i == len(track.chords)-1 or track.chords[i] != track.chords[i + 1]:
+            if i == len(track.chords) - 1 or track.chords[i] != track.chords[i + 1]:
                 if cur_chord_duration >= self.min_big_chord_duration:
                     return time_beginning, time_beginning + cur_chord_duration
                 cur_chord_duration = 0
