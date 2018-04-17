@@ -14,7 +14,7 @@ def simplify_chord(ch):
     ch = ch.replace(" ", "")
     return ch
 
-def cut_song(song, num_tacts, l_min_note, with_chords=True, delay=4): #3 arrays: notes, chords, beat
+def cut_song(song, num_tacts, l_min_note, with_chords=True, with_beat=True, delay=4): #3 arrays: notes, chords, beat
     l_piece = num_tacts * l_min_note
     notes = np.array(song[0])
     chords = np.array([simplify_chord(ch) for ch in song[1]])
@@ -26,7 +26,13 @@ def cut_song(song, num_tacts, l_min_note, with_chords=True, delay=4): #3 arrays:
 
     X_beat = beat[:n_items * l_piece].reshape((n_items, l_piece))[:,:-delay]
 
-    X = np.hstack([X_notes, X_beat])
+    print(X_beat)
+
+    if with_beat:
+        X = np.hstack([X_notes, X_beat])
+    else:
+        X = X_notes
+
     if with_chords:
         X = np.hstack([X, X_chords])
     y = np.array([chords[l_piece * (i + 1) + 1] for i in range(n_items)])
@@ -144,19 +150,21 @@ for fname in fnames:
             current_meter = l.split(":")[1]
         elif l[0] not in ['X', 'T', '%', 'S', 'M', 'L', 'K', 'Q', 'P', 'Y', 'N', '\n']:
             line = list(filter(None, l.replace(':', "").replace('\\\\', '').lower().split("|")))
-            prepared = [prepare(piece, current_key) for piece in line]
+            prepared = [prepare(piece, current_key) for piece in line[1:-1]]
             for tact in prepared:
+                if len(tact[0]) != 16:
+                    continue
                 current_song[0] += tact[0]
                 current_song[1] += tact[1]
                 current_song[2] += [1] + [0] * (len(tact[0]) - 1)
 
 songs = songs[1:]
 n_tacts = 2
-X, y = cut_song(songs[0], n_tacts, 16, with_chords=False)
+X, y = cut_song(songs[0], n_tacts, 16, with_chords=False, with_beat=False)
 for song in songs[1:]:
     try:
         if len(song[0]) > 32:
-            X_, y_ = cut_song(song, n_tacts, 16, with_chords=False)
+            X_, y_ = cut_song(song, n_tacts, 16, with_chords=False, with_beat=False)
             X = np.vstack([X, X_])
             y = np.hstack([y, y_])
     except ValueError:

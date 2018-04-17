@@ -27,11 +27,14 @@ print(len(els))
 feat = X.shape[1]
 print("Features:", feat)
 tst = np.array([1])
+tst1 = np.array([1.0])
 print(tst.dtype, X.dtype)
-if X.dtype == tst.dtype:
+print(X[0, 10])
+print(X)
+if X.dtype == tst.dtype or X.dtype == tst1.dtype:
     num_features = np.zeros(feat, dtype='bool')
 else:
-    num_features = np.array(['0' <= X[0, i][0] <= '9' for i in range(feat)])
+    num_features = np.array(['0' <= X[0, i] <= '9' for i in range(feat)])
 cat_features = np.logical_not(num_features)
 
 
