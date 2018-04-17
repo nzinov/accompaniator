@@ -20,7 +20,8 @@ default_peak_velocity = 120
 default_channel = 0
 default_ultrasound_channel = 1
 default_tempo = 124
-default_instrument = 0
+default_instrument = 40
+28
 default_ultrasound_instrument = 2
 min_velocity = 0
 default_port = 1
@@ -34,29 +35,29 @@ def len_in_s(duration, bpm):
     return duration * 60 / (bpm * 32)
 
 def run_peak(player):
-    while(player.runing.value):
+    while(player.running.value):
         sleep(distance_between_peaks)
-        player.start.value = time.time()
-        player.play_peak()
+        player.start.value = time.monotonic()
+        #player.play_peak()
     
 def run_queue_out(player):
-    while (player.runing.value):
-        #print(player.deadline.value - time.time())
-        if not player.queue_out.empty() and time.time() > player.deadline.value:
-            player.play_chord()
+    while (player.running.value):
+        if not player.queue_out.empty() and time.monotonic() > player.deadline.value:
+            player.play_chord_arpeggio()
         time.sleep(0.01)
+        
 
 class Player:
-    def __init__(self, queue=Queue(), runing=Value('i', False), tempo=Value('f', default_tempo), deadline=Value('f', max_time)):
+    def __init__(self, queue=Queue(), running=Value('i', False), tempo=Value('f', default_tempo), deadline=Value('f', 0)):
         self.midiout = MidiOut()
         self.midi_for_file = MidiFile()
         self.last_chord = empty_chord
         
         self.queue_out = queue
-        self.runing = runing
+        self.running = running
         self.tempo = tempo
         self.deadline = deadline
-        self.start = Value('f', max_time)   
+        self.start = Value('f', 0)   
         
     def play_peak(self, number=default_peak_number, velocity=default_peak_velocity):
         note_on = Message('note_on', note=number, velocity=velocity, channel=default_ultrasound_channel).bytes()
@@ -65,11 +66,22 @@ class Player:
         note_off = Message('note_off', note=number, velocity=min_velocity, channel=default_ultrasound_channel).bytes()
         self.midiout.send_message(note_off)      
     
-    def play_chord(self):
+    def play_chord_same_time(self):
         
         chord = self.queue_out.get()
-        print(chord)
-        
+        print("player get", chord, "vel", chord.velocity, "queue", self.queue_out.qsize(), "time", time.monotonic())
+        chord.notes = sorted(chord.notes)
+        if len(chord.notes) == 3:
+            chord.notes.append(Note(chord.notes[0].number + 12))
+        if chord.velocity > 127:
+            chord.velocity = 127
+        if chord.duration == 0:
+            return
+        for note in chord.notes:
+            if note.number > 127:
+                print("an incorrect note in player")
+                return
+       
         if self.last_chord != empty_chord:
             for note in self.last_chord.notes:
                 note_off = Message('note_off', note=note.number, velocity=min_velocity, channel=default_channel).bytes()
@@ -81,14 +93,36 @@ class Player:
             
         self.last_chord = chord
 
-        if chord.duration > 0:
-            sleep(len_in_s(chord.duration, self.tempo.value))
+        sleep(len_in_s(chord.duration, self.tempo.value))
         
-        if self.last_chord == chord:
+        if self.last_chord == chord: 
             for note in chord.notes:
                 note_off = Message('note_off', note=note.number, velocity=min_velocity, channel=default_channel).bytes()
                 self.midiout.send_message(note_off)       
+
+    def play_chord_arpeggio(self):
         
+        chord = self.queue_out.get()
+        print("player get", chord, "vel", chord.velocity, "queue", self.queue_out.qsize(), "time", time.monotonic())
+        chord.notes = sorted(chord.notes)
+        if len(chord.notes) == 3:
+            chord.notes.append(Note(chord.notes[0].number + 12))
+        if chord.velocity > 127:
+            chord.velocity = 127
+        if chord.duration == 0:
+            return
+        for note in chord.notes:
+            if note.number > 127:
+                print("an incorrect note in player")
+                return
+
+        for note in chord.notes:
+            note_on = Message('note_on', note=note.number, velocity=chord.velocity, channel=default_channel).bytes()
+            self.midiout.send_message(note_on)
+            sleep(len_in_s(int(chord.duration / 4), self.tempo.value))
+            note_off = Message('note_off', note=note.number, velocity=min_velocity, channel=default_channel).bytes()
+            self.midiout.send_message(note_off)                      
+      
     def put(self, chord):
         if type(chord) == Chord:
             self.queue_out.put(chord)
@@ -117,14 +151,14 @@ class Player:
     def set_tempo(self, tempo=default_tempo):
         self.tempo.value = tempo
         
-    def set_deadline(self, deadline=max_time):
+    def set_deadline(self, deadline=0):
         self.deadline.value = deadline
     
     def set_start(self, start=max_time):
         self.start.value = start    
         
     def get_sleeping_time(self):
-        return self.deadline.value - time.time()
+        return self.deadline.value - time.monotonic()
         
     def get_track(self):
         return self.midi_for_file.tracks[0]
@@ -134,7 +168,7 @@ class Player:
         return filename
         
     def run(self):
-        self.runing.value = True
+        self.running.value = True
         self.set_up_ports()
         self.set_up_midi_for_file()
         self.set_up_instrument()
@@ -148,13 +182,13 @@ class Player:
         
     def stop(self):
         """ All chords that already sound will continue to sound """
-        self.runing.value = False
+        self.running.value = False
         self.queue_process.join()
         self.queue_process.join()  
         self.queue_out = Queue()
         
     queue_out = None
-    runing = None
+    running = None
     tempo = None
     deadline = None
     start = None
@@ -166,15 +200,15 @@ class Player:
     
 if __name__ == '__main__':
     q = Player()
-    t = time.time()
+    t = time.monotonic()
     q.run()
-    chord = Chord([Note(60), Note(64)], 512, 80)    
-    q.put(chord)
+    #chord = Chord([Note(60), Note(64)], 512, 120)    
+    #q.put(chord)
     chord = Chord([Note(76)], 4, 80)    
     q.put(chord)    
-    q.set_deadline(t + 1)
+    q.set_deadline(t)
     sleep(delay)
-    q.set_deadline(t + 3.5)
+    #q.set_deadline(t + 3.5)
     sleep(10)
     q.stop()
     

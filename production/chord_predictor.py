@@ -43,9 +43,11 @@ def run_queue(predictor):
 
     while predictor.running.value:
         if not predictor.queue_in.empty():
+            #print("predictor get")
             chord = predictor.try_predict()
             if chord is not None:
                 predictor.queue_out.put(chord, defualt_predicted_len, defualt_velocity)
+                #print("predictor put")
 
 class ChordPredictor:
     model = None
@@ -75,8 +77,9 @@ class ChordPredictor:
 
     def try_predict(self):
         chord = self.queue_in.get() 
+        #print(chord.downbeat)
         if chord.downbeat == False and self.second_downbeat == False:
-            return
+            return None
         self.chords_list.append(chord)
         self.chords_len += chord.duration
         if chord.downbeat:
@@ -84,7 +87,7 @@ class ChordPredictor:
                 self.second_downbeat = True
             else:
                 self.chords_count_before_4_4 = len(self.chords_list)
-                self.chords_len_before_4_4 = self.chords_len                
+                self.chords_len_before_4_4 = 128#self.chords_len 
         if self.chords_len > 128 * 2 * 7/8:
             prediction = self.predict(self.chords_list)
             self.chords_list = self.chords_list[self.chords_count_before_4_4:]
@@ -111,15 +114,15 @@ class ChordPredictor:
         if numbers.size != 28:
             #print("Number of notes is wrong: " + str(numbers_size))
             if numbers.size < 28:
-                numbers = np.hstack([numbers, np.zeros(28 - len(numbers)) + 12])
+                numbers = np.hstack([numbers, np.zeros(28 - len(numbers)) + 24])
             else:
                 numbers = numbers[:28]
         #first numbers, then beats
         chord = self.model.predict(np.hstack([numbers, beat]).reshape(1, -1))
-        print(chord)
+        #print(chord)
         notes = chord_notes(chord[0])
         list_notes = []
         for note in notes:
             list_notes.append(Note(note + 12 * 4))
         #here you need to set the duration of the chord
-        return Chord(list_notes, 128, 100) 
+        return Chord(list_notes, 128, int(np.mean(list(map(lambda chord: chord.velocity, chords_list))))) 

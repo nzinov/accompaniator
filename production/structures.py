@@ -19,6 +19,9 @@ class Note:
     def __repr__(self):
         return self.__str__()
 
+    def __lt__(self, other):
+        return self.number < other.number 
+
     number = None
 
 

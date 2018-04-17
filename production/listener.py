@@ -32,7 +32,7 @@ def run_queue_in(listener):
     
     p = pyaudio.PyAudio()
     # open stream
-    '''pyaudio_format = pyaudio.paFloat32
+    pyaudio_format = pyaudio.paFloat32
     n_channels = 1
     stream = p.open(format=pyaudio_format,
                     channels=n_channels,
@@ -41,7 +41,7 @@ def run_queue_in(listener):
                     frames_per_buffer=buffer_size)
     '''
     s = aubio.source('/home/nikolay/pahanini.mp3', sample_rate, buffer_size)
-    
+    '''
 
     notes_o = notes("default", win_s, hop_s, sample_rate)
     onset_o = onset("default", win_s, hop_s, sample_rate)
@@ -54,13 +54,13 @@ def run_queue_in(listener):
     bar_start = False
     # the stream is read until you call stop
     prev_time = 0
-    start_time = time.time()
-    while (listener.runing.value):
+    start_time = time.monotonic()
+    while (listener.running.value):
         # read data from audio input
-        audiobuffer, read = s()
-        #audiobuffer = stream.read(buffer_size, exception_on_overflow = False)
-        #samples = np.fromstring(audiobuffer, dtype=np.float32)
-        samples = audiobuffer
+        #audiobuffer, read = s()
+        audiobuffer = stream.read(buffer_size, exception_on_overflow = False)
+        samples = np.fromstring(audiobuffer, dtype=np.float32)
+        #samples = audiobuffer
 
         if (onset_o(samples)):
             last_onset = onset_o.get_last_ms()
@@ -77,26 +77,30 @@ def run_queue_in(listener):
             if (len(beats) != 0):
                 listener.set_tempo(60 * 1000.0 / np.median(beats))
             chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value), int(new_note[1]), bar_start)
+            #print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic())
             bar_start = False
             listener.queue_in.put(chord)
-            listener.set_deadline(start_time + (last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0)
-            #print(listener.tempo.value)
+            KOLYA_time = start_time + (last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0
+            print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic(), KOLYA_time)
+            #print(count_beat, time.monotonic(), KOLYA_time, listener.deadline.value)
+            if (count_beat != 0):
+                listener.set_deadline(KOLYA_time)
             prev_time = last_onset
 
 class Listener:
-    def __init__(self, queue=Queue(), runing=Value('i', False), tempo=Value('f', default_tempo), deadline=Value('f', max_time)):
+    def __init__(self, queue=Queue(), running=Value('i', False), tempo=Value('f', default_tempo), deadline=Value('f', 0)):
         self.queue_in = queue
-        self.runing = runing
+        self.running = running
         self.tempo = tempo
         self.deadline = deadline             
 
     def run(self):
-        self.runing.value = True
+        self.running.value = True
         self.process = Process(target=run_queue_in, args=(self, ))
         self.process.start()
 
     def stop(self):
-        self.runing.value = False
+        self.running.value = False
         self.process.join()
         self.queue_in = Queue()
 
@@ -107,11 +111,11 @@ class Listener:
     def set_tempo(self, tempo=default_tempo):
         self.tempo.value = tempo
         
-    def set_deadline(self, deadline=max_time):
+    def set_deadline(self, deadline=0):
         self.deadline.value = deadline
 
     queue_in = None
-    runing = None
+    running = None
     tempo = None
     deadline = None
     process = None
