@@ -1,0 +1,8 @@
+sudo: enabled
+
+services:
+  - docker
+
+before_install:
+  - cd docker
+  - docker-compose build accompaniator
