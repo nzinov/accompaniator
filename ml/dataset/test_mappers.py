@@ -97,13 +97,13 @@ class TestAdequateCutOutLongChordsMapper(unittest.TestCase):
 
         self.assertEqual(
             """Song '', 2 tracks, bpm 0
-            Track '', instrument '' , program -1, with 1 chords 
-            {4 127 [1]}
-            
-            Track '', instrument '' , program -1, with 1 chords 
-            {4 127 [1]}
-            
-            """, processed[0].str(with_chords=True))
+Track '', instrument '' , program -1, with 1 chords 
+{4 127 [1]}
+
+Track '', instrument '' , program -1, with 1 chords 
+{4 127 [1]}
+
+""", processed[0].str(with_chords=True))
         self.assertEqual(
             """Song '', 2 tracks, bpm 0
 Track '', instrument '' , program -1, with 1 chords 
@@ -132,23 +132,23 @@ Track '', instrument '' , program -1, with 1 chords
 
         self.assertEqual(
             """Song '', 2 tracks, bpm 0
-            Track '', instrument '' , program -1, with 2 chords 
-            {2 127 [1]} {4 127 [1]}
-            
-            Track '', instrument '' , program -1, with 2 chords 
-            {2 127 [1]} {4 127 [1]}
-            
-            """,
+Track '', instrument '' , program -1, with 2 chords 
+{2 127 [1]} {4 127 [1]}
+
+Track '', instrument '' , program -1, with 2 chords 
+{2 127 [1]} {4 127 [1]}
+
+""",
             processed[0].str(with_chords=True))
         self.assertEqual(
             """Song '', 2 tracks, bpm 0
-            Track '', instrument '' , program -1, with 1 chords 
-            {4 127 [1]}
-            
-            Track '', instrument '' , program -1, with 1 chords 
-            {4 127 [1]}
-            
-            """,
+Track '', instrument '' , program -1, with 1 chords 
+{4 127 [1]}
+
+Track '', instrument '' , program -1, with 1 chords 
+{4 127 [1]}
+
+""",
             processed[1].str(with_chords=True))
 
     def test_cut_melody_at_end(self):
