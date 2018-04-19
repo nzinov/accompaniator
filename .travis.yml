@@ -6,3 +6,8 @@ services:
 before_install:
   - cd docker
   - docker-compose build accompaniator
+  - docker-compose build accompaniator-dev
+  - docker-compose build accompaniator-prod
+
+script:
+  - docker-compose run accompaniator-prod bash -c "cd accompaniator/ml && ls && python -m unittest"
