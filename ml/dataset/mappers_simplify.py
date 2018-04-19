@@ -21,8 +21,11 @@ class MelodyDetectionMapper(BaseMapper):
         :param min_unique_notes: minimum number of unique note heights to consider the track a valid melody.
         """
         super().__init__(**kwargs)
-        self.stats['melody tracks count'] = dict()
+        self.stats['melody tracks count per song'] = dict()
+        self.stats['chord tracks count per song'] = dict()
+        self.stats['melody and chord'] = dict()
         self.stats['unique notes in melody track'] = dict()
+        self.stats['likely melody tracks count'] = dict()
         self.fun = fun
         self.strategy = strategy
         self.min_unique_notes = min_unique_notes
@@ -46,8 +49,15 @@ class MelodyDetectionMapper(BaseMapper):
         return melody, not_melody
 
     def process(self, song):
+        melodies_count = song.melodies_track_count()
+        chords_count = len(song.tracks) - melodies_count
+
+        self.increment_stat(melodies_count, self.stats['melody tracks count per song'])
+        self.increment_stat(chords_count, self.stats['chord tracks count per song'])
+        self.increment_stat(str((melodies_count, chords_count)), self.stats['melody and chord'])
+
         likely_melody = [i for i, track in enumerate(song.tracks) if self.is_likely_melody(track)]
-        self.increment_stat(len(likely_melody), self.stats['melody tracks count'])
+        self.increment_stat(len(likely_melody), self.stats['likely melody tracks count'])
 
         if not likely_melody:
             raise MapperError('no melody tracks')
@@ -81,7 +91,8 @@ class MelodyDetectionMapper(BaseMapper):
 class SplitNonMelodiesToGcdMapper(BaseMapper):
     """Gets the GCD of chords duration and splits all chords longer to pieces."""
 
-    def pad_tracks_to_same_duration(self, song):
+    @staticmethod
+    def pad_tracks_to_same_duration(song):
         track_durations = [track.duration() for track in song.tracks]
         max_track_duration = max(track_durations)
         for i in range(0, len(track_durations)):
@@ -108,7 +119,7 @@ class SplitNonMelodiesToGcdMapper(BaseMapper):
         self.min_gcd = min_gcd
 
     def process(self, song):
-        self.pad_tracks_to_same_duration(song)
+        SplitNonMelodiesToGcdMapper.pad_tracks_to_same_duration(song)
 
         melody, tracks = MelodyDetectionMapper.extract_melody(song.tracks)
 
@@ -195,12 +206,8 @@ class MergeTracksMapper(BaseMapper):
 class GetSongStatisticsMapper(BaseMapper):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.stats['tracks count per song'] = dict()
         # self.stats['chord duration'] = dict()
         self.stats['most frequent chord duration'] = dict()
-        self.stats['melody tracks count per song'] = dict()
-        self.stats['chord tracks count per song'] = dict()
-        self.stats['melody and chord'] = dict()
         self.stats['track nonpause duration'] = dict()
         self.stats['track pause duration'] = dict()
         self.stats['track duration'] = dict()
@@ -211,7 +218,6 @@ class GetSongStatisticsMapper(BaseMapper):
         return int(np.argmax(np.bincount(a)))
 
     def process(self, song):
-        self.increment_stat(len(song.tracks), self.stats['tracks count per song'])
         for track in song.tracks:
             self.increment_stat(GetSongStatisticsMapper.majority([int(chord.duration) for chord in track.chords]),
                                 self.stats['most frequent chord duration'])
@@ -224,13 +230,6 @@ class GetSongStatisticsMapper(BaseMapper):
             self.increment_stat(track.duration(), self.stats['track duration'])
             if track.duration() != 0:
                 self.increment_stat(track.pause_duration()/track.duration(), self.stats['track pause to all ratio'])
-
-        melodies_count = song.melodies_track_count()
-        chords_count = len(song.tracks) - melodies_count
-
-        self.increment_stat(melodies_count, self.stats['melody tracks count per song'])
-        self.increment_stat(chords_count, self.stats['chord tracks count per song'])
-        self.increment_stat(str((melodies_count, chords_count)), self.stats['melody and chord'])
 
         return song
 
@@ -281,6 +280,8 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
         super().__init__(**kwargs)
         self.min_big_chord_duration = min_big_chord_duration
         self.min_duration = min_track_duration
+        self.stats['melody pause duration'] = dict()
+        self.stats['chord pause duration'] = dict()
 
     def clear_songs(self, songs):
         new_songs = []
@@ -305,6 +306,7 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
         time = 0
         for i, chord in enumerate(track.chords):
             if chord.duration > self.min_big_chord_duration:
+                self.increment_stat(chord.duration, self.stats['melody pause duration'])
                 return time, time + chord.duration
             time += chord.duration
         return None
@@ -318,6 +320,7 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
             time += track.chords[i].duration
             if i == len(track.chords) - 1 or track.chords[i] != track.chords[i + 1]:
                 if cur_chord_duration >= self.min_big_chord_duration:
+                    self.increment_stat(cur_chord_duration, self.stats['chord pause duration'])
                     return time_beginning, time_beginning + cur_chord_duration
                 cur_chord_duration = 0
                 time_beginning = time

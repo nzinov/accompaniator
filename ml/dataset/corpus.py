@@ -1,7 +1,7 @@
 import mido
 import os
 import tqdm
-from dataset.prestructures import *
+from prestructures import *
 from structures import *
 from dataset.pipeline import *
 from multiprocessing.pool import Pool

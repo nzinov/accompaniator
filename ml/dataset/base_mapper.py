@@ -1,3 +1,9 @@
+try:
+    import pandas as pd
+    import matplotlib.pyplot as plt
+except:
+    pass
+
 class MapperError(Exception):
     """Basic exception for handler"""
 
@@ -52,3 +58,26 @@ class BaseMapper:
 
     def get_examples(self):
         return {str((self.prefix, key)): self.examples[key] for key in self.examples.keys()}
+
+    def plot_all_stat(self, many_items_border=15):
+        stats = self.get_stats()
+
+        def plot_with_style(df, ax, kind):
+            df.plot(kind=kind, ax=ax, x='x', y='y', color=plt.get_cmap("tab10")(0))
+
+        for name, stat in stats.items():
+            if type(stat) == dict:
+                if len(stat.items()) < many_items_border:
+                    print(name, sorted(stat.items()))
+                df = pd.DataFrame.from_records(sorted(stat.items()), columns=['x', 'y'])
+                ax = plt.subplot(1, 2, 1)
+                plot_with_style(df, ax, 'line')
+                ax = plt.subplot(1, 2, 2)
+                if len(stat.items()) < many_items_border:
+                    plot_with_style(df, ax, 'bar')
+                else:
+                    plot_with_style(df, ax, 'hist')
+                plt.title(name)
+                plt.show()
+            else:
+                print(name, stat)
