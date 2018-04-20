@@ -4,3 +4,4 @@ mido
 python-rtmidi
 sklearn
 tensorflow
+tqdm
