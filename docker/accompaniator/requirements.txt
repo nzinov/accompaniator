@@ -1,7 +1,13 @@
+# Audio stuff
 aubio
 pyaudio
 mido
 python-rtmidi
+
+# ML stuff
 sklearn
 tensorflow
-tqdm
+
+# QA stuff
+flake8
+coverage
