@@ -11,3 +11,6 @@ tensorflow
 # QA stuff
 flake8
 coverage
+
+# Common stuff
+tqdm
