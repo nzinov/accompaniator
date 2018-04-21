@@ -1,3 +1,6 @@
+language: python
+python:
+  - '3.6'
 sudo: enabled
 services:
 - docker
@@ -7,7 +10,9 @@ before_install:
 - docker-compose build accompaniator-dev
 - docker-compose build accompaniator-prod
 script:
-- docker-compose run accompaniator-prod bash -c "cd accompaniator/ml && ls && python -m unittest"
+- export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+- docker-compose run accompaniator-prod bash -c "cd accompaniator/ml && git checkout $BRANCH && ls && coverage run -m unittest"
+- docker-compose run accompaniator-prod bash -c "cd accompaniator/ && flake8 ."
 notifications:
   email: false
   slack:
