@@ -70,6 +70,7 @@ class BaseMapper:
                 if len(stat.items()) < many_items_border:
                     print(name, sorted(stat.items()))
                 df = pd.DataFrame.from_records(sorted(stat.items()), columns=['x', 'y'])
+                plt.figure(figsize=(10, 5))
                 ax = plt.subplot(1, 2, 1)
                 plot_with_style(df, ax, 'line')
                 ax = plt.subplot(1, 2, 2)

@@ -1,5 +1,6 @@
 from dataset.base_mapper import MapperError
 import json
+import pickle
 
 
 # Can't encode keys in dictionary.
@@ -63,6 +64,14 @@ class Pipeline:
             examples.update(mapper.get_examples())
         return examples
 
+    def plot_all_stat(self, many_items_border=15):
+        for mapper in self.mappers:
+            mapper.plot_all_stat(many_items_border)
+
     def dump_stats(self, out_file):
         json.dump({'stats': self.get_stats(), 'examples': self.get_examples()}, out_file, sort_keys=True, indent=4,
                   default=str, cls=ComplexEncoder)
+
+    def dump_pickle(self, out_file_name):
+        with open(out_file_name, 'wb') as out_file:
+            pickle.dump({'stats': self.get_stats(), 'examples': self.get_examples()}, out_file)
