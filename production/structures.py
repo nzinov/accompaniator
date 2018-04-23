@@ -1,5 +1,6 @@
 import pickle
 
+
 class Note:
     """ Stores individual note
     Attributes:
@@ -41,7 +42,8 @@ class Chord:
         return "{%s %s %s}" % (self.duration, self.velocity, str(self.notes))
 
     def __eq__(self, other):
-        return self.duration == other.duration and self.velocity == other.velocity and self.notes == other.notes
+        return self.duration == other.duration and\
+               self.velocity == other.velocity and self.notes == other.notes
 
     def add_notes(self, notes_list):
         self.notes.extend(notes_list)
@@ -70,6 +72,7 @@ class Track:
 
     instrument_name = None
     program = None
+
 
 class Song:
     def __init__(self, tracks=[], bpm=0, name=""):
