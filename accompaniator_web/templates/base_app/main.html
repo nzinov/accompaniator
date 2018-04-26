@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Main{% endblock %}
+
+{% block main %}
+Hello, accompaniators!
+<a href="{% url 'accompaniment' %}">Попробовать! </a>
+{% endblock %}
