@@ -1,13 +1,15 @@
-from structures import *
-import numpy as np
 import pickle
 
+import numpy as np
+from structures import *
+
+
 def chord_notes(chord):
+    def interval(start, interval):
+        return (start + interval) % 12
 
-    def interval(start, interval):             
-        return (start + interval) % 12     
-
-    natural_notes_numbers = {'c': 0, 'd': 2, 'e': 4, 'f': 5, 'g': 7, 'a': 9, 'b': 11}
+    natural_notes_numbers = {'c': 0, 'd': 2, 'e': 4, 'f': 5,
+                             'g': 7, 'a': 9, 'b': 11}
     note = chord[0]
     first_note = natural_notes_numbers[note]
 
@@ -22,16 +24,22 @@ def chord_notes(chord):
     elif is_flat:
         first_note -= 1
 
-    if is_minor and is_sept: #минорный септаккорд
-        return [first_note, interval(first_note, 3), interval(first_note, 7), interval(first_note, 10)]
+    if is_minor and is_sept:  # минорный септаккорд
+        return [first_note, interval(first_note, 3), interval(first_note, 7),
+                interval(first_note, 10)]
     elif is_minor:
-        return [first_note, interval(first_note, 3), interval(first_note, 7)]
-    elif is_sept: #мажорный септаккорд
-        return [first_note, interval(first_note, 4), interval(first_note, 7), interval(first_note, 10)]
-    elif is_sext: #мажорный секстаккорд
-        return [first_note, interval(first_note, 4), interval(first_note, 7), interval(first_note, 9)]
-    else: #major большая терция и чистая квинта
-        return [first_note, interval(first_note, 4), interval(first_note, 7)]
+        return [first_note, interval(first_note, 3),
+                interval(first_note, 7)]
+    elif is_sept:  # мажорный септаккорд
+        return [first_note, interval(first_note, 4), interval(first_note, 7),
+                interval(first_note, 10)]
+    elif is_sext:  # мажорный секстаккорд
+        return [first_note, interval(first_note, 4), interval(first_note, 7),
+                interval(first_note, 9)]
+    else:  # major большая терция и чистая квинта
+        return [first_note, interval(first_note, 4),
+                interval(first_note, 7)]
+
 
 class ChordPredictor:
     model = None
@@ -43,8 +51,10 @@ class ChordPredictor:
         with open(filename, 'rb') as fid:
             self.model = pickle.load(fid)
 
-    def predict(self, chords_list): # передаётся два такта, кроме последней доли (то есть от двух тактов доступно 7/8 или 14/16 информации)
-        numbers = np.array([]) # midi numbers!
+    def predict(self,
+                chords_list):
+        # передаётся два такта, кроме последней доли (то есть от двух тактов доступно 7/8 или 14/16 информации)
+        numbers = np.array([])  # midi numbers!
         for chord in chords_list:
             num_notes_to_add = round(chord.len() / 8)
             note = chord.notes[0]
@@ -57,12 +67,13 @@ class ChordPredictor:
         if numbers.size != 28:
             print("Number of notes is wrong: " + str(numbers_size))
             if numbers.size < 28:
-                numbers = np.hstack([numbers, np.zeros(28 - len(numbers)) + 12])
+                numbers = np.hstack([numbers,
+                                     np.zeros(28 - len(numbers)) + 12])
             else:
                 numbers = numbers[:28]
-        #сначала номера, потом биты
+        # сначала номера, потом биты
         chord = self.model.predict(np.hstack([numbers, beat]).reshape(1, -1))
-        #print(chord)
+        # print(chord)
         notes = chord_notes(chord[0])
         list_notes = []
         for note in notes:

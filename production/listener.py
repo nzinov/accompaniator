@@ -1,12 +1,11 @@
-import time
 import sys
-import numpy as np
-import aubio
-import pyaudio
-from time import sleep
-from mido import Message, MidiFile, MidiTrack
 from multiprocessing.dummy import Queue, Process, Value
-from aubio import notes, onset, tempo
+from time import sleep
+
+import aubio
+import numpy as np
+import pyaudio
+from aubio import notes, onset
 from structures import Note, Chord
 
 """
@@ -23,11 +22,12 @@ hop_s = win_s // 2
 framesize = hop_s
 buffer_size = 128
 
+
 def from_ms_to_our_time(time, bpm):
     return time * (32 * bpm) / (60 * 1000)
 
+
 def run_queue_in(listener):
-    
     p = pyaudio.PyAudio()
     # open stream
     pyaudio_format = pyaudio.paFloat32
@@ -49,7 +49,7 @@ def run_queue_in(listener):
     prev_time = 0
     while (listener.runing.value):
         # read data from audio input
-        audiobuffer = stream.read(buffer_size, exception_on_overflow = False)
+        audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
         samples = np.fromstring(audiobuffer, dtype=np.float32)
 
         if (onset_o(samples)):
@@ -62,19 +62,26 @@ def run_queue_in(listener):
         if (new_note[0] != 0):
             if (len(beats) != 0):
                 listener.set_tempo(np.median(beats))
-            listener.queue_in.put(Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value), int(new_note[1])))
+            listener.queue_in.put(
+                Chord([Note(int(new_note[0]))],
+                      from_ms_to_our_time(last_onset - prev_time,
+                                          listener.tempo.value),
+                      int(new_note[1])))
             prev_time = last_onset
 
+
 class Listener:
-    def __init__(self, queue=Queue(), runing=Value('i', False), tempo=Value('i', default_tempo), deadline=Value('f', max_time)):
+    def __init__(self, queue=Queue(), runing=Value('i', False),
+                 tempo=Value('i', default_tempo),
+                 deadline=Value('f', max_time)):
         self.queue_in = queue
         self.runing = runing
         self.tempo = tempo
-        self.deadline = deadline             
+        self.deadline = deadline
 
     def run(self):
         self.runing.value = True
-        self.process = Process(target=run_queue_in, args=(self, ))
+        self.process = Process(target=run_queue_in, args=(self,))
         self.process.start()
 
     def stop(self):
@@ -85,10 +92,10 @@ class Listener:
     def get(self):
         if self.queue_in.empty() is False:
             return self.queue_in.get()
-        
+
     def set_tempo(self, tempo=default_tempo):
         self.tempo.value = tempo
-        
+
     def set_deadline(self, deadline=max_time):
         self.deadline.value = deadline
 
