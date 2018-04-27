@@ -8,6 +8,7 @@ python-rtmidi
 sklearn
 tensorflow
 pandas
+matplotlib
 
 # QA stuff
 flake8
