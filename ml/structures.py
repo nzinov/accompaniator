@@ -96,7 +96,7 @@ class Track:
             self.track_name, self.instrument_name, self.program, len(self.chords))
         if with_chords:
             ret += '\n'
-            for i in range((len(self.chords) - 1)//chords_in_row+1):
+            for i in range((len(self.chords) - 1)//chords_in_row + 1):
                 ret += ' '.join([str(chord) for chord in self.chords[i*chords_in_row:(i + 1)*chords_in_row]])
                 ret += '\n'
         return ret

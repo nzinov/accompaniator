@@ -12,10 +12,10 @@ class Note:
 
     def freq(self):
         """ Returns frequency in Hz """
-        return 2 ** ((self.number - 69) / 12.) * 440
+        return 2**((self.number - 69)/12.)*440
 
     def __str__(self):
-        return "%s" % (self.number)
+        return "%s"%(self.number)
 
     def __repr__(self):
         return self.__str__()
@@ -36,14 +36,13 @@ class Chord:
 
     def len_in_ms(self, bpm):
         """ Returns length of chord in ms given beats per minute"""
-        return self.duration * (60 * 1000) / (bpm * 32)
+        return self.duration*(60*1000)/(bpm*32)
 
     def __str__(self):
-        return "{%s %s %s}" % (self.duration, self.velocity, str(self.notes))
+        return "{%s %s %s}"%(self.duration, self.velocity, str(self.notes))
 
     def __eq__(self, other):
-        return self.duration == other.duration and\
-               self.velocity == other.velocity and self.notes == other.notes
+        return self.duration == other.duration and self.velocity == other.velocity and self.notes == other.notes
 
     def add_notes(self, notes_list):
         self.notes.extend(notes_list)
@@ -61,7 +60,7 @@ class Track:
         self.instrument_name = instrument
 
     def __str__(self):
-        return "tracks of %d chords" % (len(self.chords))
+        return "tracks of %d chords"%(len(self.chords))
 
     def __repr__(self):
         return self.__str__()
@@ -104,7 +103,7 @@ class Song:
             self.undump(f)
 
     def __str__(self):
-        ret = "'%s' %s %s\n" % (self.name, len(self.tracks), self.bpm)
+        ret = "'%s' %s %s\n"%(self.name, len(self.tracks), self.bpm)
         for t in self.tracks:
             ret += str(t) + '\n\n'
         return ret

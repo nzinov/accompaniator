@@ -77,12 +77,12 @@ def check_time_signature(track, bar_length):
     -------
         num_of_appearances: the number of repeats.
     """
-    bar_length = bar_length * 128
+    bar_length = bar_length*128
     num_of_appearances = 0
     i = 0
     while i < len(track.chords):
         check_chords = get_check_chords(track.chords[i:], bar_length)
-        if check_chords == None:
+        if check_chords is None:
             i += 1
             continue
         entries = find_entries(track.chords, check_chords)
@@ -106,7 +106,7 @@ def find_time_signature(track):
         output: string with the time signature.
     """
     whole = 1.0
-    waltz = 3 / 4
+    waltz = 3/4
     if check_time_signature(track, whole) > 0:
         return "4/4"
     if check_time_signature(track, waltz) > 0:
@@ -120,12 +120,12 @@ EXAMPLES BELOW
 """
 
 tmp_chords_whole = [[16, 0, [1, 2, 3]], [16, 0, [4, 5, 6]], [8, 0, [2, 3]],
-                         [8, 0, [2, 3]], [16, 0, [1, 2, 3]], [32, 0, [10, 11, 12]],
-                         [16, 0, [1, 2, 3]], [16, 0, [4, 5, 6]], [32, 0, [14, 15, 16]],
-                         [32, 0, [17, 18, 19]], [32, 0, [20, 21, 22]], [32, 0, [23, 24, 25]],
-                         [16, 0, [1, 2, 3]], [16, 0, [4, 5, 6]], [8, 0, [2, 3]],
-                         [8, 0, [2, 3]], [16, 0, [1, 2, 3]], [32, 0, [10, 11, 12]],
-                         [16, 0, [1, 2, 3]], [16, 0, [4, 5, 6]]]
+                    [8, 0, [2, 3]], [16, 0, [1, 2, 3]], [32, 0, [10, 11, 12]],
+                    [16, 0, [1, 2, 3]], [16, 0, [4, 5, 6]], [32, 0, [14, 15, 16]],
+                    [32, 0, [17, 18, 19]], [32, 0, [20, 21, 22]], [32, 0, [23, 24, 25]],
+                    [16, 0, [1, 2, 3]], [16, 0, [4, 5, 6]], [8, 0, [2, 3]],
+                    [8, 0, [2, 3]], [16, 0, [1, 2, 3]], [32, 0, [10, 11, 12]],
+                    [16, 0, [1, 2, 3]], [16, 0, [4, 5, 6]]]
 tmp_sub = [[16, 0, [1, 2, 3]], [16, 0, [4, 5, 6]]]
 
 chords_whole = []

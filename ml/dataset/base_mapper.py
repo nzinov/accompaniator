@@ -1,8 +1,9 @@
-try:
-    import pandas as pd
-    import matplotlib.pyplot as plt
-except:
-    pass
+# try:
+import pandas as pd
+import matplotlib.pyplot as plt
+# except ImportError:
+#     pass
+
 
 class MapperError(Exception):
     """Basic exception for handler"""

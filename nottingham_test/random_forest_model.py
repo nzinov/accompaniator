@@ -4,11 +4,11 @@ import pickle
 
 y = np.load("y.npy")
 X = (np.load("X.npy"))
-print(X[0,:])
+print(X[0, :])
 els, counts = np.unique(y, return_counts=True)
-#plt.scatter(range(len(els)), counts)
-#plt.show()
-#print(els, counts)
+# plt.scatter(range(len(els)), counts)
+# plt.show()
+# print(els, counts)
 rare = els[counts < 10]
 
 isin = np.logical_not(np.isin(y, rare))
@@ -18,11 +18,10 @@ print(X.shape)
 y = y[isin]
 
 els, counts = np.unique(y, return_counts=True)
-#plt.scatter(range(len(els)), counts)
-#plt.show()
+# plt.scatter(range(len(els)), counts)
+# plt.show()
 print(els)
 print(len(els))
-
 
 feat = X.shape[1]
 print("Features:", feat)
@@ -34,14 +33,13 @@ else:
     num_features = np.array(['0' <= X[0, i][0] <= '9' for i in range(feat)])
 cat_features = np.logical_not(num_features)
 
+# X_cat = X[:,8:16]
+# X_real = np.int_(np.hstack([X[:,:8], X[:,16:]]))
 
-#X_cat = X[:,8:16]
-#X_real = np.int_(np.hstack([X[:,:8], X[:,16:]]))
-
-X_cat = X[:,cat_features]
-X_real = np.int_(X[:,num_features])
-print(X_cat[0,:])
-print(X_real[0,:])
+X_cat = X[:, cat_features]
+X_real = np.int_(X[:, num_features])
+print(X_cat[0, :])
+print(X_real[0, :])
 
 from sklearn.preprocessing import LabelEncoder
 
@@ -70,9 +68,9 @@ print(X_test)
 
 abs_dist_score = make_scorer(custom_scorers.chords_dist_error)
 y_pred = clf.predict(X_test)
-print(accuracy_score(y_test, y_pred)) 
+print(accuracy_score(y_test, y_pred))
 print(abs_dist_score(clf, X_test, y_test))
 
 with open('rf_nottingham.pkl', 'wb') as fid:
-    pickle.dump(clf, fid)  
-print(y_test[10], X_test[10,:], clf.predict(X_test)[10])
+    pickle.dump(clf, fid)
+print(y_test[10], X_test[10, :], clf.predict(X_test)[10])

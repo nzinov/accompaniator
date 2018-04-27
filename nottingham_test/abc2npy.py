@@ -2,6 +2,7 @@ import numpy as np
 
 natural_notes_numbers = {'c': 0, 'd': 2, 'e': 4, 'f': 5, 'g': 7, 'a': 9, 'b': 11}
 
+
 def simplify_chord(ch):
     if ch[0] == '(':
         ch = ch[1:]
@@ -14,30 +15,32 @@ def simplify_chord(ch):
     ch = ch.replace(" ", "")
     return ch
 
-def cut_song(song, num_tacts, l_min_note, with_chords=True, delay=4): #3 arrays: notes, chords, beat
-    l_piece = num_tacts * l_min_note
+
+def cut_song(song, num_tacts, l_min_note, with_chords=True, delay=4):  # 3 arrays: notes, chords, beat
+    l_piece = num_tacts*l_min_note
     notes = np.array(song[0])
     chords = np.array([simplify_chord(ch) for ch in song[1]])
     beat = np.array(song[2])
     n = len(song[0])
-    n_items = len(song[0]) // l_piece - 1
-    X_notes = notes[:n_items * l_piece].reshape((n_items, l_piece))[:,:-delay]
-    X_chords = chords[:n_items * l_piece].reshape((n_items, l_piece))[:,:-delay]
+    n_items = len(song[0])//l_piece - 1
+    X_notes = notes[:n_items*l_piece].reshape((n_items, l_piece))[:, :-delay]
+    X_chords = chords[:n_items*l_piece].reshape((n_items, l_piece))[:, :-delay]
 
-    X_beat = beat[:n_items * l_piece].reshape((n_items, l_piece))[:,:-delay]
+    X_beat = beat[:n_items*l_piece].reshape((n_items, l_piece))[:, :-delay]
 
     X = np.hstack([X_notes, X_beat])
     if with_chords:
         X = np.hstack([X, X_chords])
-    y = np.array([chords[l_piece * (i + 1) + 1] for i in range(n_items)])
+    y = np.array([chords[l_piece*(i + 1) + 1] for i in range(n_items)])
     return X, y
+
 
 def get_notes_numbers(key):
     notes_numbers = {'c': 0, 'd': 2, 'e': 4, 'f': 5, 'g': 7, 'a': 9, 'b': 11, 'z': 12}
     flat_order = 'beadgcf'
     sharp_order = list(reversed(flat_order))
     flat_keys_shift = ['C', 'F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb', 'Cb']
-    sharp_keys_shift = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#'] 
+    sharp_keys_shift = ['C', 'G', 'D', 'A', 'E', 'B', 'F#', 'C#']
     minor_keys = {'Em': 'G', 'Am': 'C', 'Dm': 'F', 'Bm': 'D', 'Gm': 'Bb', 'Cm': 'Eb'}
 
     if key in minor_keys.keys():
@@ -54,22 +57,22 @@ def get_notes_numbers(key):
     else:
         raise ValueError("unknown key: " + key)
     return notes_numbers
- 
 
-def prepare(piece, key): #если циферка до слэша, это числитель, если после -- знаменатель
+
+def prepare(piece, key):  # если циферка до слэша, это числитель, если после -- знаменатель
     notes_numbers = get_notes_numbers(key)
     res_notes = []
     res_chords = []
     notes_and_chords = piece.split('"')
-    #print(notes_and_chords)
+    # print(notes_and_chords)
     chords = notes_and_chords[1::2]
     if len(chords) > 8:
         chords = chords[:8]
     elif len(chords) < 8:
         pass
     notes = notes_and_chords[::2]
-    #print(chords)
-    #print(notes)
+    # print(chords)
+    # print(notes)
     if notes[0] == '':
         notes = notes[1:]
     for n, c in zip(notes, chords):
@@ -82,7 +85,7 @@ def prepare(piece, key): #если циферка до слэша, это чис
         first_note = True
         next_note = None
         ch_l = len(res_chords)
-        for char in n+'a':
+        for char in n + 'a':
             if char == '=':
                 next_mod = 0
             elif char == '_':
@@ -90,24 +93,24 @@ def prepare(piece, key): #если циферка до слэша, это чис
             elif char == '^':
                 next_mod += 1
             elif 'a' <= char <= 'g' or char == 'z':
-                #print("SEE CHAR " + char) 
-                num_notes_to_add = int((up / down * l) / (1/16))
-                #if(up / down * l <= 1/32):
+                # print("SEE CHAR " + char)
+                num_notes_to_add = int((up/down*l)/(1/16))
+                # if(up / down * l <= 1/32):
                 #    print(":(")
-                #print("MULTIPLIER FOR PREV NOTE " + str(num_notes_to_add))
-                #if num_notes_to_add == 0:
+                # print("MULTIPLIER FOR PREV NOTE " + str(num_notes_to_add))
+                # if num_notes_to_add == 0:
                 #    print("Alert!")
                 if not first_note:
                     for o in range(num_notes_to_add):
                         res_notes.append(next_note)
                 next_note = notes_numbers[char] + next_mod
-                next_mod = 0 # incorrect a bit
+                next_mod = 0  # incorrect a bit
                 up = 1
                 down = 1
-                cnt += num_notes_to_add * int(first_note)
+                cnt += num_notes_to_add*int(first_note)
                 if first_note:
                     first_note = False
- 
+
             elif '1' <= char <= '9':
                 if sl:
                     down = int(char)
@@ -117,10 +120,12 @@ def prepare(piece, key): #если циферка до слэша, это чис
                 sl = True
             else:
                 print("!!!", char)
-        res_chords += [c] * (len(res_notes) - ch_l)
+        res_chords += [c]*(len(res_notes) - ch_l)
     return res_notes, res_chords
 
-fnames = ['jigs.abc', 'ashover.abc', 'hpps.abc', 'morris.abc', 'playford.abc', 'reelsa-c.abc', 'reelsd-g.abc', 'reelsh-l.abc', 'reelsm-q.abc', 'reelsr-t.abc', 'reelsu-z.abc', 'slip.abc', 'waltzes.abc', 'xmas.abc']
+
+fnames = ['jigs.abc', 'ashover.abc', 'hpps.abc', 'morris.abc', 'playford.abc', 'reelsa-c.abc', 'reelsd-g.abc',
+          'reelsh-l.abc', 'reelsm-q.abc', 'reelsr-t.abc', 'reelsu-z.abc', 'slip.abc', 'waltzes.abc', 'xmas.abc']
 
 songs = []
 
@@ -148,7 +153,7 @@ for fname in fnames:
             for tact in prepared:
                 current_song[0] += tact[0]
                 current_song[1] += tact[1]
-                current_song[2] += [1] + [0] * (len(tact[0]) - 1)
+                current_song[2] += [1] + [0]*(len(tact[0]) - 1)
 
 songs = songs[1:]
 n_tacts = 2
@@ -164,5 +169,5 @@ for song in songs[1:]:
         print(song)
 print(X, y)
 print(X.shape, y.shape)
-np.save("X.npy", X) 
+np.save("X.npy", X)
 np.save("y.npy", y)

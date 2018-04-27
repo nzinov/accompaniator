@@ -6,7 +6,7 @@ from structures import *
 
 def chord_notes(chord):
     def interval(start, interval):
-        return (start + interval) % 12
+        return (start + interval)%12
 
     natural_notes_numbers = {'c': 0, 'd': 2, 'e': 4, 'f': 5,
                              'g': 7, 'a': 9, 'b': 11}
@@ -56,12 +56,12 @@ class ChordPredictor:
         # передаётся два такта, кроме последней доли (то есть от двух тактов доступно 7/8 или 14/16 информации)
         numbers = np.array([])  # midi numbers!
         for chord in chords_list:
-            num_notes_to_add = round(chord.len() / 8)
+            num_notes_to_add = round(chord.len()/8)
             note = chord.notes[0]
             for i in range(num_notes_to_add):
                 numbers = np.append(numbers, note.number)
         # shift midi notes to our notes
-        numbers = numbers % 12
+        numbers = numbers%12
         # generate beat
         beat = np.hstack([np.ones(4), np.zeros(12), np.ones(4), np.ones(8)])
         if numbers.size != 28:
@@ -77,5 +77,5 @@ class ChordPredictor:
         notes = chord_notes(chord[0])
         list_notes = []
         for note in notes:
-            list_notes.append(Note(note + 12 * 4))
+            list_notes.append(Note(note + 12*4))
         return Chord(list_notes, 128, 1)

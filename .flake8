@@ -1,0 +1,4 @@
+[flake8]
+ignore = F405,F403,E226,E228
+exclude = .git,__pycache__,test*.py,nottingham_test
+max-line-length=120
