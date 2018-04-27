@@ -7,6 +7,7 @@ python-rtmidi
 # ML stuff
 sklearn
 tensorflow
+pandas
 
 # QA stuff
 flake8
