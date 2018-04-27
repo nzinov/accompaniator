@@ -1,0 +1,29 @@
+env:
+  global:
+    - CC_TEST_REPORTER_ID=0dfde872d81275827a68161ff17c79ab7e5374c5e1d34cf38c0d155a4c05e37f
+    - CODECLIMATE_REPO_TOKEN=0d97fe99732240fd1b87
+language: python
+python:
+  - '3.6'
+sudo: enabled
+services:
+- docker
+before_install:
+- cd docker
+- docker-compose build accompaniator
+- docker-compose build accompaniator-dev
+- docker-compose build accompaniator-prod
+before_script:
+  - curl -L https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64 > ./cc-test-reporter
+  - chmod +x ./cc-test-reporter
+  - ./cc-test-reporter before-build
+script:
+- export BRANCH=$(if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then echo $TRAVIS_BRANCH; else echo $TRAVIS_PULL_REQUEST_BRANCH; fi)
+- docker-compose run accompaniator-prod bash -c "cd accompaniator/ml && git checkout $BRANCH && ls && coverage run -m unittest"
+- docker-compose run accompaniator-prod bash -c "cd accompaniator/ && flake8 ."
+after_script:
+  - ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT
+notifications:
+  email: false
+  slack:
+    secure: EGl6QblMKEeisA7J0POh2yJKL8SLq67TnPu4UHyMO2lBXxP4OcYYYJR6An0PnAkyF156DQ1u2o4kQkiyk6imaHzcyVHGL4/o35EXcNHrNYK6Ms8kIOH+HFBUCVmMLWSgZg8ZuUjmwU2rGOzYDFPINOw/W9jJz+LAdzOx2kDBuui8l7GEdR8sD3WB9u+xesucCMXOlOkP8IcpTdFuZF1//M3itMfi+m1HU67B2ygYNPTLXCdImtqMfo650eHL6zBVB978ApaHfKaS+etP9Rqn4Yzrxn4ppKjIqqvm/30zrN71Sm8OZXp06bbR2A8qEhVaF0rZtcoNT1GxxWoETfpeFXAQ1Wv3JohCDzETQz5uQUDeU4dEzH1OR92SvpML9mr+9tnyPaYew4wVQAkJ8cLAZ1iOne6BxXs2/2C9Y3C7RrfysKCkr87zk0gt/muDDfzkS6n8y92H0wbJlW8RfLupokXaUjbaPtMj7ObsnCcOKGdpsGfU6kJAsCa6EHllaNN5OeofQ+lSscUZLbiW0M3fk/zuuUIIKn0hieSCfAxJ/NCI3uZ3+bScPUR1FWuo6HKfGuEPALf979g1qxxcExT2tWUrsrLdmFYN+VBb9nEcJnIR+A97CdCPxA1DBzbOQhgHlwS4msbg8MuN33AIWUgl0z/k4V8sUp4H12LX3AGCYdk=
