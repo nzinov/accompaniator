@@ -15,13 +15,14 @@ from madmom.features.beats import RNNBeatProcessor, DBNBeatTrackingProcessor
 from madmom.ml.nn import NeuralNetworkEnsemble
 import sys
 
+
 def main():
     """DBNBeatTracker"""
 
     # define parser
     p = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter, description='''
-    The DBNBeatTracker program detects all beats in an audio file according to
+    The DBNBeatTracker.py program detects all beats in an audio file according to
     the method described in:
 
     "A Multi-Model Approach to Beat Tracking Considering Heterogeneous Music
@@ -45,12 +46,12 @@ def main():
     This program can be run in 'single' file mode to process a single audio
     file and write the detected beats to STDOUT or the given output file.
 
-      $ DBNBeatTracker single INFILE [-o OUTFILE]
+      $ DBNBeatTracker.py single INFILE [-o OUTFILE]
 
     If multiple audio files should be processed, the program can also be run
     in 'batch' mode to save the detected beats to files with the given suffix.
 
-      $ DBNBeatTracker batch [-o OUTPUT_DIR] [-s OUTPUT_SUFFIX] FILES
+      $ DBNBeatTracker.py batch [-o OUTPUT_DIR] [-s OUTPUT_SUFFIX] FILES
 
     If no output directory is given, the program writes the files with the
     detected beats to the same location as the audio files.
@@ -62,7 +63,7 @@ def main():
 
     # version
     p.add_argument('--version', action='version',
-                   version='DBNBeatTracker.2016')
+                   version='DBNBeatTracker.py.2016')
     # input/output options
     io_arguments(p, output_suffix='.beats.txt', online=True)
     ActivationsProcessor.add_arguments(p)

@@ -43,11 +43,11 @@ class NoiseReductionMapper(BaseMapper):
 
     @staticmethod
     def round_to_base(x, base=4):
-        return int(base*round(float(x)/base))
+        return int(base * round(float(x) / base))
 
     @staticmethod
     def get_divergence(x, base=4):
-        return abs(x-NoiseReductionMapper.round_to_base(x, base))
+        return abs(x - NoiseReductionMapper.round_to_base(x, base))
 
     def process(self, song):
         for track in song.tracks:

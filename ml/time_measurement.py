@@ -77,7 +77,7 @@ def check_time_signature(track, bar_length):
     -------
         num_of_appearances: the number of repeats.
     """
-    bar_length = bar_length*128
+    bar_length = bar_length * 128
     num_of_appearances = 0
     i = 0
     while i < len(track.chords):
@@ -106,7 +106,7 @@ def find_time_signature(track):
         output: string with the time signature.
     """
     whole = 1.0
-    waltz = 3/4
+    waltz = 3 / 4
     if check_time_signature(track, whole) > 0:
         return "4/4"
     if check_time_signature(track, waltz) > 0:

@@ -1,5 +1,5 @@
 def interval(start, interval):
-    return (start + interval)%12
+    return (start + interval) % 12
 
 
 def chord_notes(chord):
@@ -37,4 +37,4 @@ def chords_dist_error(chord1, chord2):
         notes2 = sorted(chord_notes(chord2[i]))
         intersect = len(set(notes1) & set(notes2))
         s += min(len(notes1) - intersect, len(notes2) - intersect)
-    return s/len(chord1)
+    return s / len(chord1)

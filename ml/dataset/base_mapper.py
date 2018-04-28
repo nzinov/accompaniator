@@ -1,5 +1,6 @@
 from ml.dataset.corpus import in_ipynb
 import pandas as pd
+
 try:
     if in_ipynb():
         import matplotlib.pyplot as plt

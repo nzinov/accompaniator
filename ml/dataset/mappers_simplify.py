@@ -146,7 +146,7 @@ class SplitNonMelodiesToGcdMapper(BaseMapper):
             for chord in track.chords:
                 chord_duration = chord.duration
                 chord.duration = gcd
-                for i in range(0, int(chord_duration/gcd)):
+                for i in range(0, int(chord_duration / gcd)):
                     new_chords.append(deepcopy(chord))
             track.chords = new_chords
 
@@ -229,7 +229,7 @@ class GetSongStatisticsMapper(BaseMapper):
             self.increment_stat(track.pause_duration(), self.stats['track pause duration'])
             self.increment_stat(track.duration(), self.stats['track duration'])
             if track.duration() != 0:
-                self.increment_stat(track.pause_duration()/track.duration(), self.stats['track pause to all ratio'])
+                self.increment_stat(track.pause_duration() / track.duration(), self.stats['track pause to all ratio'])
 
         return song
 
@@ -272,7 +272,7 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
         return [track1, track2]
 
     def __init__(self, min_big_chord_duration=128,
-                 min_track_duration=10*128/4, **kwargs):
+                 min_track_duration=10 * 128 / 4, **kwargs):
         """
         :param min_big_chord_duration (in 1/128th): chords from this duration are considered long
         :param min_track_duration (in 1/128th): tracks smaller than that are not considered after split

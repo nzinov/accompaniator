@@ -15,9 +15,9 @@ class TimeSignature:
         self.notated_32nd_notes_per_beat = notated_32nd_notes_per_beat
 
     def __str__(self):
-        return "%s (%s %s %s %s)"%(self.time,
-                                   self.numerator, self.denominator,
-                                   self.clocks_per_click, self.notated_32nd_notes_per_beat)
+        return "%s (%s %s %s %s)" % (self.time,
+                                     self.numerator, self.denominator,
+                                     self.clocks_per_click, self.notated_32nd_notes_per_beat)
 
     def __repr__(self):
         return self.__str__()
@@ -35,14 +35,14 @@ class Note:
 
     def freq(self):
         """ Returns frequency in Hz """
-        return 2**((self.number - 69)/12.)*440
+        return 2**((self.number - 69) / 12.) * 440
 
     @staticmethod
     def freq_to_number(freq):
-        return 12*np.log2(freq/440)
+        return 12 * np.log2(freq / 440)
 
     def __str__(self):
-        return "%s"%(self.number)
+        return "%s" % (self.number)
 
     def __repr__(self):
         return self.__str__()
@@ -67,10 +67,10 @@ class Chord:
 
     def len_in_ms(self, bpm):
         """ Returns length of chord in ms given beats per minute. """
-        return self.duration*bpm/(128*60*1000)
+        return self.duration * bpm / (128 * 60 * 1000)
 
     def __str__(self):
-        return "{%s %s %s}"%(self.duration, self.velocity, str(self.notes))
+        return "{%s %s %s}" % (self.duration, self.velocity, str(self.notes))
 
     def __repr__(self):
         return self.__str__()
@@ -92,12 +92,12 @@ class Track:
         self.program = program
 
     def str(self, with_chords=False, chords_in_row=5):
-        ret = "Track '%s', instrument '%s' , program %s, with %d chords "%(
+        ret = "Track '%s', instrument '%s' , program %s, with %d chords " % (
             self.track_name, self.instrument_name, self.program, len(self.chords))
         if with_chords:
             ret += '\n'
-            for i in range((len(self.chords) - 1)//chords_in_row + 1):
-                ret += ' '.join([str(chord) for chord in self.chords[i*chords_in_row:(i + 1)*chords_in_row]])
+            for i in range((len(self.chords) - 1) // chords_in_row + 1):
+                ret += ' '.join([str(chord) for chord in self.chords[i * chords_in_row:(i + 1) * chords_in_row]])
                 ret += '\n'
         return ret
 
@@ -182,7 +182,7 @@ class Song:
             self.undump(f)
 
     def str(self, with_chords=False):
-        ret = "Song '%s', %s tracks, bpm %s\n"%(self.name, len(self.tracks), self.bpm)
+        ret = "Song '%s', %s tracks, bpm %s\n" % (self.name, len(self.tracks), self.bpm)
         for t in self.tracks:
             ret += t.str(with_chords=with_chords) + '\n'
         return ret
