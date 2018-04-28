@@ -6,7 +6,7 @@ import aubio
 import numpy as np
 import pyaudio
 from aubio import notes, onset
-from production.structures import Note, Chord
+from ml.structures import Note, Chord
 
 """
 1 beat in bpm is 1/4 of musical beat

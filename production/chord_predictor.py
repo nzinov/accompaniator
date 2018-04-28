@@ -1,7 +1,4 @@
-import pickle
-
-import numpy as np
-from production.structures import *
+from ml.structures import *
 
 
 def chord_notes(chord):

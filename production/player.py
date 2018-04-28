@@ -5,7 +5,7 @@ from time import sleep
 
 from mido import Message, MidiFile, MidiTrack
 from rtmidi import MidiOut
-from production.structures import Note, Chord
+from ml.structures import Note, Chord
 
 """
 1 beat in bpm is 1/4 of musical beat
