@@ -1,9 +1,9 @@
 import mido
 import os
 import tqdm
-from prestructures import *
-from structures import *
-from dataset.pipeline import *
+from ml.prestructures import *
+from ml.structures import *
+from ml.dataset.pipeline import *
 from multiprocessing.pool import Pool
 
 

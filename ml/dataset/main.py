@@ -1,5 +1,5 @@
-from dataset.mappers_preprocess import *
-from dataset.mappers_simplify import *
+from ml.dataset.mappers_preprocess import *
+from ml.dataset.mappers_simplify import *
 import sys
 
 """ Usage: python main.py midi_dir """

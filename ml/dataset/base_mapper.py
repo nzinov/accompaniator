@@ -1,8 +1,10 @@
-# try:
+from ml.dataset.corpus import in_ipynb
 import pandas as pd
-import matplotlib.pyplot as plt
-# except ImportError:
-#     pass
+try:
+    if in_ipynb():
+        import matplotlib.pyplot as plt
+except ImportError:
+    pass
 
 
 class MapperError(Exception):

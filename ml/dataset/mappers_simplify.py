@@ -1,11 +1,11 @@
 from copy import deepcopy
 
-from structures import *
+from ml.structures import *
 import numpy as np
 import math
 
-from dataset.base_mapper import BaseMapper, MapperError
-from dataset.corpus import in_ipynb
+from ml.dataset.base_mapper import BaseMapper, MapperError
+from ml.dataset.corpus import in_ipynb
 
 if in_ipynb():
     import matplotlib.pyplot as plt

@@ -1,6 +1,6 @@
-from dataset.corpus import *
-from dataset.mappers_simplify import *
-from dataset.base_mapper import *
+from ml.dataset.corpus import *
+from ml.dataset.mappers_simplify import *
+from ml.dataset.base_mapper import *
 
 import numpy as np
 
