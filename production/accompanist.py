@@ -21,75 +21,75 @@ max_time = sys.float_info.max
 deadline is the time in seconds since the beginning of the era, float
 """
 
+
 def run_accompanist(accompanist):
-    while (accompanist.runing.value):
+    while (accompanist.running.value):
         if (not accompanist.queue_in.empty()):
             chord = accompanist.queue_in.get()
             accompanist.queue_out.put(chord)
-            accompanist.set_deadline(time.time()) 
+            accompanist.set_deadline(time.monotonic())
+
 
 class Accompanist:
     def __init__(self, websocket):
         self.queue_in = Queue()
         self.queue_out = Queue()
         self.predictor_queue = Queue()
-        self.runing = Value('i', False)
+        self.running = Value('i', False)
         self.tempo = Value('f', default_tempo)
-        self.deadline = Value('f', max_time)
+        self.deadline = Value('f', 0)
 
         self.websocket = websocket
-        
-        self.player = Player(self.web_socket, self.queue_out, self.runing, self.tempo, self.deadline)
+
+        self.player = Player(self.websocket, self.queue_out, self.running, self.tempo, self.deadline)
         self.predictor = ChordPredictor(self.queue_in, self.queue_out)
-        self.listener = Listener(self.queue_in, self.runing, self.tempo, self.deadline)        
-    
+        self.listener = Listener(self.queue_in, self.running, self.tempo, self.deadline)
+
     def run(self):
-        self.runing.value = True
-        #self.process = Process(target=run_accompanist, args=(self, ))
-        #self.process.start()   
+        self.running.value = True
+        # self.process = Process(target=run_accompanist, args=(self, ))
+        # self.process.start()
         self.listener.run()
         self.player.run()
         self.predictor.run()
-        
+
     def stop(self):
-        self.runing.value = False
+        self.running.value = False
         self.player.stop()
-        self.listener.stop() 
+        self.listener.stop()
         self.predictor.stop()
         self.queue_in = Queue()
         self.queue_out = Queue()
-        #self.process.join()
-        
+        # self.process.join()
+
     def set_tempo(self, tempo=default_tempo):
         self.tempo.value = tempo
-        
-    def set_deadline(self, deadline=max_time):
+
+    def set_deadline(self, deadline=0):
         self.deadline.value = deadline
 
     def set_queue_in(self, queue):
         self.queue_in = queue
 
-    def set_queue_out(self, queue):
-        self.queue_out = queue
-         
     player = None
     listener = None
     predictor = None
     queue_in = None
     queue_out = None
-    runing = None
+    running = None
     tempo = None
     deadline = None
     process = None
 
+
 if __name__ == '__main__':
     a = Accompanist()
-    start_time = time.time()
+    start_time = time.monotonic()
     a.run()
     sleep(50)
     a.stop()
     '''q = a.player
-    start_time = time.time()
+    start_time = time.monotonic()
     a.run()
     chord = Chord([60, 64, 67, 72], 64, 120)    
     q.put(chord)
@@ -99,7 +99,7 @@ if __name__ == '__main__':
     sleep(2)
     a.set_deadline(start_time + 3.5)
     '''
-    
+
     '''q = a.listener
     a.run()
     sleep(1)
@@ -109,4 +109,3 @@ if __name__ == '__main__':
     print("Stopped")
     '''
 
-    

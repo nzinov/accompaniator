@@ -24,26 +24,12 @@ win_s = 1024
 hop_s = win_s // 4
 buffer_size = hop_s
 
+
 def from_ms_to_our_time(time, bpm):
     return int(time * (32 * bpm) / (60 * 1000))
 
 
 def run_queue_in(listener):
-    
-    p = pyaudio.PyAudio()
-    # open stream
-    '''pyaudio_format = pyaudio.paFloat32
-    n_channels = 1
-    stream = p.open(format=pyaudio_format,
-                    channels=n_channels,
-                    rate=sample_rate,
-                    input=True,
-                    frames_per_buffer=buffer_size)
-    '''
-    #s = aubio.source('/home/nikolay/pahanini.mp3', sample_rate, buffer_size)
-    s = listener.queue_in.get()
-    
-
     notes_o = notes("default", win_s, hop_s, sample_rate)
     onset_o = onset("default", win_s, hop_s, sample_rate)
     temp_o = aubio.tempo("specdiff", win_s, hop_s, sample_rate)
@@ -55,14 +41,19 @@ def run_queue_in(listener):
     bar_start = False
     # the stream is read until you call stop
     prev_time = 0
-    start_time = time.time()
-    while (s != "Finished"):
+    start_time = time.monotonic()
+
+    while listener.queue_in.empty():
+        time.sleep(0.01)
+    audiobuffer = listener.queue_in.get()
+
+    #TODO: checking whether the session has ended? Like a 'finished' message from the queue?
+    while (listener.running.value):
         # read data from audio input
-        audiobuffer = s
-        #audiobuffer, read = s()
-        #audiobuffer = stream.read(buffer_size, exception_on_overflow = False)
-        #samples = np.fromstring(audiobuffer, dtype=np.float32)
-        samples = audiobuffer
+        # audiobuffer, read = s()
+        #audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
+        samples = np.fromstring(audiobuffer, dtype=np.float32)
+        # samples = audiobuffer
 
         if (onset_o(samples)):
             last_onset = onset_o.get_last_ms()
@@ -78,44 +69,53 @@ def run_queue_in(listener):
         if (new_note[0] != 0):
             if (len(beats) != 0):
                 listener.set_tempo(60 * 1000.0 / np.median(beats))
-            chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value), int(new_note[1]), bar_start)
+            chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value),
+                          int(new_note[1]), bar_start)
+            # print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic())
             bar_start = False
             listener.queue_in.put(chord)
-            listener.set_deadline(start_time + (last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0)
-            #print(listener.tempo.value)
+            KOLYA_time = start_time + (last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0
+            print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic(), KOLYA_time)
+            # print(count_beat, time.monotonic(), KOLYA_time, listener.deadline.value)
+            if (count_beat != 0):
+                listener.set_deadline(KOLYA_time)
             prev_time = last_onset
 
-        s = listener.queue_in.get()
+        #wait for new samples and then get them
+        while listener.queue_in.empty():
+            time.sleep(0.01)
+        audiobuffer = listener.queue_in.get()
 
 class Listener:
-    def __init__(self, queue=Queue(), runing=Value('i', False), tempo=Value('f', default_tempo), deadline=Value('f', max_time)):
+    def __init__(self, queue=Queue(), running=Value('i', False), tempo=Value('f', default_tempo),
+                 deadline=Value('f', 0)):
         self.queue_in = queue
-        self.runing = runing
+        self.running = running
         self.tempo = tempo
-        self.deadline = deadline             
+        self.deadline = deadline
 
     def run(self):
-        self.runing.value = True
-        self.process = Process(target=run_queue_in, args=(self, ))
+        self.running.value = True
+        self.process = Process(target=run_queue_in, args=(self,))
         self.process.start()
 
     def stop(self):
-        self.runing.value = False
+        self.running.value = False
         self.process.join()
         self.queue_in = Queue()
 
     def get(self):
         if self.queue_in.empty() is False:
             return self.queue_in.get()
-        
+
     def set_tempo(self, tempo=default_tempo):
         self.tempo.value = tempo
-        
-    def set_deadline(self, deadline=max_time):
+
+    def set_deadline(self, deadline=0):
         self.deadline.value = deadline
 
     queue_in = None
-    runing = None
+    running = None
     tempo = None
     deadline = None
     process = None
