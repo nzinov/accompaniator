@@ -4,7 +4,8 @@ from time import sleep
 from mido import Message, MidiFile, MidiTrack
 from rtmidi import MidiOut
 from structures import Note, Chord
-from multiprocessing.dummy import Queue, Process, Value
+from multiprocessing import Queue, Process, Value
+import fluidsynth
 
 """
 1 beat in bpm is 1/4 of musical beat
@@ -20,10 +21,10 @@ default_peak_velocity = 120
 default_channel = 0
 default_ultrasound_channel = 1
 default_tempo = 124
-default_instrument = 30
-default_ultrasound_instrument = 48
+default_instrument = 0
+default_ultrasound_instrument = 2
 min_velocity = 0
-default_port = 0
+default_port = 1
 delay = 0.000000001
 sec_in_hour = 3600
 max_time = sys.float_info.max
@@ -41,24 +42,29 @@ def run_peak(player):
     
 def run_queue_out(player):
     while (player.runing.value):
-        sleeping_time = player.get_sleeping_time()
-        if sleeping_time < sec_in_hour:
-            if sleeping_time > 0:
-                sleep(sleeping_time)
-            if (not player.queue_out.empty()):
-                player.play_chord()
+        #print(player.deadline.value - time.time())
+        if not player.queue_out.empty() and time.time() > player.deadline.value:
+            player.play_chord()
+        time.sleep(0.01)
 
 class Player:
-    def __init__(self, queue=Queue(), runing=Value('i', False), tempo=Value('i', default_tempo), deadline=Value('f', max_time)):
-        self.midiout = MidiOut()
+    def __init__(self, websocket, queue=Queue(), runing=Value('i', False), tempo=Value('f', default_tempo), deadline=Value('f', max_time)):
+        #self.midiout = MidiOut()
+
+        #self.fluid_synth = fluidsynth.Synth()
+        #sfid = self.fluid_synth.sfload("soundfonts/piano_and_ultrasound.sf2")
+        #self.fs.program_select(0, sfid, 0, 0)
+
         self.midi_for_file = MidiFile()
         self.last_chord = empty_chord
+
+        self.websocket = websocket
         
         self.queue_out = queue
         self.runing = runing
         self.tempo = tempo
         self.deadline = deadline
-        self.start = Value(float, max_time)   
+        self.start = Value('f', max_time)   
         
     def play_peak(self, number=default_peak_number, velocity=default_peak_velocity):
         note_on = Message('note_on', note=number, velocity=velocity, channel=default_ultrasound_channel).bytes()
@@ -70,15 +76,19 @@ class Player:
     def play_chord(self):
         
         chord = self.queue_out.get()
+        print(chord)
         
         if self.last_chord != empty_chord:
             for note in self.last_chord.notes:
                 note_off = Message('note_off', note=note.number, velocity=min_velocity, channel=default_channel).bytes()
-                self.midiout.send_message(note_off)
+                self.websocket.send_audio(note_off, binary=True)
+                #self.midiout.send_message(note_off)
         
         for note in chord.notes:
             note_on = Message('note_on', note=note.number, velocity=chord.velocity, channel=default_channel).bytes()
-            self.midiout.send_message(note_on)
+            self.websocket.send_audio(note_on)
+
+            #self.midiout.send_message(note_on)
             
         self.last_chord = chord
 
@@ -88,7 +98,8 @@ class Player:
         if self.last_chord == chord:
             for note in chord.notes:
                 note_off = Message('note_off', note=note.number, velocity=min_velocity, channel=default_channel).bytes()
-                self.midiout.send_message(note_off)       
+                self.websocket.send_audio(note_off, binary=True)
+                #self.midiout.send_message(note_off)
         
     def put(self, chord):
         if type(chord) == Chord:

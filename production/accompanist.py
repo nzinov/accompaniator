@@ -6,11 +6,13 @@ import pyaudio
 from aubio import notes, onset, tempo
 from time import sleep
 from mido import Message, MidiFile, MidiTrack
+
 from rtmidi import MidiOut
-from multiprocessing.dummy import Queue, Process, Value
+from multiprocessing import Queue, Process, Value
 from structures import Note, Chord
 from listener import Listener
 from player import Player
+from chord_predictor import ChordPredictor
 
 default_tempo = 124
 max_time = sys.float_info.max
@@ -27,39 +29,52 @@ def run_accompanist(accompanist):
             accompanist.set_deadline(time.time()) 
 
 class Accompanist:
-    def __init__(self):
+    def __init__(self, websocket):
         self.queue_in = Queue()
         self.queue_out = Queue()
+        self.predictor_queue = Queue()
         self.runing = Value('i', False)
-        self.tempo = Value('i', default_tempo)
+        self.tempo = Value('f', default_tempo)
         self.deadline = Value('f', max_time)
+
+        self.websocket = websocket
         
-        self.player = Player(self.queue_out, self.runing, self.tempo, self.deadline)
+        self.player = Player(self.web_socket, self.queue_out, self.runing, self.tempo, self.deadline)
+        self.predictor = ChordPredictor(self.queue_in, self.queue_out)
         self.listener = Listener(self.queue_in, self.runing, self.tempo, self.deadline)        
     
     def run(self):
         self.runing.value = True
-        self.process = Process(target=run_accompanist, args=(self, ))
-        self.process.start()   
+        #self.process = Process(target=run_accompanist, args=(self, ))
+        #self.process.start()   
         self.listener.run()
         self.player.run()
+        self.predictor.run()
         
     def stop(self):
         self.runing.value = False
         self.player.stop()
-        self.listener.stop()        
+        self.listener.stop() 
+        self.predictor.stop()
         self.queue_in = Queue()
         self.queue_out = Queue()
-        self.process.join()
+        #self.process.join()
         
     def set_tempo(self, tempo=default_tempo):
         self.tempo.value = tempo
         
     def set_deadline(self, deadline=max_time):
-        self.deadline.value = deadline  
+        self.deadline.value = deadline
+
+    def set_queue_in(self, queue):
+        self.queue_in = queue
+
+    def set_queue_out(self, queue):
+        self.queue_out = queue
          
     player = None
     listener = None
+    predictor = None
     queue_in = None
     queue_out = None
     runing = None
@@ -69,6 +84,7 @@ class Accompanist:
 
 if __name__ == '__main__':
     a = Accompanist()
+    start_time = time.time()
     a.run()
     sleep(50)
     a.stop()
@@ -93,5 +109,4 @@ if __name__ == '__main__':
     print("Stopped")
     '''
 
-    
     
