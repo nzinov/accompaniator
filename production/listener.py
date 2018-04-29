@@ -8,6 +8,7 @@ from mido import Message, MidiFile, MidiTrack
 from multiprocessing.dummy import Queue, Process, Value
 from aubio import notes, onset, tempo
 from structures import Note, Chord
+import wave
 
 """
 1 beat in bpm is 1/4 of musical beat
@@ -38,6 +39,10 @@ def run_queue_in(listener):
                     input=True,
                     frames_per_buffer=buffer_size)
 
+    listener.wavefile.setnchannels(n_channels)
+    listener.wavefile.setsampwidth(p.get_sample_size(pyaudio_format))
+    listener.wavefile.setframerate(sample_rate / 2)
+
     notes_o = notes("default", win_s, hop_s, sample_rate)
     onset_o = onset("default", win_s, hop_s, sample_rate)
     temp_o = aubio.tempo("specdiff", win_s, hop_s, sample_rate)
@@ -49,8 +54,13 @@ def run_queue_in(listener):
     prev_time = 0
     while (listener.runing.value):
         # read data from audio input
-        audiobuffer = stream.read(buffer_size, exception_on_overflow = False)
+        audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
         samples = np.fromstring(audiobuffer, dtype=np.float32)
+
+        ##voice recording
+        converted_samples = np.int16((samples + 1) * (2 ** 16))
+        listener.wavefile.writeframes(bytes(converted_samples))
+        ##finish of voice recording
 
         if (onset_o(samples)):
             last_onset = onset_o.get_last_ms()
@@ -66,11 +76,13 @@ def run_queue_in(listener):
             prev_time = last_onset
 
 class Listener:
-    def __init__(self, queue=Queue(), runing=Value('i', False), tempo=Value('i', default_tempo), deadline=Value('f', max_time)):
+    def __init__(self, queue=Queue(), runing=Value('i', False), tempo=Value('i', default_tempo),
+                 deadline=Value('f', max_time), name_of_voice="your_voice.wav"):
         self.queue_in = queue
         self.runing = runing
         self.tempo = tempo
-        self.deadline = deadline             
+        self.deadline = deadline
+        self.wavefile = wave.open(name_of_voice, "w")
 
     def run(self):
         self.runing.value = True
@@ -81,6 +93,7 @@ class Listener:
         self.runing.value = False
         self.process.join()
         self.queue_in = Queue()
+        self.wavefile.close()
 
     def get(self):
         if self.queue_in.empty() is False:
