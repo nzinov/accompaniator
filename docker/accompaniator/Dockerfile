@@ -27,4 +27,6 @@ ADD . /build/
 RUN mv asound.conf /etc/asound.conf
 RUN cat ./.bashrc >> ~/.bashrc
 
+RUN git clone https://github.com/nzinov/accompaniator
+
 CMD ./startup.sh

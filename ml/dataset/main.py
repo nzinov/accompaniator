@@ -1,5 +1,5 @@
-from dataset.mappers_preprocess import *
-from dataset.mappers_simplify import *
+from ml.dataset.mappers_preprocess import *
+from ml.dataset.mappers_simplify import *
 import sys
 
 """ Usage: python main.py midi_dir """
@@ -23,7 +23,7 @@ corpus.pipeline.mappers = \
         MelodyDetectionMapper(strategy='most probable', fun=np.min, min_unique_notes=5),
         SplitNonMelodiesToGcdMapper(min_gcd=16),
         MergeTracksMapper(),
-        AdequateCutOutLongChordsMapper(min_big_chord_duration=256, min_track_duration=10*128/4),
+        AdequateCutOutLongChordsMapper(min_big_chord_duration=256, min_track_duration=10 * 128 / 4),
         GetSongStatisticsMapper()
     ]
 

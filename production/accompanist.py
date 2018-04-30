@@ -3,8 +3,8 @@ import time
 from multiprocessing.dummy import Queue, Process, Value
 from time import sleep
 
-from listener import Listener
-from player import Player
+from production.listener import Listener
+from production.player import Player
 
 default_tempo = 124
 max_time = sys.float_info.max
