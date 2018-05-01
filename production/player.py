@@ -1,8 +1,9 @@
-import time
 import sys
 import scipy
+import time
 import numpy as np
 from time import sleep
+
 from mido import Message, MidiFile, MidiTrack
 from rtmidi import MidiOut
 from structures import Note, Chord
@@ -32,9 +33,11 @@ sec_in_hour = 3600
 max_time = sys.float_info.max
 empty_chord = Chord([], 0, 0)
 
+
 def len_in_s(duration, bpm):
     """ Returns length of chord in s given beats per minute"""
     return duration * 60 / (bpm * 32)
+
 
 def run_peak(player):
     while(player.running.value):
@@ -53,12 +56,15 @@ def run_queue_out(player):
         player.midiout.send_message(note_off)
 
 
+
 class Player:
-    def __init__(self, queue=Queue(), running=Value('i', False), tempo=Value('f', default_tempo), deadline=Value('f', 0)):
+    def __init__(self, queue=Queue(), running=Value('i', False),
+                 tempo=Value('i', default_tempo),
+                 deadline=Value('f', 0)):
         self.midiout = MidiOut()
         self.midi_for_file = MidiFile()
         self.last_chord = empty_chord
-        
+
         self.queue_out = queue
         self.running = running
         self.tempo = tempo
@@ -66,18 +72,19 @@ class Player:
         self.start_peak = Value('f', 0)  
         self.start_chord = 0 
         
-    def play_peak(self, number=default_peak_number, velocity=default_peak_velocity):
-        note_on = Message('note_on', note=number, velocity=velocity, channel=default_ultrasound_channel).bytes()
+    def play_peak(self, number=default_peak_number,
+                  velocity=default_peak_velocity):
+        note_on = Message('note_on', note=number, velocity=velocity,
+                          channel=default_ultrasound_channel).bytes()
         self.midiout.send_message(note_on)
         sleep(default_peak_time)
-        note_off = Message('note_off', note=number, velocity=min_velocity, channel=default_ultrasound_channel).bytes()
-        self.midiout.send_message(note_off)      
+        note_off = Message('note_off', note=number, velocity=min_velocity,
+                           channel=default_ultrasound_channel).bytes()
+        self.midiout.send_message(note_off)    
     
     def play_chord_same_time(self):
-        
         chord = self.queue_out.get()
-        print("player get", chord, "vel", chord.velocity, "queue", self.queue_out.qsize(), "time", time.monotonic())
-        
+        #print("player get", chord, "vel", chord.velocity, "queue", self.queue_out.qsize(), "time", time.monotonic())
         if chord.velocity > 127:
             chord.velocity = 127
         if chord.duration == 0:
@@ -86,29 +93,42 @@ class Player:
             if note.number > 127:
                 print("an incorrect note in player")
                 return
-       
+
         if self.last_chord != empty_chord:
             for note in self.last_chord.notes:
-                note_off = Message('note_off', note=note.number, velocity=min_velocity, channel=default_channel).bytes()
+                note_off = Message('note_off', note=note.number,
+                                   velocity=min_velocity,
+                                   channel=default_channel).bytes()
                 self.midiout.send_message(note_off)
-        
+
         for note in chord.notes:
-            note_on = Message('note_on', note=note.number, velocity=chord.velocity, channel=default_channel).bytes()
+            note_on = Message('note_on', note=note.number,
+                              velocity=chord.velocity,
+                              channel=default_channel).bytes()
             self.midiout.send_message(note_on)
-            
+
         self.last_chord = chord
 
         sleep(len_in_s(chord.duration, self.tempo.value))
         
-        if self.last_chord == chord: 
+        if self.last_chord == chord:
             for note in chord.notes:
-                note_off = Message('note_off', note=note.number, velocity=min_velocity, channel=default_channel).bytes()
+                note_off = Message('note_off', note=note.number,
+                                   velocity=min_velocity,
+                                   channel=default_channel).bytes()
                 self.midiout.send_message(note_off)       
 
     def play_chord_arpeggio(self, track=np.array([])):
-        
         chord = self.queue_out.get()
         print("player get", chord, "vel", chord.velocity, "queue", self.queue_out.qsize(), "time", time.monotonic())
+        if chord.velocity > 127:
+            chord.velocity = 127
+        if chord.duration == 0:
+            return
+        for note in chord.notes:
+            if note.number > 127:
+                print("an incorrect note in player")
+                return
         chord.notes = sorted(chord.notes)
         if len(chord.notes) == 3:
             chord.notes.append(Note(chord.notes[0].number + 12))
@@ -116,14 +136,6 @@ class Player:
             notes_numbers = np.arange(len(chord.notes))
             notes_durations = np.array([int(128/len(chord.notes)) for i in range(len(chord.notes))])
             track = np.column_stack((notes_numbers, notes_durations))
-        if chord.velocity > 127:
-            chord.velocity = 127
-        if chord.duration == 0:
-            return
-        for note in chord.notes:
-            if note.number > 127:
-                print("an incorrect note in player")
-                return
 
         notes_sum_durations = scipy.cumsum(track.transpose(), axis=1)[1]
         if (self.last_note_number != None):
@@ -151,26 +163,29 @@ class Player:
             self.queue_out.put(chord)
             return True
         return False
-    
+
     def set_up_ports(self):
         """ This is necessary to HEAR the music """
         available_ports = self.midiout.get_ports()
         if available_ports:
             self.midiout.open_port(default_port)
         else:
-            self.midiout.open_virtual_port("Tmp virtual output") 
-             
+            self.midiout.open_virtual_port("Tmp virtual output")
+
     def set_up_instrument(self, program=default_instrument):
-        program_change = Message('program_change', program=program, channel=default_channel).bytes()
-        self.midiout.send_message(program_change)  
-        
-    def set_up_ultrasound_instrument(self, program=default_ultrasound_instrument):
-        program_change = Message('program_change', program=program, channel=default_ultrasound_channel).bytes()
-        self.midiout.send_message(program_change)     
-    
+        program_change = Message('program_change', program=program,
+                                 channel=default_channel).bytes()
+        self.midiout.send_message(program_change)
+
+    def set_up_ultrasound_instrument(self,
+                                     program=default_ultrasound_instrument):
+        program_change = Message('program_change', program=program,
+                                 channel=default_ultrasound_channel).bytes()
+        self.midiout.send_message(program_change)
+
     def set_up_midi_for_file(self):
-        self.midi_for_file.tracks.append(MidiTrack()) 
-        
+        self.midi_for_file.tracks.append(MidiTrack())
+
     def set_tempo(self, tempo=default_tempo):
         self.tempo.value = tempo
         
@@ -185,31 +200,31 @@ class Player:
         
     def get_track(self):
         return self.midi_for_file.tracks[0]
-    
+
     def save_file(self, filename='my track.mid'):
         self.midi_for_file.save(filename)
         return filename
-        
+
     def run(self):
         self.running.value = True
         self.set_up_ports()
         self.set_up_midi_for_file()
         self.set_up_instrument()
         self.set_up_ultrasound_instrument()
-        
-        self.queue_process = Process(target=run_queue_out, args=(self, ))
+
+        self.queue_process = Process(target=run_queue_out, args=(self,))
         self.queue_process.start()
-        
-        self.queue_process = Process(target=run_peak, args=(self, ))
-        self.queue_process.start()        
-        
+
+        self.queue_process = Process(target=run_peak, args=(self,))
+        self.queue_process.start()
+
     def stop(self):
         """ All chords that already sound will continue to sound """
         self.running.value = False
         self.queue_process.join()
-        self.queue_process.join()  
+        self.queue_process.join()
         self.queue_out = Queue()
-        
+
     queue_out = None
     running = None
     tempo = None
@@ -222,18 +237,17 @@ class Player:
     midi_for_file = None
     last_chord = None
     last_note_number = None 
-    
+
+
 if __name__ == '__main__':
     q = Player()
     t = time.monotonic()
     q.run()
-    #chord = Chord([Note(60), Note(64)], 512, 120)    
-    #q.put(chord)
+    chord = Chord([Note(60), Note(64)], 512, 120)    
+    q.put(chord)
     chord = Chord([Note(76)], 4, 80)    
     q.put(chord)    
     q.set_deadline(t)
-    sleep(delay)
-    #q.set_deadline(t + 3.5)
     sleep(10)
     q.stop()
-    
+

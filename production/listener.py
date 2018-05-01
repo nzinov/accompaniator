@@ -1,14 +1,13 @@
-import time
 import sys
-import numpy as np
+import time
 import aubio
+import numpy as np
 import pyaudio
 from time import sleep
 from mido import Message, MidiFile, MidiTrack
 from multiprocessing import Queue, Process, Value
 from aubio import notes, onset, tempo
 from structures import Note, Chord
-
 import wave
 
 """
@@ -24,12 +23,13 @@ win_s = 1024
 hop_s = win_s // 4
 buffer_size = hop_s
 
+
 def from_ms_to_our_time(time, bpm):
     return int(time * (32 * bpm) / (60 * 1000))
 
 
+
 def run_queue_in(listener):
-    
     p = pyaudio.PyAudio()
     # open stream
     pyaudio_format = pyaudio.paFloat32
@@ -57,8 +57,7 @@ def run_queue_in(listener):
     start_time = time.monotonic()
     while (listener.running.value):
         # read data from audio input
-        #audiobuffer, read = s()
-        audiobuffer = stream.read(buffer_size, exception_on_overflow = False)
+        audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
         samples = np.fromstring(audiobuffer, dtype=np.float32)
         #samples = audiobuffer
 
@@ -88,11 +87,13 @@ def run_queue_in(listener):
             prev_time = last_onset
 
 class Listener:
-    def __init__(self, queue=Queue(), running=Value('i', False), tempo=Value('f', default_tempo), deadline=Value('f', 0)):
+    def __init__(self, queue=Queue(), running=Value('i', False),
+                 tempo=Value('i', default_tempo),
+                 deadline=Value('f', 0)):
         self.queue_in = queue
         self.running = running
         self.tempo = tempo
-        self.deadline = deadline             
+        self.deadline = deadline
 
     def run(self):
         self.running.value = True
@@ -107,7 +108,7 @@ class Listener:
     def get(self):
         if self.queue_in.empty() is False:
             return self.queue_in.get()
-        
+
     def set_tempo(self, tempo=default_tempo):
         self.tempo.value = tempo
         

@@ -7,12 +7,13 @@ from multiprocessing import Queue, Process, Value
 defualt_predicted_len = 128
 defualt_velocity = 100
 
+
 def chord_notes(chord):
+    def interval(start, interval):
+        return (start + interval) % 12
 
-    def interval(start, interval):             
-        return (start + interval) % 12     
-
-    natural_notes_numbers = {'c': 0, 'd': 2, 'e': 4, 'f': 5, 'g': 7, 'a': 9, 'b': 11}
+    natural_notes_numbers = {'c': 0, 'd': 2, 'e': 4, 'f': 5,
+                             'g': 7, 'a': 9, 'b': 11}
     note = chord[0]
     first_note = natural_notes_numbers[note]
 
@@ -27,16 +28,20 @@ def chord_notes(chord):
     elif is_flat:
         first_note -= 1
 
-    if is_minor and is_sept: #minor seventh chord
-        return [first_note, interval(first_note, 3), interval(first_note, 7), interval(first_note, 10)]
+    if is_minor and is_sept:  # минорный септаккорд
+        return [first_note, interval(first_note, 3), interval(first_note, 7),
+                interval(first_note, 10)]
     elif is_minor:
         return [first_note, interval(first_note, 3), interval(first_note, 7)]
-    elif is_sept: #major seventh chord
-        return [first_note, interval(first_note, 4), interval(first_note, 7), interval(first_note, 10)]
-    elif is_sext: #major sextracker
-        return [first_note, interval(first_note, 4), interval(first_note, 7), interval(first_note, 9)]
-    else: #major a major third and a perfect fifth
-        return [first_note, interval(first_note, 4), interval(first_note, 7)]
+    elif is_sept:  # мажорный септаккорд
+        return [first_note, interval(first_note, 4), interval(first_note, 7),
+                interval(first_note, 10)]
+    elif is_sext:  # мажорный секстаккорд
+        return [first_note, interval(first_note, 4), interval(first_note, 7),
+                interval(first_note, 9)]
+    else:  # major большая терция и чистая квинта
+        return [first_note, interval(first_note, 4),
+                interval(first_note, 7)]
 
 def run_queue(predictor):
     predictor.load_model("rf_nottingham.pkl")
@@ -100,7 +105,7 @@ class ChordPredictor:
 
 
     def predict(self, chords_list):
-        # passed two beats, except the last 1/8 (from the two beats is available 7/8 or 14/16 of the information)
+        # передаётся два такта, кроме последней доли (то есть от двух тактов доступно 7/8 или 14/16 информации)
         numbers = np.array([]) # midi numbers!
         for chord in chords_list:
             num_notes_to_add = round(chord.len() / 8)
@@ -114,12 +119,12 @@ class ChordPredictor:
         if numbers.size != 28:
             #print("Number of notes is wrong: " + str(numbers_size))
             if numbers.size < 28:
-                numbers = np.hstack([numbers, np.zeros(28 - len(numbers)) + 24])
+                numbers = np.hstack([numbers, np.zeros(28 - len(numbers)) + 12])
             else:
                 numbers = numbers[:28]
-        #first numbers, then beats
+        # сначала номера, потом биты
         chord = self.model.predict(np.hstack([numbers, beat]).reshape(1, -1))
-        #print(chord)
+        # print(chord)
         notes = chord_notes(chord[0])
         list_notes = []
         for note in notes:
