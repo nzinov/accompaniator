@@ -276,7 +276,10 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
 
     def cut_fragment_by_time_split(self, track, time1, time2):
         t1, t2 = self.cut_fragment_by_time_(track, time1, time2)
+        chords = track.chords
+        track.chords = None
         track1, track2 = deepcopy(track), deepcopy(track)
+        track.chords = chords
         track1.chords = t1
         track2.chords = t2
         return [track1, track2]
@@ -348,10 +351,12 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
 
             changing = False if times is None else True
             if changing:
+                tracks = song.tracks
+                song.tracks = None
                 song1, song2 = deepcopy(song), deepcopy(song)
                 track_pairs = list(map(lambda track:
                                        self.cut_fragment_by_time_split(track, times[0], times[1]),
-                                       song.tracks))
+                                       tracks))
                 song1.tracks = [pair[0] for pair in track_pairs]
                 song2.tracks = [pair[1] for pair in track_pairs]
                 self.increment_stat('total pauses cut')
