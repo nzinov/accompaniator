@@ -28,9 +28,11 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.write_message("Chunk sent")
         self.write_message(message, binary=True)
 
+
 def main():
     app = tornado.web.Application([url(r"/websocket", WebSocketHandler)])
     return app
+
 
 if __name__ == "__main__":
     app = main()

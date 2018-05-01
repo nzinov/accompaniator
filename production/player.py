@@ -64,8 +64,8 @@ def run_peak(player):
 def run_queue_out(player):
     while player.running.value:
         if not player.queue_out.empty() and time.monotonic() > player.deadline.value:
-            """ track is array of pairs: first is note number in chord, second is note len (duration) in 1/128. 
-            Sum of durations MUST be equal to 128 """
+            """ track is array of pairs: first is note number in chord, second is note len (duration) in 1/128.
+             Sum of durations MUST be equal to 128 """
             player.play_chord_arpeggio(np.array([[0, 19], [1, 18], [2, 18], [3, 18], [2, 18], [1, 18], [0, 19]]))
         time.sleep(0.01)
     if player.last_note_number is not None:
