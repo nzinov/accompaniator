@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+</head>
+<body>
+
+
+  <button id="button" onclick="Recording(this);">RECORD</button>
+  <button id="stop" onclick="Stop();">STOP</button>
+
+
+  <script>
+
+  var audio_context;
+  var recorder;
+
+  function startUserMedia(stream) {
+    var input = audio_context.createMediaStreamSource(stream);
+    recorder = new Recorder(input);
+  }
+
+  function Send(message=""){
+      var ws = new WebSocket('ws://demos.kaazing.com/echo');
+      ws.onopen = function(){
+          ws.send(message);
+      }
+      ws.onmessage = function (ev) {
+          var s = ev.data;
+          console.log(s);
+          Play(s);
+      }
+  }
+function Stop() {
+    document.getElementById("button").innerText = "STOP";
+    recorder && recorder.stop();
+    recorder.clear();
+    setTimeout(function () {
+        document.getElementById("button").innerText = "RECORD";
+    }, 1000)
+}
+
+  function sleep(milliseconds) {
+      var start = new Date().getTime();
+      for (var i = 0; i < 1e7; i++) {
+          if ((new Date().getTime() - start) > milliseconds){
+              break;
+          }
+      }
+  }
+
+
+  function Play(blob){
+      var url = URL.createObjectURL(blob);
+      var au = document.createElement('audio');
+
+      au.controls = true;
+      au.src = url;
+      au.play();
+  }
+
+  function Recording(button) {
+      if (button.innerText == "RECORD") {
+          recorder && recorder.record();
+          button.innerText = "recording";
+          setTimeout(function(){Recording(button)}, 100);
+      }
+      else if (button.innerText == "recording"){
+          SendFrames();
+          button.innerText = "RECORD";
+          recorder && recorder.stop();
+          recorder.clear();
+          Recording(button);
+      }
+  }
+
+  function SendFrames() {
+    recorder && recorder.exportWAV(function(blob){
+        Send(blob);
+    });
+  }
+
+  window.onload = function init() {
+    try {
+      // webkit shim
+      window.AudioContext = window.AudioContext || window.webkitAudioContext;
+      navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
+      window.URL = window.URL || window.webkitURL;
+
+      audio_context = new AudioContext;
+      __log('Audio context set up.');
+      __log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'available.' : 'not present!'));
+    } catch (e) {
+      alert('No web audio support in this browser!');
+    }
+
+    navigator.getUserMedia({audio: true}, startUserMedia, function(e) {
+      __log('No live audio input: ' + e);
+    });
+
+  };
+  </script>
+
+  <script src="../dist/recorder.js"></script>
+</body>
+</html>
