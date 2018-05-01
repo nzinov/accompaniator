@@ -1,15 +1,10 @@
 import time
 import sys
 import numpy as np
-import aubio
-import pyaudio
 from time import sleep
-from mido import Message, MidiFile, MidiTrack
 from multiprocessing import Queue, Process, Value
 from aubio import notes, onset, tempo
-from structures import Note, Chord
-
-import wave
+from ml.structures import Note, Chord
 
 """
 1 beat in bpm is 1/4 of musical beat
@@ -32,7 +27,7 @@ def from_ms_to_our_time(time, bpm):
 def run_queue_in(listener):
     notes_o = notes("default", win_s, hop_s, sample_rate)
     onset_o = onset("default", win_s, hop_s, sample_rate)
-    temp_o = aubio.tempo("specdiff", win_s, hop_s, sample_rate)
+    temp_o = tempo("specdiff", win_s, hop_s, sample_rate)
     last_onset = 0
     beats = []
     last_beat = 0
@@ -47,11 +42,11 @@ def run_queue_in(listener):
         time.sleep(0.01)
     audiobuffer = listener.queue_in.get()
 
-    #TODO: checking whether the session has ended? Like a 'finished' message from the queue?
+    # TODO: checking whether the session has ended? Like a 'finished' message from the queue?
     while (listener.running.value):
         # read data from audio input
         # audiobuffer, read = s()
-        #audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
+        # audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
         samples = np.fromstring(audiobuffer, dtype=np.float32)
         # samples = audiobuffer
 
@@ -66,8 +61,8 @@ def run_queue_in(listener):
                 last_downbeat = last_beat
                 bar_start = True
         new_note = notes_o(samples)
-        if (new_note[0] != 0):
-            if (len(beats) != 0):
+        if new_note[0] != 0:
+            if len(beats) != 0:
                 listener.set_tempo(60 * 1000.0 / np.median(beats))
             chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value),
                           int(new_note[1]), bar_start)
@@ -81,10 +76,11 @@ def run_queue_in(listener):
                 listener.set_deadline(KOLYA_time)
             prev_time = last_onset
 
-        #wait for new samples and then get them
+        # wait for new samples and then get them
         while listener.queue_in.empty():
             time.sleep(0.01)
         audiobuffer = listener.queue_in.get()
+
 
 class Listener:
     def __init__(self, queue=Queue(), running=Value('i', False), tempo=Value('f', default_tempo),

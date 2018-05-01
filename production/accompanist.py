@@ -1,18 +1,11 @@
 import time
 import sys
-import numpy as np
-import aubio
-import pyaudio
-from aubio import notes, onset, tempo
 from time import sleep
-from mido import Message, MidiFile, MidiTrack
 
-from rtmidi import MidiOut
-from multiprocessing import Queue, Process, Value
-from structures import Note, Chord
-from listener import Listener
-from player import Player
-from chord_predictor import ChordPredictor
+from multiprocessing import Queue, Value
+from production.listener import Listener
+from production.player import Player
+from production.chord_predictor import ChordPredictor
 
 default_tempo = 124
 max_time = sys.float_info.max
@@ -23,8 +16,8 @@ deadline is the time in seconds since the beginning of the era, float
 
 
 def run_accompanist(accompanist):
-    while (accompanist.running.value):
-        if (not accompanist.queue_in.empty()):
+    while accompanist.running.value:
+        if not accompanist.queue_in.empty():
             chord = accompanist.queue_in.get()
             accompanist.queue_out.put(chord)
             accompanist.set_deadline(time.monotonic())
@@ -91,10 +84,10 @@ if __name__ == '__main__':
     '''q = a.player
     start_time = time.monotonic()
     a.run()
-    chord = Chord([60, 64, 67, 72], 64, 120)    
+    chord = Chord([60, 64, 67, 72], 64, 120)
     q.put(chord)
-    chord = Chord([76], 64, 120)    
-    q.put(chord)    
+    chord = Chord([76], 64, 120)
+    q.put(chord)
     a.set_deadline(start_time + 2)
     sleep(2)
     a.set_deadline(start_time + 3.5)
@@ -108,4 +101,3 @@ if __name__ == '__main__':
     a.stop()
     print("Stopped")
     '''
-

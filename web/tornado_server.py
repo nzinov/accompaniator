@@ -1,6 +1,7 @@
 import tornado.websocket
-from production import accompanist
+from tornado.web import url
 
+from production import accompanist
 from multiprocessing import Queue
 
 
@@ -27,4 +28,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.write_message("Chunk sent")
         self.write_message(message, binary=True)
 
-#TODO: the application itself
+def main():
+    app = tornado.web.Application([url(r"/websocket", WebSocketHandler)])
+    return app
+
+if __name__ == "__main__":
+    app = main()
