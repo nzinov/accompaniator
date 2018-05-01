@@ -1,6 +1,21 @@
+# Audio stuff
 aubio
 pyaudio
 mido
 python-rtmidi
+#madmom
+#cython
+
+# ML stuff
 sklearn
 tensorflow
+numpy
+pandas
+matplotlib
+
+# QA stuff
+flake8
+coverage
+
+# Common stuff
+tqdm

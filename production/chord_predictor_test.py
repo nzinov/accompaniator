@@ -1,9 +1,9 @@
-from chord_predictor import *
+from production.chord_predictor import *
 
 predictor = ChordPredictor()
 predictor.load_model("rf_nottingham.pkl")
 
-#создаём список аккордов
+# создаём список аккордов
 
 chords_list = []
 for i in range(28):
