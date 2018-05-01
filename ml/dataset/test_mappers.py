@@ -66,16 +66,16 @@ class TestMergeTracksMapper(unittest.TestCase):
 
 class TestSplitChordsToGcdMapper(unittest.TestCase):
     def test(self):
-        chord1 = Chord([Note(1), Note(1)], 4, 127)
-        chord2 = Chord([Note(1), Note(1)], 8, 127)
-        chord3 = Chord([Note(1), Note(1)], 12, 127)
+        chord1 = Chord([Note(1)], 4, 127)
+        chord2 = Chord([Note(1)], 8, 127)
+        chord3 = Chord([Note(1)], 12, 127)
 
         track = Track([chord1, chord2, chord3])
         song = Song([track, track])
 
         tscgm = SplitNonMelodiesToGcdMapper(min_gcd=1)
         self.assertEqual(
-            '[{4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}, {4 127 [1, 1]}]',
+            '[{4 127 [1]}, {4 127 [1]}, {4 127 [1]}, {4 127 [1]}, {4 127 [1]}, {4 127 [1]}]',
             str(tscgm.process(song).tracks[0].chords))
 
 

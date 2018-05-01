@@ -74,14 +74,17 @@ class MelodyDetectionMapper(BaseMapper):
                     if chord.notes:
                         heights += list(map(lambda note: note.number, chord.notes))
                 values.append(self.fun(heights))
-            melody_index = np.argmax(values)
+            melody_index = likely_melody[np.argmax(values)]
+            assert song.tracks[melody_index].has_one_note_at_time()
             song.tracks[0], song.tracks[melody_index] = song.tracks[melody_index], song.tracks[0]
+            assert song.melody_track.has_one_note_at_time()
             return song
         elif self.strategy == 'split':
             songs = []
             for melody_index in likely_melody:
                 song_res = deepcopy(song)
                 song_res.tracks[0], song_res.tracks[melody_index] = song_res.tracks[melody_index], song_res.tracks[0]
+                assert song_res.melody_track.has_one_note_at_time()
                 songs.append(song_res)
             return songs
         else:
@@ -154,6 +157,8 @@ class SplitNonMelodiesToGcdMapper(BaseMapper):
 
         song.tracks = [melody] + tracks
 
+        assert song.melody_track.has_one_note_at_time()
+
         return song
 
 
@@ -200,6 +205,9 @@ class MergeTracksMapper(BaseMapper):
             new_tracks.append(tracks[indices[0]])
         song.tracks = ([melody] if melody else new_tracks) + new_tracks
         self.increment_stat(track_groups_per_song, self.stats['merging groups per song'])
+
+        assert song.melody_track.has_one_note_at_time()
+
         return song
 
 
@@ -230,6 +238,8 @@ class GetSongStatisticsMapper(BaseMapper):
             self.increment_stat(track.duration(), self.stats['track duration'])
             if track.duration() != 0:
                 self.increment_stat(track.pause_duration() / track.duration(), self.stats['track pause to all ratio'])
+
+        assert song.melody_track.has_one_note_at_time()
 
         return song
 
@@ -298,6 +308,7 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
             if len(song.tracks) <= 1:
                 self.increment_stat('not enough tracks')
             else:
+                assert song.melody_track.has_one_note_at_time()
                 new_songs.append(song)
 
         return new_songs
