@@ -64,19 +64,20 @@ def run_peak(player):
 def run_queue_out(player):
     while player.running.value:
         if not player.queue_out.empty() and time.monotonic() > player.deadline.value:
-            """ track is array of pairs: first is note number in chord, second is note len (duration) in 1/128. Sum of durations MUST be equal to 128 """
+            """ track is array of pairs: first is note number in chord, second is note len (duration) in 1/128. 
+            Sum of durations MUST be equal to 128 """
             player.play_chord_arpeggio(np.array([[0, 19], [1, 18], [2, 18], [3, 18], [2, 18], [1, 18], [0, 19]]))
         time.sleep(0.01)
-    if player.last_note_number != None:
+    if player.last_note_number is not None:
         player.fluid_synth.noteoff(default_channel, player.last_note_number)  # turning the note off
 
         # note_off = Message('note_off', note=player.last_note_number, velocity=min_velocity,
-                           #channel=default_channel).bytes()
+        #   channel=default_channel).bytes()
         # player.midiout.send_message(note_off)
 
 
 class Player:
-    def __init__(self, websocket,  queue=Queue(), running=Value('i', False), tempo=Value('f', default_tempo),
+    def __init__(self, websocket, queue=Queue(), running=Value('i', False), tempo=Value('f', default_tempo),
                  deadline=Value('f', 0)):
         # self.midiout = MidiOut()
         self.midi_for_file = MidiFile()
@@ -90,14 +91,13 @@ class Player:
 
         """
         special ultrasound synth
-        
         self.ultrasound_fluid_synth = fluidsynth.Synth()
         sfid = self.ultrasound_fluid_synth.sfload(default_soundfont_path)
         #TODO: check whether it works
         self.ultrasound_fluid_synth.program_select(0, sfid, 0, 1) #should be fine??
         """
 
-        self.queue_out = queue # maybe queue_in?
+        self.queue_out = queue  # maybe queue_in?
         self.running = running
         self.tempo = tempo
         self.deadline = deadline
@@ -128,9 +128,10 @@ class Player:
 
         if self.last_chord != empty_chord:
             for note in self.last_chord.notes:
-                self.fluid_synth.noteoff(default_channel, note.number) #turning the note off
+                self.fluid_synth.noteoff(default_channel, note.number)  # turning the note off
 
-                # note_off = Message('note_off', note=note.number, velocity=min_velocity, channel=default_channel).bytes()
+                # note_off = Message('note_off', note=note.number, velocity=min_velocity,
+                #    channel=default_channel).bytes()
                 # self.midiout.send_message(note_off)
 
         for note in chord.notes:
@@ -153,11 +154,11 @@ class Player:
             # put chunk of leftovers in the queue
             self.real_queue_out.put_nowait(self.fluid_synth.get_samples(output_rate * duration_in_secs))
 
-
         if self.last_chord == chord:
             for note in chord.notes:
-                self.fluid_synth.noteoff(default_channel, note.number) #finally turning the note off
-                # note_off = Message('note_off', note=note.number, velocity=min_velocity, channel=default_channel).bytes()
+                self.fluid_synth.noteoff(default_channel, note.number)  # finally turning the note off
+                # note_off = Message('note_off', note=note.number,
+                #   velocity=min_velocity, channel=default_channel).bytes()
                 # self.midiout.send_message(note_off)
 
     def play_chord_arpeggio(self, track=np.array([])):
@@ -181,7 +182,7 @@ class Player:
                 return
 
         notes_sum_durations = scipy.cumsum(track.transpose(), axis=1)[1]
-        if (self.last_note_number != None):
+        if self.last_note_number is not None:
             self.fluid_synth.noteoff(default_channel, self.last_note_number)  # turning the note off
             # note_off = Message('note_off', note=self.last_note_number, velocity=min_velocity,
             #                    channel=default_channel).bytes()
@@ -208,7 +209,8 @@ class Player:
                 pair += 1
                 note_number = track[pair][0]
 
-                self.fluid_synth.noteon(default_channel, chord.notes[note_number].number, chord.velocity)  # turning the note on
+                # turning the note on
+                self.fluid_synth.noteon(default_channel, chord.notes[note_number].number, chord.velocity)
                 # note_on = Message('note_on', note=chord.notes[note_number].number, velocity=chord.velocity,
                 #                  channel=default_channel).bytes()
                 # self.midiout.send_message(note_on)
