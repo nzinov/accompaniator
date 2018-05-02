@@ -57,7 +57,7 @@ def run_queue(predictor):
 class ChordPredictor:
     model = None
 
-    def __init__(self, queue_in, queue_out):
+    def __init__(self, queue_in=Queue(), queue_out=Queue()):
         self.queue_in = queue_in
         self.queue_out = queue_out
         self.running = Value('i', False)
