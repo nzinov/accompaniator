@@ -1,5 +1,6 @@
 import pickle
 
+
 class Note:
     """ Stores individual note
     Attributes:
@@ -20,7 +21,7 @@ class Note:
         return self.__str__()
 
     def __lt__(self, other):
-        return self.number < other.number 
+        return self.number < other.number
 
     number = None
 
@@ -75,6 +76,7 @@ class Track:
 
     instrument_name = None
     program = None
+
 
 class Song:
     def __init__(self, tracks=[], bpm=0, name=""):

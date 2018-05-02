@@ -1,14 +1,7 @@
 import sys
-import numpy as np
-import aubio
-import pyaudio
 import time
-from aubio import notes, onset, tempo
 from time import sleep
-from mido import Message, MidiFile, MidiTrack
-from rtmidi import MidiOut
-from multiprocessing import Queue, Process, Value
-from structures import Note, Chord
+from multiprocessing import Queue, Value
 from listener import Listener
 from player import Player
 from chord_predictor import ChordPredictor
@@ -19,7 +12,8 @@ max_time = sys.float_info.max
 
 """
 deadline is the time in seconds since the beginning of the era, float
-""" 
+"""
+
 
 class Accompanist:
     def __init__(self):
@@ -29,11 +23,11 @@ class Accompanist:
         self.running = Value('i', False)
         self.tempo = Value('f', default_tempo)
         self.deadline = Value('f', 0)
-        
+
         self.player = Player(self.queue_out, self.running, self.tempo, self.deadline)
         self.predictor = ChordPredictor(self.queue_in, self.queue_out)
-        self.listener = Listener(self.queue_in, self.running, self.tempo, self.deadline)        
-    
+        self.listener = Listener(self.queue_in, self.running, self.tempo, self.deadline)
+
     def run(self):
         self.running.value = True
         self.listener.run()
@@ -43,17 +37,17 @@ class Accompanist:
     def stop(self):
         self.running.value = False
         self.player.stop()
-        self.listener.stop() 
+        self.listener.stop()
         self.predictor.stop()
         self.queue_in = Queue()
         self.queue_out = Queue()
-        
+
     def set_tempo(self, tempo=default_tempo):
         self.tempo.value = tempo
-        
+
     def set_deadline(self, deadline=0):
-        self.deadline.value = deadline  
-         
+        self.deadline.value = deadline
+
     player = None
     listener = None
     predictor = None
@@ -91,4 +85,3 @@ if __name__ == '__main__':
     a.stop()
     print("Stopped")
     '''
-

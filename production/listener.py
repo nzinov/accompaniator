@@ -4,11 +4,9 @@ import aubio
 import numpy as np
 import pyaudio
 from time import sleep
-from mido import Message, MidiFile, MidiTrack
 from multiprocessing import Queue, Process, Value
-from aubio import notes, onset, tempo
+from aubio import notes, onset
 from structures import Note, Chord
-import wave
 
 """
 1 beat in bpm is 1/4 of musical beat
@@ -26,7 +24,6 @@ buffer_size = hop_s
 
 def from_ms_to_our_time(time, bpm):
     return int(time * (32 * bpm) / (60 * 1000))
-
 
 
 def run_queue_in(listener):
@@ -59,7 +56,7 @@ def run_queue_in(listener):
         # read data from audio input
         audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
         samples = np.fromstring(audiobuffer, dtype=np.float32)
-        #samples = audiobuffer
+        # samples = audiobuffer
 
         if (onset_o(samples)):
             last_onset = onset_o.get_last_ms()
@@ -75,16 +72,18 @@ def run_queue_in(listener):
         if (new_note[0] != 0):
             if (len(beats) != 0):
                 listener.set_tempo(60 * 1000.0 / np.median(beats))
-            chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value), int(new_note[1]), bar_start)
-            #print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic())
+            chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value),
+                          int(new_note[1]), bar_start)
+            # print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic())
             bar_start = False
             listener.queue_in.put(chord)
             KOLYA_time = start_time + (last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0
             print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic(), KOLYA_time)
-            #print(count_beat, time.monotonic(), KOLYA_time, listener.deadline.value)
+            # print(count_beat, time.monotonic(), KOLYA_time, listener.deadline.value)
             if (count_beat != 0):
                 listener.set_deadline(KOLYA_time)
             prev_time = last_onset
+
 
 class Listener:
     def __init__(self, queue=Queue(), running=Value('i', False),
@@ -111,7 +110,7 @@ class Listener:
 
     def set_tempo(self, tempo=default_tempo):
         self.tempo.value = tempo
-        
+
     def set_deadline(self, deadline=0):
         self.deadline.value = deadline
 
