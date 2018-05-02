@@ -1,5 +1,4 @@
 import sys
-import scipy
 import time
 import numpy as np
 from time import sleep
@@ -137,7 +136,7 @@ class Player:
             notes_durations = np.array([int(128/len(chord.notes)) for i in range(len(chord.notes))])
             track = np.column_stack((notes_numbers, notes_durations))
 
-        notes_sum_durations = scipy.cumsum(track.transpose(), axis=1)[1]
+        notes_sum_durations = np.cumsum(track.transpose(), axis=1)[1]
         if (self.last_note_number != None):
             note_off = Message('note_off', note=self.last_note_number, velocity=min_velocity, channel=default_channel).bytes()
             self.midiout.send_message(note_off)
