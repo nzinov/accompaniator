@@ -1,10 +1,13 @@
 import pickle
+import time
 import numpy as np
 from structures import Note, Chord
 from multiprocessing import Queue, Process, Value
 
 defualt_predicted_len = 128
 defualt_velocity = 100
+
+prediction_time = 0.01
 
 
 def chord_notes(chord):
@@ -58,7 +61,7 @@ def run_queue(predictor):
 class ChordPredictor:
     model = None
 
-    def __init__(self, queue_in=Queue(), queue_out=Queue()):
+    def __init__(self, queue_in=Queue(), queue_out=Queue(), deadline=Value('f', 0)):
         self.queue_in = queue_in
         self.queue_out = queue_out
         self.running = Value('i', False)
@@ -67,6 +70,8 @@ class ChordPredictor:
         self.chords_len_before_4_4 = 0
         self.second_downbeat = False
         self.chords_list = []
+        self.deadline = deadline
+        self.prediction_for_beat = False
 
     def run(self):
         self.running.value = True
@@ -89,20 +94,28 @@ class ChordPredictor:
         self.chords_list.append(chord)
         self.chords_len += chord.duration
         if chord.downbeat:
+            self.prediction_for_beat = False
             if not self.second_downbeat:
                 self.second_downbeat = True
             else:
                 self.chords_count_before_4_4 = len(self.chords_list)
                 self.chords_len_before_4_4 = 128  # self.chords_len
         if self.chords_len > 128 * 2 * 7 / 8:
+            self.prediction_for_beat = True
             prediction = self.predict(self.chords_list)
             self.chords_list = self.chords_list[self.chords_count_before_4_4:]
             self.chords_len = self.chords_len - self.chords_len_before_4_4
             self.chords_len_before_4_4 = self.chords_len
             self.chords_count_before_4_4 = len(self.chords_list)
             return prediction
-        else:
-            return None
+        if time.monotonic() > self.deadline.value - prediction_time and self.prediction_for_beat is False:
+            print("because of deadline")
+            self.prediction_for_beat = True
+            self.chords_list.append(Chord([Note(-1)], 128 * 2 * 7 / 8 - self.chords_len, 0))
+            prediction = self.predict(self.chords_list)
+            self.chords_list.pop()
+            return prediction
+        return None
 
     def predict(self, chords_list):
         # передаётся два такта, кроме последней доли (то есть от двух тактов доступно 7/8 или 14/16 информации)
