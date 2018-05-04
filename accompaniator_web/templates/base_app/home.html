@@ -1,0 +1,32 @@
+{% extends 'main_base.html' %}
+
+
+{% load static %}
+
+{% block idea %}
+
+
+<!--========== SLIDER ==========-->
+<div class="promo-block">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-6 sm-margin-b-60">
+                <div class="margin-b-30">
+                    <h2 class="promo-block-title">To start singing </br> Push the button </h2>
+                    <p class="promo-block-text">you can talk about us in social networks</p>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="promo-block-img-wrap">
+                    <a class='btn btn-secondary' href='home_after.html'>
+                        <img class="promo-block-img img-responsive" src="{% static 'img/button.png' %}" class="img-circle" href="" align="Avatar">
+                    </a>
+                </div>
+            </div>
+        </div>
+        <!--// end row -->
+    </div>
+</div>
+<!--========== SLIDER ==========-->
+
+{% endblock %}

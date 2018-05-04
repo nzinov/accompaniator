@@ -9,20 +9,22 @@ from .forms import FeedbackForm
 
 def index(request):
     context_dict = {}
-    return render(request, 'base_app/main.html', context_dict)
+    return render(request, 'base_app/landing.html', context_dict)
 
 
-def accompaniment(request):
-    if request.session.session_key is not None:
-        request.session.delete()
-    request.session.create()
-    folder_name = request.session.session_key
-    os.mkdir(os.path.join(settings.MEDIA_ROOT, folder_name))
-
-    # ???
-    # request.session.save()
+def home(request):
     context_dict = {}
-    return render(request, 'base_app/accompaniment.html', context_dict)
+    return render(request, 'base_app/home.html', context_dict)
+
+
+def recordings(request):
+    context_dict = {}
+    return render(request, 'base_app/recordings.html', context_dict)
+
+
+def settings(request):
+    context_dict = {}
+    return render(request, 'base_app/settings.html', context_dict)
 
 
 def results(request):
