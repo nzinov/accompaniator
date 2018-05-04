@@ -1,8 +1,10 @@
+import pandas as pd
+
 try:
-    import pandas as pd
     import matplotlib.pyplot as plt
-except:
+except ImportError:
     pass
+
 
 class MapperError(Exception):
     """Basic exception for handler"""

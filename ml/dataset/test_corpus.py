@@ -1,5 +1,5 @@
 import unittest
-from dataset.corpus import *
+from ml.dataset.corpus import *
 
 
 class TestChords(unittest.TestCase):

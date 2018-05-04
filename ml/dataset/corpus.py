@@ -1,9 +1,10 @@
 import mido
 import os
 import tqdm
-from prestructures import *
-from structures import *
-from dataset.pipeline import *
+import logging as log
+from ml.prestructures import *
+from ml.structures import *
+from ml.dataset.pipeline import *
 from multiprocessing.pool import Pool
 
 
@@ -41,7 +42,7 @@ class SongCorpus:
         :param time: time in ticks
         :return: float
         """
-        return time/(tpb/(128/4))
+        return time / (tpb / (128 / 4))
 
     @staticmethod
     def is_note_on(message):
@@ -85,7 +86,7 @@ class SongCorpus:
                 mid = mido.MidiFile(filename)
                 tpb = mid.ticks_per_beat
             except Exception as e:
-                log.warning('Broken midi %s: %s'%(filename, e))
+                log.warning('Broken midi %s: %s' % (filename, e))
                 return
 
             song = Song()
@@ -142,7 +143,7 @@ class SongCorpus:
                 song.dump(output_file)
             return song
         except Exception as e:
-            log.warning('MIDI broken %s'%filename)
+            log.warning('MIDI broken %s' % filename)
             log.warning(e)
             return None
 
@@ -217,7 +218,7 @@ class SongCorpus:
                     break
 
     def save_to_file(self, filename, append=True):
-        with open(filename, '%sb'%('a' if append else 'w')) as output_file:
+        with open(filename, '%sb' % ('a' if append else 'w')) as output_file:
             for song in self.songs:
                 song.dump(output_file)
 
