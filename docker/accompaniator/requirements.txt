@@ -20,3 +20,6 @@ coverage
 
 # Common stuff
 tqdm
+
+# Web stuff
+django
