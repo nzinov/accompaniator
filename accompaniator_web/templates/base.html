@@ -29,8 +29,9 @@
 </head>
 <!-- END HEAD -->
 
+<script src = "{% static 'js/timer.js' %}"> </script>
 <!-- BODY -->
-<body id="body" data-spy="scroll" data-target=".header">
+<body id="body" data-spy="scroll" data-target=".header" onload="startTimer()">
 
 {% block main %}
 {% endblock %}
