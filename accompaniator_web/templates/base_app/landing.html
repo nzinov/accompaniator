@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+
+{% block main %}
+
+
+<!--========== HEADER ==========-->
+<header class="header navbar-fixed-top">
+    <!-- Navbar -->
+    <nav class="navbar" role="navigation">
+        <div class="container">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="menu-container js_nav-item">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".nav-collapse">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="toggle-icon"></span>
+                </button>
+
+                <!-- Logo -->
+                <div class="logo">
+                    <a class="logo-wrap" href="#body">
+                        <img class="logo-img" src="{% static 'img/logo.png' %}" alt="Asentus Logo">
+                    </a>
+                </div>
+                <!-- End Logo -->
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse nav-collapse">
+                <div class="menu-container">
+                    <ul class="nav navbar-nav navbar-nav-right">
+                        <li class="js_nav-item nav-item"><a class="nav-item-child nav-item-hover" href="#body">Домой</a></li>
+                        <li class="js_nav-item nav-item"><a class="nav-item-child nav-item-hover" href="#about">Кто мы</a></li>
+                        <li class="js_nav-item nav-item"><a class="nav-item-child nav-item-hover" href="#try">Попробовать</a></li>
+
+                    </ul>
+                </div>
+            </div>
+            <!-- End Navbar Collapse -->
+        </div>
+    </nav>
+    <!-- Navbar -->
+</header>
+<!--========== END HEADER ==========-->
+
+<!--========== SLIDER ==========-->
+<div class="promo-block">
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-6 sm-margin-b-60">
+                <div class="margin-b-30">
+                    <h1 class="promo-block-title">Пойте, а мы вам подыграем</h1>
+                    <p class="promo-block-text">Наше приложение автоматически подстраивается под вашу мелодию</p>
+                </div>
+            </div>
+            <div class="col-sm-6">
+                <div class="promo-block-img-wrap">
+                    <img class="promo-block-img img-responsive" src="{% static 'img/button.png' %}" align="Avatar">
+                </div>
+            </div>
+        </div>
+        <!--// end row -->
+    </div>
+</div>
+<!--========== SLIDER ==========-->
+
+<!--========== PAGE LAYOUT ==========-->
+<!-- About -->
+<div id="about">
+    <div class="container content-lg">
+        <div class="row">
+            <div class="col-sm-4">
+                <div class="section-seperator margin-b-50">
+                    <div class="margin-b-50">
+                        <div class="margin-b-30">
+                            <h2>Ты любишь играть</h2>
+                            <p>В реал-тайме мы подыграем тебе</p>
+                        </div>
+                    </div>
+                </div>
+                <img class="full-width img-responsive" src="{% static 'img/first.jpg' %}" alt="Image">
+
+            </div>
+            <div class="col-sm-4">
+                <div class="section-seperator margin-b-50">
+                    <div class="margin-b-50">
+                        <div class="margin-b-30">
+                            <h2>Ты любишь петь </h2>
+                            <p>В реал-тайме мы подыграем тебе</p>
+                        </div>
+                    </div>
+                </div>
+                <img class="full-width img-responsive" src="{% static 'img/second.jpg' %}" alt="Image">
+            </div>
+            <div class="col-sm-4">
+                <div class="section-seperator margin-b-50">
+                    <div class="margin-b-50">
+                        <div class="margin-b-30">
+                            <h2>Ты придумал мелодию </h2>
+                            <p>Мы сделаем тебе клевую аранжировку</p>
+                        </div>
+                    </div>
+                </div>
+                <img class="full-width img-responsive" src="{% static 'img/third.jpg' %}" alt="Image">
+            </div>
+
+        </div>
+        <!--// end row -->
+    </div>
+</div>
+<!-- End About -->
+
+
+<div id="try">
+    <!--========== END PAGE LAYOUT ==========-->
+    <div class="promo-banner parallax-window" data-parallax="scroll" data-image-src="{% static 'img/happy.jpg' %}">
+        <div class="container-sm content-lg">
+            <h2 class="promo-banner-title">Пой вместе с нами, играй с нами</h2>
+            <p class="promo-banner-text">Станьте первыми пользователями нашего приложения</p>
+            <a href="{% url 'home_after_landing' %}" class="btn-theme btn-theme-md btn-default-bg text-uppercase">Попробовать</a>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}
