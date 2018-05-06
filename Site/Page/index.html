@@ -6,15 +6,21 @@
 </head>
 <body>
 
-
+<p>Press Init after start</p>
+  <div><button id="init" onclick="Init();">INIT</button></div>
+  <div>
   <button id="button" onclick="Recording(this);">RECORD</button>
   <button id="stop" onclick="Stop();">STOP</button>
-
+  </div>
 
   <script>
 
   var audio_context;
   var recorder;
+  var queve = [];
+  var isPlaying = false;
+  var prev_length = 0;
+  var isRecording = false;
 
   function startUserMedia(stream) {
     var input = audio_context.createMediaStreamSource(stream);
@@ -29,13 +35,15 @@
       ws.onmessage = function (ev) {
           var s = ev.data;
           console.log(s);
-          Play(s);
+          Push(s);
       }
   }
+
 function Stop() {
     document.getElementById("button").innerText = "STOP";
     recorder && recorder.stop();
     recorder.clear();
+    isRecording=false;
     setTimeout(function () {
         document.getElementById("button").innerText = "RECORD";
     }, 1000)
@@ -51,27 +59,47 @@ function Stop() {
   }
 
 
-  function Play(blob){
+  function Push(blob){
       var url = URL.createObjectURL(blob);
       var au = document.createElement('audio');
 
       au.controls = true;
       au.src = url;
-      au.play();
+      queve.push(au);
   }
+
+
+  function RealPlay(){
+      if (isRecording) {
+          if (queve.length > 0 && !isPlaying){
+              isPlaying = true;
+              var song = queve.shift();
+              song.play();
+              setTimeout(function () {
+                  isPlaying=false;
+              }, 200)
+          }
+          setTimeout(RealPlay, 200);
+      }
+  }
+
 
   function Recording(button) {
       if (button.innerText == "RECORD") {
+          queve = []
+          isRecording=true;
           recorder && recorder.record();
           button.innerText = "recording";
-          setTimeout(function(){Recording(button)}, 100);
+          Recording(button);
+          setTimeout(RealPlay, 300);
       }
       else if (button.innerText == "recording"){
           SendFrames();
-          button.innerText = "RECORD";
-          recorder && recorder.stop();
           recorder.clear();
-          Recording(button);
+          prev_length = queve.length;
+          setTimeout(function () {
+              Recording(button)
+          }, 200);
       }
   }
 
@@ -81,16 +109,14 @@ function Stop() {
     });
   }
 
-  window.onload = function init() {
+  function Init() {
     try {
       // webkit shim
       window.AudioContext = window.AudioContext || window.webkitAudioContext;
       navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia;
       window.URL = window.URL || window.webkitURL;
 
-      audio_context = new AudioContext;
-      __log('Audio context set up.');
-      __log('navigator.getUserMedia ' + (navigator.getUserMedia ? 'available.' : 'not present!'));
+      audio_context = new window.AudioContext;
     } catch (e) {
       alert('No web audio support in this browser!');
     }
