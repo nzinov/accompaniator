@@ -30,10 +30,10 @@ def from_ms_to_our_time(time, bpm):
 def find_closest_onset_velocity(beat, onsets_velocity):
     minimum_difference = 100000
     closest_velocity = -1
-    for onset, velocity in onsets_velocity:
-        if beat - onset < minimum_difference:
+    for local_onset, velocity in onsets_velocity:
+        if beat - local_onset < minimum_difference:
             closest_velocity = velocity
-            minimum_difference = beat - onset
+            minimum_difference = beat - local_onset
 
     return closest_velocity
 
@@ -130,10 +130,11 @@ def run_queue_in(listener):
             # print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic())
             bar_start = False
             listener.queue_in.put(chord)
-            KOLYA_time = start_time + (beat_groups[downbeat_group] + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0
+            KOLYA_time = start_time + (beat_groups[downbeat_group] + (4 - count_beat) * 60 * 1000.0 /
+                                       listener.tempo.value) / 1000.0
             print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic(), KOLYA_time)
             # print(count_beat, time.monotonic(), KOLYA_time, listener.deadline.value)
-            if count_beat != 0:
+            if count_beat != downbeat_group:
                 listener.set_deadline(KOLYA_time)
             prev_time = last_onset
 
