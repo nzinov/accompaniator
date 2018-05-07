@@ -38,30 +38,27 @@ def run_queue_in(listener):
     prev_time = 0
     start_time = time.monotonic()
 
-    while listener.queue_in.empty():
-        time.sleep(0.01)
-    audiobuffer = listener.queue_in.get()
 
     # TODO: checking whether the session has ended? Like a 'finished' message from the queue?
     while (listener.running.value):
-        # read data from audio input
-        # audiobuffer, read = s()
-        # audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
-        samples = np.fromstring(audiobuffer, dtype=np.float32)
-        # samples = audiobuffer
+        # get new samples
+        samples = listener.queue_in.get()
 
-        if (onset_o(samples)):
+        if onset_o(samples):
+            print(1)
             last_onset = onset_o.get_last_ms()
-        if (temp_o(samples)):
+        if temp_o(samples):
+            print(2)
             tmp = temp_o.get_last_ms()
             beats.append(tmp - last_beat)
             count_beat = (count_beat + 1) % 4
             last_beat = tmp
-            if (count_beat == 0):
+            if count_beat == 0:
                 last_downbeat = last_beat
                 bar_start = True
         new_note = notes_o(samples)
         if new_note[0] != 0:
+            print(3)
             if len(beats) != 0:
                 listener.set_tempo(60 * 1000.0 / np.median(beats))
             chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value),
@@ -72,14 +69,9 @@ def run_queue_in(listener):
             KOLYA_time = start_time + (last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0
             print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic(), KOLYA_time)
             # print(count_beat, time.monotonic(), KOLYA_time, listener.deadline.value)
-            if (count_beat != 0):
+            if count_beat != 0:
                 listener.set_deadline(KOLYA_time)
             prev_time = last_onset
-
-        # wait for new samples and then get them
-        while listener.queue_in.empty():
-            time.sleep(0.01)
-        audiobuffer = listener.queue_in.get()
 
 
 class Listener:
@@ -109,6 +101,9 @@ class Listener:
 
     def set_deadline(self, deadline=0):
         self.deadline.value = deadline
+
+    def set_queue_in(self, queue):
+        self.queue_in = queue
 
     queue_in = None
     running = None

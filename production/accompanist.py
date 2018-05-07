@@ -63,6 +63,8 @@ class Accompanist:
 
     def set_queue_in(self, queue):
         self.queue_in = queue
+        self.listener.set_queue_in(queue)
+
 
     player = None
     listener = None

@@ -1,11 +1,25 @@
+import wave
+import numpy as np
+import io
+import pickle
+from pydub import AudioSegment
+
+from scipy.io import wavfile
 import tornado.websocket
+from tornado import ioloop
 from tornado.web import url
 
 from production import accompanist
 from multiprocessing import Queue
 
+buffer_size = 256
+
 
 class WebSocketHandler(tornado.websocket.WebSocketHandler):
+
+    def check_origin(self, origin):
+        return True
+
     def initialize(self):
         self.in_queue = Queue()
         self.accompanist = None
@@ -15,10 +29,17 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.accompanist.set_queue_in(self.in_queue)
         self.accompanist.run()
 
+        # print("Connected to tornado server")
         self.write_message("Connected to tornado server")
 
     def on_message(self, message):
-        self.in_queue.put_nowait(message)
+        # print("Chunk received")
+        s = io.BytesIO(message)
+        sound = AudioSegment.from_file(s, 'wav')
+        samples = np.fromstring(sound.raw_data, dtype=np.float32)
+        for i in range(0, len(samples)//buffer_size - 1):
+            self.in_queue.put_nowait(samples[i * buffer_size:(i + 1) * buffer_size])
+
         self.write_message("Chunk received")
 
     def on_close(self):
@@ -30,9 +51,12 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
 
 
 def main():
-    app = tornado.web.Application([url(r"/websocket", WebSocketHandler)])
+    app = tornado.web.Application([url(r"/ws", WebSocketHandler)])
     return app
 
 
 if __name__ == "__main__":
     app = main()
+    http_server = tornado.httpserver.HTTPServer(app)
+    http_server.listen(8000, address='127.0.0.1')
+    ioloop.IOLoop.instance().start()
