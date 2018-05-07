@@ -42,8 +42,8 @@ var Recorder = exports.Recorder = (function () {
         _classCallCheck(this, Recorder);
 
         this.config = {
-            bufferLen: 4096,
-            numChannels: 2,
+            bufferLen: 1024,
+            numChannels: 1,
             mimeType: 'audio/wav'
         };
         this.recording = false;
@@ -96,6 +96,9 @@ var Recorder = exports.Recorder = (function () {
                     case 'clear':
                         clear();
                         break;
+                    case 'length':
+                        length();
+                        break;
                 }
             };
 
@@ -141,6 +144,10 @@ var Recorder = exports.Recorder = (function () {
                 recLength = 0;
                 recBuffers = [];
                 initBuffers();
+            }
+            
+            function length() {
+                return recLength;
             }
 
             function initBuffers() {
@@ -254,6 +261,11 @@ var Recorder = exports.Recorder = (function () {
         key: 'clear',
         value: function clear() {
             this.worker.postMessage({ command: 'clear' });
+        }
+    }, {
+        key: 'length',
+        value: function length() {
+            this.worker.postMessage({ command: 'length' });
         }
     }, {
         key: 'getBuffer',
