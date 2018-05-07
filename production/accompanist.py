@@ -65,7 +65,6 @@ class Accompanist:
         self.queue_in = queue
         self.listener.set_queue_in(queue)
 
-
     player = None
     listener = None
     predictor = None

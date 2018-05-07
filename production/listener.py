@@ -38,7 +38,6 @@ def run_queue_in(listener):
     prev_time = 0
     start_time = time.monotonic()
 
-
     # TODO: checking whether the session has ended? Like a 'finished' message from the queue?
     while (listener.running.value):
         # get new samples

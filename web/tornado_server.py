@@ -1,10 +1,7 @@
-import wave
 import numpy as np
 import io
-import pickle
 from pydub import AudioSegment
 
-from scipy.io import wavfile
 import tornado.websocket
 from tornado import ioloop
 from tornado.web import url
@@ -37,7 +34,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         s = io.BytesIO(message)
         sound = AudioSegment.from_file(s, 'wav')
         samples = np.fromstring(sound.raw_data, dtype=np.float32)
-        for i in range(0, len(samples)//buffer_size - 1):
+        for i in range(0, len(samples) // buffer_size - 1):
             self.in_queue.put_nowait(samples[i * buffer_size:(i + 1) * buffer_size])
 
         self.write_message("Chunk received")
