@@ -1,6 +1,5 @@
 import numpy as np
 import io
-from pydub import AudioSegment
 import scipy.io.wavfile
 
 import tornado.websocket
@@ -42,7 +41,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.accompanist.stop()
 
     def send_audio(self, message):
-        self.write_message("Chunk sent")
+        # self.write_message("Chunk sent")
         self.write_message(message, binary=True)
 
 
