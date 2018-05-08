@@ -1,6 +1,7 @@
 import numpy as np
 import io
 from pydub import AudioSegment
+import scipy.io.wavfile
 
 import tornado.websocket
 from tornado import ioloop
@@ -26,18 +27,16 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.accompanist.set_queue_in(self.in_queue)
         self.accompanist.run()
 
-        print("Connected to tornado server")
-        self.write_message("Connected to tornado server")
+        # self.write_message("Connected to tornado server")
 
     def on_message(self, message):
-        print("Chunk received")
         s = io.BytesIO(message)
-        sound = AudioSegment.from_file(s, 'wav')
-        samples = np.fromstring(sound.raw_data, dtype=np.float32)
+        _, samplesints = scipy.io.wavfile.read(s)
+        samples = samplesints.astype(np.float32, order='C') / 32768.0
         for i in range(0, len(samples) // buffer_size - 1):
             self.in_queue.put(samples[i * buffer_size:(i + 1) * buffer_size])
 
-        self.write_message("Chunk received")
+        # self.write_message("Chunk received")
 
     def on_close(self):
         self.accompanist.stop()

@@ -42,17 +42,11 @@ def run_queue_in(listener):
     while listener.running.value:
         # get new samples
         samples = listener.queue_in.get()
-        print('new samples!')
-        print(f'len: {len(samples)}')
-
-        print(samples)
 
 
         if onset_o(samples):
-            print(1)
             last_onset = onset_o.get_last_ms()
         if temp_o(samples):
-            print(2)
             tmp = temp_o.get_last_ms()
             beats.append(tmp - last_beat)
             count_beat = (count_beat + 1) % 4
@@ -60,18 +54,15 @@ def run_queue_in(listener):
             if count_beat == 0:
                 last_downbeat = last_beat
                 bar_start = True
-        print('almost thear!')
         new_note = notes_o(samples)
-        print('yea')
         if new_note[0] != 0:
-            print(3)
             if len(beats) != 0:
                 listener.set_tempo(60 * 1000.0 / np.median(beats))
             chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value),
                           int(new_note[1]), bar_start)
             # print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic())
             bar_start = False
-            listener.queue_in.put(chord)
+            listener.queue_from_listener_to_predictor.put(chord)
             KOLYA_time = start_time + (last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0
             print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic(), KOLYA_time)
             # print(count_beat, time.monotonic(), KOLYA_time, listener.deadline.value)
@@ -81,10 +72,11 @@ def run_queue_in(listener):
 
 
 class Listener:
-    def __init__(self, queue=Queue(), running=Value('i', False),
+    def __init__(self, input_queue, queue_from_listener_to_predictor, running=Value('i', False),
                  tempo=Value('i', default_tempo),
                  deadline=Value('f', 0)):
-        self.queue_in = queue
+        self.queue_in = input_queue
+        self.queue_from_listener_to_predictor = queue_from_listener_to_predictor
         self.running = running
         self.tempo = tempo
         self.deadline = deadline
