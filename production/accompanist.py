@@ -27,7 +27,8 @@ class Accompanist:
 
         self.player = Player(self.queue_from_predictor_to_player, self.running, self.tempo, self.deadline)
         self.predictor = ChordPredictor(self.queue_from_listener_to_predictor, self.queue_from_predictor_to_player)
-        self.listener = Listener(self.queue_into_listener, self.queue_from_listener_to_predictor, self.running, self.tempo, self.deadline)
+        self.listener = Listener(self.queue_into_listener, self.queue_from_listener_to_predictor, self.running,
+                                 self.tempo, self.deadline)
 
     def run(self):
         self.running.value = True
