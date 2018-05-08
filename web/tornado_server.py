@@ -26,16 +26,16 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.accompanist.set_queue_in(self.in_queue)
         self.accompanist.run()
 
-        # print("Connected to tornado server")
+        print("Connected to tornado server")
         self.write_message("Connected to tornado server")
 
     def on_message(self, message):
-        # print("Chunk received")
+        print("Chunk received")
         s = io.BytesIO(message)
         sound = AudioSegment.from_file(s, 'wav')
         samples = np.fromstring(sound.raw_data, dtype=np.float32)
         for i in range(0, len(samples) // buffer_size - 1):
-            self.in_queue.put_nowait(samples[i * buffer_size:(i + 1) * buffer_size])
+            self.in_queue.put(samples[i * buffer_size:(i + 1) * buffer_size])
 
         self.write_message("Chunk received")
 
@@ -55,5 +55,5 @@ def main():
 if __name__ == "__main__":
     app = main()
     http_server = tornado.httpserver.HTTPServer(app)
-    http_server.listen(8000, address='127.0.0.1')
+    http_server.listen(8070, address='127.0.0.1')
     ioloop.IOLoop.instance().start()
