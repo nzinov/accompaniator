@@ -4,7 +4,7 @@ import numpy as np
 from time import sleep
 
 from mido import Message, MidiFile, MidiTrack
-from rtmidi import MidiOut
+# from rtmidi import MidiOut
 from production.structures import Note, Chord
 from multiprocessing import Queue, Process, Value
 
@@ -42,12 +42,14 @@ def len_in_s(duration, bpm):
     return duration * 60 / (bpm * 32)
 
 
+'''
 def send_output_queue_to_client(player):
     """ Goes through the audio output queue and sends chunks from it to the client via tornado WebSocketHandler"""
     while player.running.value:
         chunk = player.real_queue_out.get()
-        # chunk_raw_audio_bytes = fluidsynth.raw_audio_string(chunk)
-        # player.websocket.send_audio(chunk_raw_audio_bytes)
+        chunk_raw_audio_bytes = fluidsynth.raw_audio_string(chunk)
+        player.websocket.send_audio(chunk_raw_audio_bytes)
+'''
 
 
 def run_peak(player):
@@ -81,6 +83,8 @@ class Player:
         self.last_chord = empty_chord
 
         self.websocket = websocket
+        self.fluid_synth = None
+        self.real_queue_out = Queue()
         '''
         self.fluid_synth = fluidsynth.Synth()
         sfid = self.fluid_synth.sfload(default_soundfont_path)
@@ -155,7 +159,6 @@ class Player:
         if duration_in_secs > 0:
             # put chunk of leftovers in the queue
             self.real_queue_out.put_nowait(self.fluid_synth.get_samples(output_rate * duration_in_secs))
-
 
         if self.last_chord == chord:
             for note in chord.notes:

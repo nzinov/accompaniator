@@ -43,7 +43,6 @@ def run_queue_in(listener):
         # get new samples
         samples = listener.queue_in.get()
 
-
         if onset_o(samples):
             last_onset = onset_o.get_last_ms()
         if temp_o(samples):
