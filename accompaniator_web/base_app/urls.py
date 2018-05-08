@@ -1,5 +1,4 @@
-from django.conf import settings
-from django.urls import path, include
+from django.urls import path
 
 from . import views
 
@@ -10,6 +9,6 @@ urlpatterns = [
     path('settings', views.settings, name='settings'),
     path('home', views.home, name='home'),
     path('home_after_landing', views.home_after_landing, name='home_after_landing'),
-    path('procces', views.process, name='procces'),
+    path('process', views.process, name='process'),
 
 ]
