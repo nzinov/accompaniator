@@ -10,6 +10,6 @@ urlpatterns = [
     path('settings', views.settings, name='settings'),
     path('home', views.home, name='home'),
     path('home_after_landing', views.home_after_landing, name='home_after_landing'),
-    path('procces', views.procces, name='procces'),
+    path('procces', views.process, name='procces'),
 
 ]
