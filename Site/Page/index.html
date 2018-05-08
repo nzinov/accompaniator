@@ -23,7 +23,7 @@
     var prev_length = 0;
     var isRecording = false;
     var frames = [];
-    var frames_per_send = 40;
+    var frames_per_send = 10;
     var frame_size = 1024;
     var isInited = false;
     var numChannels = 1;
@@ -47,19 +47,7 @@
     }
 
 
-    function WS(message) {
-        ws = new WebSocket('ws://demos.kaazing.com/echo');
-        ws.onopen = function(){
-            ws.send(message);
-        };
-        ws.onmessage = function (ev) {
-            var s = ev.data;
-            console.log(s);
-            Push(s);
-        };
-        ws.onclose = function () {
-            setTimeout(WS, 1);
-        };
+    function WS() {
 
     }
 
@@ -98,14 +86,14 @@
     function simpleExportWAV() {
         interleaved = mergeBuffers(frames, frames.length * frame_size);
         dataview = encodeWAV(interleaved);
-        return new Blob([dataview], { type: 'audio/wav' });
+        return new Blob([dataview], { type: mimeType });
     }
 
 
     function exportWAV(array_frames) {
         interleaved = mergeBuffers(array_frames, array_frames.length * frame_size);
         dataview = encodeWAV(interleaved);
-        return new Blob([dataview], { type: 'audio/wav' });
+        return new Blob([dataview], { type: mimeType });
     }
 
 
@@ -193,7 +181,12 @@
             toSendBlob = exportWAV(toSend);
             console.log("toSendBlob", toSendBlob);
             //Push(toSendBlob);
-            WS(toSendBlob);
+            if (ws.readyState==1){
+                ws.send(toSendBlob);
+            }
+            else{
+                console.log("blob is lost")
+            }
         }
         if (isRecording) {
             setTimeout(SendFrames, 300);
@@ -210,13 +203,19 @@
         setTimeout(function () {
             document.getElementById("button").innerText = "RECORD";
             document.getElementById("button").disabled = false;
-        }, 1000)
+        }, 1000);
+        ws.close();
     }
 
 
     function Recording(button) {
         if (button.innerText == "RECORD") {
-            //WS();
+            ws = new WebSocket('ws://demos.kaazing.com/echo');
+            ws.onmessage = function (ev) {
+                var s = ev.data;
+                console.log(s);
+                Push(s);
+            };
             queve = [];
             frames = [];
             isRecording=true;
