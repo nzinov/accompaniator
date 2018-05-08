@@ -1,6 +1,6 @@
 import pickle
 import numpy as np
-from structures import Note, Chord
+from production.structures import Note, Chord
 from multiprocessing import Queue, Process, Value
 
 defualt_predicted_len = 128
@@ -44,7 +44,7 @@ def chord_notes(chord):
 
 
 def run_queue(predictor):
-    predictor.load_model("rf_nottingham.pkl")
+    predictor.load_model("../production/rf_nottingham.pkl")
 
     while predictor.running.value:
         if not predictor.queue_in.empty():
