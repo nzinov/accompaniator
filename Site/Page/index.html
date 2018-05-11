@@ -7,9 +7,7 @@
 <body>
 
 <div>
-    <button id="button" onclick="Init(this);">INIT</button>
-    <button id="stop" onclick="Stop();" disabled>STOP</button>
-    <!-- <button id="play" onclick="TestPlay();">Test Play</button> !-->
+    <button onclick="Init();">BUTTON</button>
 </div>
 
 <script>
@@ -29,6 +27,7 @@
     var numChannels = 1;
     var mimeType = 'audio/wav';
     var sampleRate = 44100;
+    var state = "init";
 
     function startUserMedia(stream) {
         var input = audio_context.createMediaStreamSource(stream);
@@ -195,21 +194,19 @@
 
 
     function Stop() {
-        document.getElementById("stop").disabled = true;
-        document.getElementById("button").innerText = "stopping";
+        state = 'stopping';
         recorder && recorder.stop();
         recorder.clear();
         isRecording=false;
         setTimeout(function () {
-            document.getElementById("button").innerText = "RECORD";
-            document.getElementById("button").disabled = false;
+            state = 'record';
         }, 1000);
         ws.close();
     }
 
 
-    function Recording(button) {
-        if (button.innerText == "RECORD") {
+    function Recording() {
+        if (state == "record") {
             ws = new WebSocket('ws://demos.kaazing.com/echo');
             ws.onmessage = function (ev) {
                 var s = ev.data;
@@ -220,18 +217,16 @@
             frames = [];
             isRecording=true;
             recorder && recorder.record();
-            button.innerText = "recording";
-            button.disabled = true;
-            document.getElementById('stop').disabled = false;
+            state = "recording";
             setTimeout(SendFrames, 100);
-            Recording(button);
+            Recording();
             RealPlay();
 
         }
-        else if (button.innerText == "recording"){
+        else if (state == "recording"){
             setTimeout(WriteBuffer, 100);
             setTimeout(function () {
-                Recording(button)
+                Recording()
             }, 200);
         }
     }
@@ -252,9 +247,14 @@
         });
     }
 
-    function Init(button) {
+    function Init() {
         if (isInited){
-            Recording(button);
+            if (state == 'recording') {
+                Stop();
+            }
+            else if(state == 'record'){
+                Recording();
+            }
         }
         else {
             try {
@@ -265,7 +265,7 @@
 
                 audio_context = new window.AudioContext;
                 isInited = true;
-                button.innerText="RECORD";
+                state = 'record';
             } catch (e) {
                 alert('No web audio support in this browser!');
             }
