@@ -13,10 +13,10 @@ class PreNote:
 
     def freq(self):
         """ Returns frequency in Hz """
-        return 2**((self.number - 69)/12.)*440
+        return 2**((self.number - 69) / 12.) * 440
 
     def __str__(self):
-        return "%s %s %s"%(self.number, self.duration, self.velocity)
+        return "%s %s %s" % (self.number, self.duration, self.velocity)
 
     def __repr__(self):
         return self.__str__()
@@ -30,7 +30,7 @@ class PreChord:
         self.delta = delta
 
     def __str__(self):
-        return "{%s %s}"%(self.delta, str(self.notes))
+        return "{%s %s}" % (self.delta, str(self.notes))
 
     def __repr__(self):
         return self.__str__()

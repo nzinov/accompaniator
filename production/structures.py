@@ -1,5 +1,6 @@
 import pickle
 
+
 class Note:
     """ Stores individual note
     Attributes:
@@ -19,16 +20,20 @@ class Note:
     def __repr__(self):
         return self.__str__()
 
+    def __lt__(self, other):
+        return self.number < other.number
+
     number = None
 
 
 class Chord:
     """Stores a chord and its length in 1/128 beats"""
 
-    def __init__(self, notes_list, duration, velocity):
+    def __init__(self, notes_list, duration, velocity, downbeat=False):
         self.notes = notes_list[:]
         self.velocity = velocity
         self.duration = duration
+        self.downbeat = downbeat
 
     def len(self):
         return self.duration
@@ -49,6 +54,7 @@ class Chord:
     duration = None
     notes = None
     velocity = None
+    downbeat = None
 
 
 class Track:
@@ -70,6 +76,7 @@ class Track:
 
     instrument_name = None
     program = None
+
 
 class Song:
     def __init__(self, tracks=[], bpm=0, name=""):

@@ -1,6 +1,6 @@
-from dataset.corpus import *
-from dataset.mappers_simplify import *
-from dataset.base_mapper import *
+from ml.dataset.corpus import *
+from ml.dataset.mappers_simplify import *
+from ml.dataset.base_mapper import *
 
 import numpy as np
 
@@ -43,11 +43,11 @@ class NoiseReductionMapper(BaseMapper):
 
     @staticmethod
     def round_to_base(x, base=4):
-        return int(base*round(float(x)/base))
+        return int(base * round(float(x) / base))
 
     @staticmethod
     def get_divergence(x, base=4):
-        return abs(x-NoiseReductionMapper.round_to_base(x, base))
+        return abs(x - NoiseReductionMapper.round_to_base(x, base))
 
     def process(self, song):
         for track in song.tracks:

@@ -32,3 +32,10 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /run/dbus/:/run/dbus/:rw
       - /dev/shm:/dev/shm
+
+  accompaniator-test:
+    image: accompaniator
+    build: accompaniator
+    environment:
+    - CC_TEST_REPORTER_ID
+    - CODECLIMATE_REPO_TOKEN
