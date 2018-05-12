@@ -5,25 +5,27 @@
 
 {% block idea %}
 
+<script src = "{% static 'js/timer.js' %}"> </script>
 
 <!--========== SLIDER ==========-->
 <div class="promo-block">
     <div class="container">
-        <div class="row">
+        <div id="start_button" class="row">
             <div class="col-sm-offset-3">
                 <div class="promo-block-img-wrap">
-                    <a class='btn btn-secondary' href="{% url 'process' %}">
-                        <img class= img-responsive" src="{% static 'img/button.png' %}" class="img-circle" href="{% url 'process' %}" align="Avatar">
+                    <a class='btn btn-secondary'>
+                        <img class= img-responsive" src="{% static 'img/button.png' %}" class="img-circle" align="Avatar" onclick="document.getElementById('start_button').style.display = 'none'; document.getElementById('stop_button').style.display = 'block'; startTimer(); ">
                     </a>
                 </div>
             </div>
         </div>
 
-        <div class="row" style="display: none">
+        <div id="stop_button" class="row" style="display: none">
             <div class="col-sm-offset-3">
                 <div class="promo-block-img-wrap">
-                    <a class='btn btn-secondary' href="{% url 'process' %}">
-                        <img class= img-responsive" src="{% static 'img/button_stop.png' %}" class="img-circle" href="{% url 'process' %}" align="Avatar">
+                    <a class='btn btn-secondary' href="{% url 'results' %}" >
+                        <img class= img-responsive" src="{% static 'img/button_stop.png' %}" class="img-circle" align="Avatar">
+                        <p><span id="my_timer" style="font-size: 300%;">00:00</span></p>
                     </a>
                 </div>
             </div>

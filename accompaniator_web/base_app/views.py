@@ -37,11 +37,6 @@ def preferences(request):
     return render(request, 'base_app/settings.html', context_dict)
 
 
-def process(request):
-    context_dict = {}
-    return render(request, 'base_app/process.html', context_dict)
-
-
 def home_after_landing(request):
     context_dict = {}
     return render(request, 'base_app/home_after_landing.html', context_dict)
