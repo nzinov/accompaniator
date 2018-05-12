@@ -26,8 +26,6 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.accompanist.set_queue_in(self.in_queue)
         self.accompanist.run()
 
-        # self.write_message("Connected to tornado server")
-
     def on_message(self, message):
         s = io.BytesIO(message)
         _, samplesints = scipy.io.wavfile.read(s)
@@ -35,14 +33,13 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         for i in range(0, len(samples) // buffer_size - 1):
             self.in_queue.put(samples[i * buffer_size:(i + 1) * buffer_size])
 
-        # self.write_message("Chunk received")
-
     def on_close(self):
         self.accompanist.stop()
 
     def send_audio(self, message):
-        # self.write_message("Chunk sent")
-        self.write_message(message, binary=True)
+        output = io.BytesIO()
+        scipy.io.wavfile.write(output, 44100, message)
+        self.write_message(output.getvalue(), binary=True)
 
 
 def main():

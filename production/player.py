@@ -4,9 +4,9 @@ import numpy as np
 from time import sleep
 
 from mido import Message, MidiFile, MidiTrack
-# from rtmidi import MidiOut
 from production.structures import Note, Chord
 from multiprocessing import Queue, Process, Value
+import production.pyfluidsynth as fluidsynth
 
 """
 1 beat in bpm is 1/4 of musical beat
@@ -32,8 +32,8 @@ sec_in_hour = 3600
 max_time = sys.float_info.max
 empty_chord = Chord([], 0, 0)
 
-default_soundfont_path = "soundfonts/piano_and_ultrasound.sf2"
-sent_chunk_size_in_secs = 0.1
+default_soundfont_path = "../soundfonts/piano_and_ultrasound.sf2"
+sent_chunk_size_in_secs = 0.5
 output_rate = 44100  # in Hz
 
 
@@ -42,14 +42,14 @@ def len_in_s(duration, bpm):
     return duration * 60 / (bpm * 32)
 
 
-'''
+
 def send_output_queue_to_client(player):
     """ Goes through the audio output queue and sends chunks from it to the client via tornado WebSocketHandler"""
     while player.running.value:
         chunk = player.real_queue_out.get()
-        chunk_raw_audio_bytes = fluidsynth.raw_audio_string(chunk)
-        player.websocket.send_audio(chunk_raw_audio_bytes)
-'''
+        player.websocket.send_audio(chunk)
+        #sleep(sent_chunk_size_in_secs)
+
 
 
 def run_peak(player):
@@ -85,12 +85,11 @@ class Player:
         self.websocket = websocket
         self.fluid_synth = None
         self.real_queue_out = Queue()
-        '''
         self.fluid_synth = fluidsynth.Synth()
         sfid = self.fluid_synth.sfload(default_soundfont_path)
         self.fluid_synth.program_select(0, sfid, 0, 0)
         self.real_queue_out = Queue()
-        '''
+
 
         """
         special ultrasound synth
@@ -153,12 +152,14 @@ class Player:
 
         for i in range((duration_in_secs / sent_chunk_size_in_secs) // 1):
             # put chunk of full size in the queue
-            self.real_queue_out.put_nowait(self.fluid_synth.get_samples(output_rate * sent_chunk_size_in_secs))
+            self.real_queue_out.put(self.fluid_synth.get_samples(int(output_rate * sent_chunk_size_in_secs)))
             duration_in_secs -= duration_in_secs
 
         if duration_in_secs > 0:
             # put chunk of leftovers in the queue
-            self.real_queue_out.put_nowait(self.fluid_synth.get_samples(output_rate * duration_in_secs))
+            self.real_queue_out.put(self.fluid_synth.get_samples(int(output_rate * duration_in_secs)))
+
+        sleep(duration_in_secs)  # not sure if that's needed?
 
         if self.last_chord == chord:
             for note in chord.notes:
@@ -171,7 +172,7 @@ class Player:
 
     def play_chord_arpeggio(self, track=np.array([])):
         chord = self.queue_out.get()
-        print("player get", chord, "vel", chord.velocity, "queue", self.queue_out.qsize(), "time", time.monotonic())
+        # print("player get", chord, "vel", chord.velocity, "queue", self.queue_out.qsize(), "time", time.monotonic())
         if chord.velocity > 127:
             chord.velocity = 127
         if chord.duration == 0:
@@ -223,8 +224,9 @@ class Player:
                 #                   velocity=chord.velocity, channel=default_channel).bytes()
                 # self.midiout.send_message(note_on)
                 self.last_note_number = chord.notes[note_number].number
-            self.real_queue_out.put_nowait(self.fluid_synth.get_samples(output_rate * sent_chunk_size_in_secs))
-            # time.sleep(0.01)
+            self.real_queue_out.put(self.fluid_synth.get_samples(int(output_rate * sent_chunk_size_in_secs)))
+            time.sleep(sent_chunk_size_in_secs)
+            # time.sleep(0.1)
 
     def put(self, chord):
         if type(chord) == Chord:
@@ -285,6 +287,10 @@ class Player:
 
         self.queue_process = Process(target=run_peak, args=(self,))
         self.queue_process.start()
+
+        self.queue_process = Process(target=send_output_queue_to_client, args=(self,))
+        self.queue_process.start()
+
 
     def stop(self):
         """ All chords that already sound will continue to sound """
