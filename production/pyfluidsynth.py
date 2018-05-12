@@ -24,7 +24,6 @@
 Added lots of bindings and stuff to help with playing live -- Bill Peterson <albedozero@gmail.com>
 """
 
-import time
 from ctypes import *
 from ctypes.util import find_library
 from six import iteritems
@@ -32,10 +31,7 @@ from six import iteritems
 # A short circuited or expression to find the FluidSynth library
 # (mostly needed for Windows distributions of libfluidsynth supplied with QSynth)
 
-lib = find_library('fluidsynth') or \
-      find_library('libfluidsynth') or \
-      find_library('libfluidsynth-1')
-
+lib = find_library('fluidsynth') or find_library('libfluidsynth') or find_library('libfluidsynth-1')
 
 
 if lib is None:
@@ -344,7 +340,7 @@ class Synth:
     def setting(self, opt, val):
         """change an arbitrary synth setting, type-smart"""
         opt = opt.encode()
-        if isinstance(val, str): #??
+        if isinstance(val, str):  # ??
             fluid_settings_setstr(self.settings, opt, val)
         elif isinstance(val, int):
             fluid_settings_setint(self.settings, opt, val)
@@ -477,7 +473,8 @@ class Synth:
         nr Chorus voice count (0-99, CPU time consumption proportional to this value)
         level Chorus level (0.0-10.0)
         speed Chorus speed in Hz (0.29-5.0)
-        depth_ms Chorus depth (max value depends on synth sample rate, 0.0-21.0 is safe for sample rate values up to 96KHz)
+        depth_ms Chorus depth (max value depends on synth sample rate, 0.0-21.0 is safe for sample rate values up
+        to 96KHz)
         type Chorus waveform type (0=sine, 1=triangle)
         """
         set = 0

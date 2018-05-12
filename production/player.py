@@ -42,14 +42,12 @@ def len_in_s(duration, bpm):
     return duration * 60 / (bpm * 32)
 
 
-
 def send_output_queue_to_client(player):
     """ Goes through the audio output queue and sends chunks from it to the client via tornado WebSocketHandler"""
     while player.running.value:
         chunk = player.real_queue_out.get()
         player.websocket.send_audio(chunk)
-        #sleep(sent_chunk_size_in_secs)
-
+        # sleep(sent_chunk_size_in_secs)
 
 
 def run_peak(player):
@@ -89,7 +87,6 @@ class Player:
         sfid = self.fluid_synth.sfload(default_soundfont_path)
         self.fluid_synth.program_select(0, sfid, 0, 0)
         self.real_queue_out = Queue()
-
 
         """
         special ultrasound synth
@@ -290,7 +287,6 @@ class Player:
 
         self.queue_process = Process(target=send_output_queue_to_client, args=(self,))
         self.queue_process.start()
-
 
     def stop(self):
         """ All chords that already sound will continue to sound """
