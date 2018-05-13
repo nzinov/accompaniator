@@ -4,7 +4,7 @@
 {% load static %}
 
 {% block idea %}
-
+<script src="{% static 'js/result.js' %}"></script>
 
 <!--========== SLIDER ==========-->
 <div class="promo-block">
@@ -19,7 +19,7 @@
                     {% csrf_token %}
                     <input type="text" id="id_song_name" name="song_name" class="form-control" placeholder="Лучшая песня эвэр" required=""
                            autofocus="">
-                    <input type="hidden" name="rating" required id="id_rating"/>
+                    <p><span id="mark" style="display: none" >00:00</span></p>
                 </div>
             </div>
             <div class="row">
@@ -29,11 +29,11 @@
 
                 <div class="col-sm-4">
                     <ul class="list-inline">
-                        <li><a href="#" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
-                        <li><a href="#" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
-                        <li><a href="#" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
-                        <li><a href="#" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
-                        <li><a href="#" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
+                        <li><a href="#" onclick="one()" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
+                        <li><a href="#" onclick="second()" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
+                        <li><a href="#" onclick="third()" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
+                        <li><a href="#" onclick="fourth()" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
+                        <li><a href="#" onclick="five()" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
                     </ul>
                 </div>
             </div>
@@ -56,8 +56,11 @@
                     <h2></h2>
                 </div>
                 <div class="col-sm-2">
-                    <button type="button" class="btn btn-success">Скачать</button>
+                    <a onclick="onDownload();">
+                        <button type="button" class="btn btn-success">Скачать</button>
+                    </a>
                 </div>
+
                 <div class="col-sm-1">
                     <a href="{% url 'home' %}">
                         <button type="button" class="btn btn-primary">По новой</button>
