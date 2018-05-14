@@ -2,7 +2,7 @@ import sys
 import time
 import aubio
 import numpy as np
-# import pyaudio
+import pyaudio
 from time import sleep
 from multiprocessing import Queue, Process, Value
 from aubio import notes, onset
@@ -27,6 +27,21 @@ def from_ms_to_our_time(time, bpm):
 
 
 def run_queue_in(listener):
+    stream = None
+    if not listener.input_from_queue:
+        p = pyaudio.PyAudio()
+        # open stream
+        pyaudio_format = pyaudio.paFloat32
+        n_channels = 1
+        stream = p.open(format=pyaudio_format,
+                        channels=n_channels,
+                        rate=sample_rate,
+                        input=True,
+                        frames_per_buffer=buffer_size)
+    '''
+    s = aubio.source('/home/nikolay/pahanini.mp3', sample_rate, buffer_size)
+    '''
+
     notes_o = notes("default", win_s, hop_s, sample_rate)
     onset_o = onset("default", win_s, hop_s, sample_rate)
     temp_o = aubio.tempo("specdiff", win_s, hop_s, sample_rate)
@@ -40,8 +55,13 @@ def run_queue_in(listener):
     prev_time = 0
     start_time = time.monotonic()
     while listener.running.value:
-        # get new samples
-        samples = listener.queue_in.get()
+        # read data from audio input
+        if not listener.input_from_queue:
+            audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
+            samples = np.fromstring(audiobuffer, dtype=np.float32)
+        else:
+            samples = listener.queue_in.get()
+        # samples = audiobuffer
 
         if onset_o(samples):
             last_onset = onset_o.get_last_ms()
@@ -59,11 +79,11 @@ def run_queue_in(listener):
                 listener.set_tempo(60 * 1000.0 / np.median(beats))
             chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value),
                           int(new_note[1]), bar_start)
-            # print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic())
+            print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic())
             bar_start = False
             listener.queue_from_listener_to_predictor.put(chord)
             KOLYA_time = start_time + (last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0
-            print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic(), KOLYA_time)
+            # print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic(), KOLYA_time)
             # print(count_beat, time.monotonic(), KOLYA_time, listener.deadline.value)
             if count_beat != 0:
                 listener.set_deadline(KOLYA_time)
@@ -76,6 +96,12 @@ class Listener:
                  deadline=Value('f', 0)):
         self.queue_in = input_queue
         self.queue_from_listener_to_predictor = queue_from_listener_to_predictor
+
+        if input_queue is not None:
+            self.input_from_queue = True
+        else:
+            self.input_from_queue = False
+
         self.running = running
         self.tempo = tempo
         self.deadline = deadline
@@ -102,6 +128,7 @@ class Listener:
 
     def set_queue_in(self, queue):
         self.queue_in = queue
+        self.input_from_queue = True
 
     queue_in = None
     running = None

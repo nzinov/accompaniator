@@ -4,6 +4,7 @@ import numpy as np
 from time import sleep
 
 from mido import Message, MidiFile, MidiTrack
+from rtmidi import MidiOut
 from production.structures import Note, Chord
 from multiprocessing import Queue, Process, Value
 import production.pyfluidsynth as fluidsynth
@@ -55,6 +56,7 @@ def send_output_queue_to_client(player):
             chunk = np.concatenate([chunk, small_chunk])
         count += 1
         if count >= int(sent_chunk_size_in_secs / small_frame_time_in_secs):
+            print(len(chunk))
             player.websocket.send_audio(chunk)
             count = 0
         # sleep(sent_chunk_size_in_secs)
@@ -83,16 +85,18 @@ def run_queue_out(player):
 
 
 class Player:
-    def __init__(self, websocket, queue=Queue(), running=Value('i', False),
+    def __init__(self, queue=Queue(), running=Value('i', False),
                  tempo=Value('i', default_tempo),
                  deadline=Value('f', 0)):
-        # self.midiout = MidiOut()
+        self.midiout = MidiOut()
         self.midi_for_file = MidiFile()
         self.last_chord = empty_chord
 
-        self.websocket = websocket
+        self.websocket = None
+        self.output_to_websocket = None
+
         self.fluid_synth = None
-        self.real_queue_out = Queue()
+        self.real_queue_out = None
         self.fluid_synth = fluidsynth.Synth()
         sfid = self.fluid_synth.sfload(default_soundfont_path)
         self.fluid_synth.program_select(0, sfid, 0, 0)
@@ -115,14 +119,9 @@ class Player:
 
     def play_peak(self, number=default_peak_number,
                   velocity=default_peak_velocity):
-        # TODO: change midiout to queue output if it is eventually used
-        note_on = Message('note_on', note=number, velocity=velocity,
-                          channel=default_ultrasound_channel).bytes()
-        self.midiout.send_message(note_on)
+        self.note_on(default_ultrasound_channel, number, velocity)
         sleep(default_peak_time)
-        note_off = Message('note_off', note=number, velocity=min_velocity,
-                           channel=default_ultrasound_channel).bytes()
-        self.midiout.send_message(note_off)
+        self.note_off(default_ultrasound_channel, number, min_velocity)
 
     def play_chord_same_time(self):
         chord = self.queue_out.get()
@@ -138,44 +137,30 @@ class Player:
 
         if self.last_chord != empty_chord:
             for note in self.last_chord.notes:
-                self.fluid_synth.noteoff(default_channel, note.number)  # turning the note off
-
-                # note_off = Message('note_off', note=note.number, velocity=min_velocity,
-                #                    channel=default_channel).bytes()
-                # self.midiout.send_message(note_off)
+                self.note_off(default_channel, note.number, min_velocity)
 
         for note in chord.notes:
-            self.fluid_synth.noteon(default_channel, note.number, chord.velocity)  # turning the note on
-
-            # note_on = Message('note_on', note=note.number,
-            #                   velocity=chord.velocity,
-            #                   channel=default_channel).bytes()
-            # self.midiout.send_message(note_on)
+            self.note_on(default_channel, note.number, chord.velocity)
 
         self.last_chord = chord
 
-        # sleep(len_in_s(chord.duration, self.tempo.value))
         duration_in_secs = len_in_s(chord.duration, self.tempo.value)
 
-        for i in range((duration_in_secs / sent_chunk_size_in_secs) // 1):
-            # put chunk of full size in the queue
-            self.real_queue_out.put(self.fluid_synth.get_samples(int(output_rate * sent_chunk_size_in_secs)))
-            duration_in_secs -= duration_in_secs
+        if self.output_to_websocket is True:
+            for i in range((duration_in_secs / sent_chunk_size_in_secs) // 1):
+                # put chunk of full size in the queue
+                self.real_queue_out.put(self.fluid_synth.get_samples(int(output_rate * sent_chunk_size_in_secs)))
+                duration_in_secs -= duration_in_secs
 
-        if duration_in_secs > 0:
-            # put chunk of leftovers in the queue
-            self.real_queue_out.put(self.fluid_synth.get_samples(int(output_rate * duration_in_secs)))
+            if duration_in_secs > 0:
+                # put chunk of leftovers in the queue
+                self.real_queue_out.put(self.fluid_synth.get_samples(int(output_rate * duration_in_secs)))
 
         sleep(duration_in_secs)  # not sure if that's needed?
 
         if self.last_chord == chord:
             for note in chord.notes:
-                self.fluid_synth.noteoff(default_channel, note.number)  # finally turning the note off
-
-                # note_off = Message('note_off', note=note.number,
-                #                    velocity=min_velocity,
-                #                    channel=default_channel).bytes()
-                # self.midiout.send_message(note_off)
+                self.note_off(default_channel, note.number, min_velocity)
 
     def play_chord_arpeggio(self, track=np.array([])):
         chord = self.queue_out.get()
@@ -197,20 +182,15 @@ class Player:
             track = np.column_stack((notes_numbers, notes_durations))
 
         notes_sum_durations = np.cumsum(track.transpose(), axis=1)[1]
-        if self.last_note_number is not None:
-            self.fluid_synth.noteoff(default_channel, self.last_note_number)  # turning the note off
 
-            # note_off = Message('note_off', note=self.last_note_number, velocity=min_velocity,
-            #                    channel=default_channel).bytes()
-            # self.midiout.send_message(note_off)
+        if self.last_note_number is not None:
+            self.note_off(default_channel, self.last_note_number, min_velocity)
+
         self.start_chord = time.monotonic()
         pair = 0
         note_number = track[pair][0]
-        self.fluid_synth.noteon(default_channel, chord.notes[note_number].number, chord.velocity)  # turning the note on
+        self.note_on(default_channel, chord.notes[note_number].number, chord.velocity)
 
-        # note_on = Message('note_on', note=chord.notes[note_number].number, velocity=chord.velocity,
-        #                   channel=default_channel).bytes()
-        # self.midiout.send_message(note_on)
         while (pair < len(track) - 1):
             # TODO
             if time.monotonic() > self.start_chord + max((self.deadline.value - self.start_chord) *
@@ -218,21 +198,32 @@ class Player:
                                                          notes_sum_durations[-1],
                                                          len_in_s(notes_sum_durations[pair],
                                                          self.tempo.value)):
-                self.fluid_synth.noteoff(default_channel, chord.notes[note_number].number)  # turning the note off
-
-                # note_off = Message('note_off', note=chord.notes[note_number].number,
-                #                    velocity=min_velocity, channel=default_channel).bytes()
-                # self.midiout.send_message(note_off)
+                self.note_off(default_channel, chord.notes[note_number].number, min_velocity)
                 pair += 1
                 note_number = track[pair][0]
-                self.fluid_synth.noteon(default_channel, chord.notes[note_number].number, chord.velocity)
+                self.note_on(default_channel, chord.notes[note_number].number, chord.velocity)
 
-                # note_on = Message('note_on', note=chord.notes[note_number].number,
-                #                   velocity=chord.velocity, channel=default_channel).bytes()
-                # self.midiout.send_message(note_on)
                 self.last_note_number = chord.notes[note_number].number
-            self.real_queue_out.put(self.fluid_synth.get_samples(int(output_rate * small_frame_time_in_secs)))
+
+            if self.output_to_websocket is True:
+                self.real_queue_out.put(self.fluid_synth.get_samples(int(output_rate * small_frame_time_in_secs)))
             time.sleep(small_frame_time_in_secs)
+
+    def note_on(self, channel, note, velocity):
+        if self.output_to_websocket is True:
+            self.fluid_synth.noteon(channel, note, velocity)
+
+        else:
+            note_on = Message('note_on', note=note, velocity=velocity, channel=channel).bytes()
+            self.midiout.send_message(note_on)
+
+    def note_off(self, channel, note, velocity):
+        if self.output_to_websocket is True:
+            self.fluid_synth.noteoff(channel, note)
+
+        else:
+            note_off = Message('note_off', note=note, velocity=velocity, channel=channel).bytes()
+            self.midiout.send_message(note_off)
 
     def put(self, chord):
         if type(chord) == Chord:
@@ -281,11 +272,17 @@ class Player:
         self.midi_for_file.save(filename)
         return filename
 
+    def set_websocket(self, websocket):
+        self.websocket = websocket
+        self.output_to_websocket = True
+        self.real_queue_out = Queue()
+
     def run(self):
         self.running.value = True
-        # self.set_up_ports()
-        # self.set_up_midi_for_file()
-        # self.set_up_instrument()
+        if not self.output_to_websocket:
+            self.set_up_ports()
+            self.set_up_midi_for_file()
+            self.set_up_instrument()
         # self.set_up_ultrasound_instrument()
 
         self.queue_process = Process(target=run_queue_out, args=(self,))

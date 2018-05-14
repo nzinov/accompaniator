@@ -22,7 +22,8 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.accompanist = None
 
     def open(self):
-        self.accompanist = accompanist.Accompanist(self)
+        self.accompanist = accompanist.Accompanist()
+        self.accompanist.set_websocket(self)
         self.accompanist.set_queue_in(self.in_queue)
         self.accompanist.run()
 

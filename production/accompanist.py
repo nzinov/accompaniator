@@ -16,7 +16,7 @@ deadline is the time in seconds since the beginning of the era, float
 
 
 class Accompanist:
-    def __init__(self, websocket):
+    def __init__(self):
         self.queue_into_listener = None
         self.queue_from_listener_to_predictor = Queue()
         self.queue_from_predictor_to_player = Queue()
@@ -25,9 +25,9 @@ class Accompanist:
         self.tempo = Value('f', default_tempo)
         self.deadline = Value('f', 0)
 
-        self.websocket = websocket
+        self.websocket = None
 
-        self.player = Player(websocket, self.queue_from_predictor_to_player, self.running, self.tempo, self.deadline)
+        self.player = Player(self.queue_from_predictor_to_player, self.running, self.tempo, self.deadline)
         self.predictor = ChordPredictor(self.queue_from_listener_to_predictor, self.queue_from_predictor_to_player)
         self.listener = Listener(self.queue_into_listener, self.queue_from_listener_to_predictor, self.running,
                                  self.tempo, self.deadline)
@@ -55,6 +55,10 @@ class Accompanist:
     def set_queue_in(self, queue):
         self.queue_into_listener = queue
         self.listener.set_queue_in(queue)
+
+    def set_websocket(self, websocket):
+        self.websocket = websocket
+        self.player.set_websocket(websocket)
 
     player = None
     listener = None
