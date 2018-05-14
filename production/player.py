@@ -77,12 +77,8 @@ def run_queue_out(player):
             player.play_chord_arpeggio(np.array([[0, 19], [1, 18], [2, 18], [3, 18], [2, 18], [1, 18], [0, 19]]))
         time.sleep(0.01)
     if player.last_note_number is not None:
-        player.fluid_synth.noteoff(default_channel, player.last_note_number)  # turning the note off
-
-        # note_off = Message('note_off', note=player.last_note_number, velocity=min_velocity,
-        #                    channel=default_ultrasound_channel).bytes()
-        # player.midiout.send_message(note_off)
-
+        player.note_off(default_channel, player.last_note_number, )
+        player.fluid_synth.noteoff(default_ultrasound_channel, player.last_note_number, min_velocity)
 
 class Player:
     def __init__(self, queue=Queue(), running=Value('i', False),
