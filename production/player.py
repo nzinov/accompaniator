@@ -33,7 +33,8 @@ max_time = sys.float_info.max
 empty_chord = Chord([], 0, 0)
 
 default_soundfont_path = "../soundfonts/piano_and_ultrasound.sf2"
-sent_chunk_size_in_secs = 0.5
+sent_chunk_size_in_secs = 1.5
+small_frame_time_in_secs = 0.1
 output_rate = 44100  # in Hz
 
 
@@ -44,9 +45,18 @@ def len_in_s(duration, bpm):
 
 def send_output_queue_to_client(player):
     """ Goes through the audio output queue and sends chunks from it to the client via tornado WebSocketHandler"""
+    chunk = np.array([])
+    count = 0
     while player.running.value:
-        chunk = player.real_queue_out.get()
-        player.websocket.send_audio(chunk)
+        small_chunk = player.real_queue_out.get()
+        if count == 0:
+            chunk = small_chunk
+        else:
+            chunk = np.concatenate([chunk, small_chunk])
+        count += 1
+        if count >= int(sent_chunk_size_in_secs / small_frame_time_in_secs):
+            player.websocket.send_audio(chunk)
+            count = 0
         # sleep(sent_chunk_size_in_secs)
 
 
@@ -221,9 +231,8 @@ class Player:
                 #                   velocity=chord.velocity, channel=default_channel).bytes()
                 # self.midiout.send_message(note_on)
                 self.last_note_number = chord.notes[note_number].number
-            self.real_queue_out.put(self.fluid_synth.get_samples(int(output_rate * sent_chunk_size_in_secs)))
-            time.sleep(sent_chunk_size_in_secs)
-            # time.sleep(0.1)
+            self.real_queue_out.put(self.fluid_synth.get_samples(int(output_rate * small_frame_time_in_secs)))
+            time.sleep(small_frame_time_in_secs)
 
     def put(self, chord):
         if type(chord) == Chord:
