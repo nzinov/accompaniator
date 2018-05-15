@@ -29,6 +29,7 @@
     var sampleRate = 44100;
     var state = "init";
     var delay = [];
+    var send_queve = [];
     var text_ws;
     var server_name = 'ws://demos.kaazing.com/echo';
     TextWS();
@@ -179,7 +180,21 @@
         Push(simpleExportWAV());
     }
 
-    function Send(array){
+    function WSSend(){
+        num = send_queve.length;
+        for(var i = 0; i < num; i++){
+            if (send_queve.length > 0) {
+                blob = send_queve.shift();
+                if (ws.readyState == 1) {
+                    ws.send(blob);
+                    _now = new Date().getTime();
+                    delay.push(_now);
+                }
+                else {
+                    send_queve.unshift(blob);
+                }
+            }
+        }
     }
 
     function SendFrames(){
@@ -191,16 +206,8 @@
             }
             //toSendStr = JSON.stringify(toSend);
             toSendBlob = exportWAV(toSend);
-            //console.log("toSendBlob", toSendBlob);
-            //Push(toSendBlob);
-            if (ws.readyState==1){
-                ws.send(toSendBlob);
-                _now = new Date().getTime();
-                delay.push(_now);
-            }
-            else{
-                console.log("blob is lost")
-            }
+            send_queve.push(toSendBlob);
+            WSSend();
         }
         if (isRecording) {
             setTimeout(SendFrames, 300);
