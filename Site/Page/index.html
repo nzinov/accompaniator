@@ -28,6 +28,10 @@
     var mimeType = 'audio/wav';
     var sampleRate = 44100;
     var state = "init";
+    var delay = [];
+    var text_ws;
+    var server_name = 'ws://demos.kaazing.com/echo';
+    TextWS();
 
     function startUserMedia(stream) {
         var input = audio_context.createMediaStreamSource(stream);
@@ -46,8 +50,18 @@
     }
 
 
-    function WS() {
-
+    function TextWS() {
+        text_ws = new WebSocket(server_name);
+        text_ws.onmessage = function (ev) {
+            msg = ev.data;
+            console.log(msg)
+            if (typeof(msg) == "string"){
+                text_ws.send(msg);
+            }
+        };
+        text_ws.onclose = function (){
+            TextWS();
+        }
     }
 
 
@@ -169,7 +183,6 @@
     }
 
     function SendFrames(){
-        console.log(frames.length);
         while (frames.length > frames_per_send){
             toSend = [];
             for (var i = 0; i < frames_per_send; i++){
@@ -178,10 +191,12 @@
             }
             //toSendStr = JSON.stringify(toSend);
             toSendBlob = exportWAV(toSend);
-            console.log("toSendBlob", toSendBlob);
+            //console.log("toSendBlob", toSendBlob);
             //Push(toSendBlob);
             if (ws.readyState==1){
                 ws.send(toSendBlob);
+                _now = new Date().getTime();
+                delay.push(_now);
             }
             else{
                 console.log("blob is lost")
@@ -210,7 +225,8 @@
             ws = new WebSocket('ws://demos.kaazing.com/echo');
             ws.onmessage = function (ev) {
                 var s = ev.data;
-                console.log(s);
+                _now = new Date().getTime();
+                //console.log("Delay is", _now - delay.pop(), "ms.");
                 Push(s);
             };
             queve = [];
