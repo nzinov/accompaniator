@@ -3,7 +3,6 @@ aubio
 pyaudio
 mido
 python-rtmidi
-pyfluidsynth
 #madmom
 #cython
 
@@ -24,3 +23,4 @@ tqdm
 
 # Web
 tornado
+six

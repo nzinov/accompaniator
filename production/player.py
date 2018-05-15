@@ -33,7 +33,7 @@ sec_in_hour = 3600
 max_time = sys.float_info.max
 empty_chord = Chord([], 0, 0)
 
-default_soundfont_path = "../soundfonts/piano_and_ultrasound.sf2"
+default_soundfont_path = "../docker/accompaniator/piano_and_ultrasound.sf2"
 sent_chunk_size_in_secs = 1.5
 small_frame_time_in_secs = 0.1
 output_rate = 44100  # in Hz
