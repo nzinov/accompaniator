@@ -82,7 +82,8 @@ def run_queue_in(listener):
             print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic())
             bar_start = False
             listener.queue_from_listener_to_predictor.put(chord)
-            KOLYA_time = start_time + (last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0
+            KOLYA_time = start_time - listener.web_delay + (last_downbeat + (4 - count_beat) * 60 * 1000.0
+                                                            / listener.tempo.value) / 1000.0
             # print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic(), KOLYA_time)
             # print(count_beat, time.monotonic(), KOLYA_time, listener.deadline.value)
             if count_beat != 0:
@@ -101,6 +102,8 @@ class Listener:
             self.input_from_queue = True
         else:
             self.input_from_queue = False
+
+        self.web_delay = 0
 
         self.running = running
         self.tempo = tempo
@@ -129,6 +132,9 @@ class Listener:
     def set_queue_in(self, queue):
         self.queue_in = queue
         self.input_from_queue = True
+
+    def set_web_delay(self, delay):
+        self.web_delay = delay
 
     queue_in = None
     running = None

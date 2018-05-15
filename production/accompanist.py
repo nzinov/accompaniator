@@ -60,6 +60,9 @@ class Accompanist:
         self.websocket = websocket
         self.player.set_websocket(websocket)
 
+    def set_web_delay(self, delay):
+        self.listener.set_web_delay(delay)
+
     player = None
     listener = None
     predictor = None

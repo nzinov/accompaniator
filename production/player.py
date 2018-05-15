@@ -80,6 +80,7 @@ def run_queue_out(player):
         player.note_off(default_channel, player.last_note_number, )
         player.fluid_synth.noteoff(default_ultrasound_channel, player.last_note_number, min_velocity)
 
+
 class Player:
     def __init__(self, queue=Queue(), running=Value('i', False),
                  tempo=Value('i', default_tempo),
@@ -187,7 +188,7 @@ class Player:
         note_number = track[pair][0]
         self.note_on(default_channel, chord.notes[note_number].number, chord.velocity)
 
-        while (pair < len(track) - 1):
+        while pair < len(track) - 1:
             # TODO
             if time.monotonic() > self.start_chord + max((self.deadline.value - self.start_chord) *
                                                          notes_sum_durations[pair] /
