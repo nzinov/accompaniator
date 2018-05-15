@@ -19,7 +19,8 @@
                     {% csrf_token %}
                     <input type="text" id="id_song_name" name="song_name" class="form-control" placeholder="Лучшая песня эвэр" required=""
                            autofocus="">
-                    <p><span id="mark" style="display: none" >00:00</span></p>
+                    <p><span id="mark" >00:00</span></p>
+                    <p><span id="mark1" style="display: none" >00:00</span></p>
                 </div>
             </div>
             <div class="row">
@@ -29,11 +30,11 @@
 
                 <div class="col-sm-4">
                     <ul class="list-inline">
-                        <li><a href="#" onclick="one()" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
-                        <li><a href="#" onclick="second()" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
-                        <li><a href="#" onclick="third()" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
-                        <li><a href="#" onclick="fourth()" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
-                        <li><a href="#" onclick="five()" class="social-icons"><img src="{% static 'img/star.png' %}" width="100%" height="100%"></img></a></li>
+                        <li><a id="star1" href="#" onclick="star(1, this)" class="social-icons"><img src="{% static 'img/star_dark.png' %}" width="100%" height="100%"></img></a></li>
+                        <li><a id="star2" href="#" onclick="star(2, this)" class="social-icons"><img src="{% static 'img/star_dark.png' %}" width="100%" height="100%"></img></a></li>
+                        <li><a id="star3" href="#" onclick="star(3, this)" class="social-icons"><img src="{% static 'img/star_dark.png' %}" width="100%" height="100%"></img></a></li>
+                        <li><a id="star4" href="#" onclick="star(4, this)" class="social-icons"><img src="{% static 'img/star_dark.png' %}" width="100%" height="100%"></img></a></li>
+                        <li><a id="star5" href="#" onclick="star(5, this)" class="social-icons"><img src="{% static 'img/star_dark.png' %}" width="100%" height="100%"></img></a></li>
                     </ul>
                 </div>
             </div>
