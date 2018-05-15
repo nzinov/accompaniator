@@ -3,6 +3,7 @@ aubio
 pyaudio
 mido
 python-rtmidi
+pyfluidsynth
 #madmom
 #cython
 
@@ -20,3 +21,6 @@ coverage
 
 # Common stuff
 tqdm
+
+# Web
+tornado

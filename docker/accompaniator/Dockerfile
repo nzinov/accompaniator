@@ -26,6 +26,7 @@ ADD . /build/
 
 RUN mv asound.conf /etc/asound.conf
 RUN cat ./.bashrc >> ~/.bashrc
+RUN mv piano_and_ultrasound.sf2 /piano_and_ultrasound.sf2
 
 RUN git clone https://github.com/nzinov/accompaniator
 
