@@ -72,14 +72,16 @@ def run_queue_in(listener):
         if (new_note[0] != 0):
             if (len(beats) != 0):
                 listener.set_tempo(60 * 1000.0 / np.median(beats))
-            chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value),
+            chord = Chord([Note(int(new_note[0]))],
+                          from_ms_to_our_time(last_onset - prev_time,
+                                              listener.tempo.value),
                           int(new_note[1]), bar_start)
-            # print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic())
             bar_start = False
             listener.queue_in.put(chord)
-            KOLYA_time = start_time + (last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0
-            print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic(), KOLYA_time)
-            # print(count_beat, time.monotonic(), KOLYA_time, listener.deadline.value)
+            KOLYA_time = start_time + (last_downbeat + (4 - count_beat) * 60 *
+                                       1000.0 / listener.tempo.value) / 1000.0
+            print(bar_start, listener.tempo.value, listener.deadline.value,
+                  time.monotonic(), KOLYA_time)
             if (count_beat != 0):
                 listener.set_deadline(KOLYA_time)
             prev_time = last_onset

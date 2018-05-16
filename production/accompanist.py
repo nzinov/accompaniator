@@ -24,9 +24,12 @@ class Accompanist:
         self.tempo = Value('f', default_tempo)
         self.deadline = Value('f', 0)
 
-        self.player = Player(self.queue_out, self.running, self.tempo, self.deadline)
-        self.predictor = ChordPredictor(self.queue_in, self.queue_out, self.deadline)
-        self.listener = Listener(self.queue_in, self.running, self.tempo, self.deadline)
+        self.player = Player(self.queue_out, self.running, self.tempo,
+                             self.deadline)
+        self.predictor = ChordPredictor(self.queue_in, self.queue_out,
+                                        self.deadline)
+        self.listener = Listener(self.queue_in, self.running, self.tempo,
+                                 self.deadline)
 
     def run(self):
         self.running.value = True
@@ -63,7 +66,7 @@ if __name__ == '__main__':
     a = Accompanist()
     start_time = time.monotonic()
     a.run()
-    sleep(50)
+    sleep(5)
     a.stop()
     '''q = a.player
     start_time = time.monotonic()

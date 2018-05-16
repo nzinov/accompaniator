@@ -47,14 +47,19 @@ def run_peak(player):
 
 def run_queue_out(player):
     while (player.running.value):
-        if not player.queue_out.empty() and time.monotonic() > player.deadline.value:
-            """ track is array of pairs: first is note number in chord, second is note len (duration) in 1/128.
+        if (not player.queue_out.empty() and
+                time.monotonic() > player.deadline.value):
+            """ track is array of pairs: first is note number in chord,
+                second is note len (duration) in 1/128.
                 Sum of durations MUST be equal to 128 """
-            player.play_chord_arpeggio(np.array([[0, 19], [1, 18], [2, 18], [3, 18], [2, 18], [1, 18], [0, 19]]))
+            player.play_chord_arpeggio(np.array([[0, 19], [1, 18], [2, 18],
+                                                 [3, 18], [2, 18], [1, 18],
+                                                 [0, 19]]))
         time.sleep(0.01)
     if player.last_note_number is not None:
-        note_off = Message('note_off', note=player.last_note_number, velocity=min_velocity,
-                           channel=default_ultrasound_channel).bytes()
+        note_off = Message('note_off', note=player.last_note_number,
+                           velocity=min_velocity,
+                           channel=default_channel).bytes()
         player.midiout.send_message(note_off)
 
 
@@ -85,7 +90,6 @@ class Player:
 
     def play_chord_same_time(self):
         chord = self.queue_out.get()
-        # print("player get", chord, "vel", chord.velocity, "queue", self.queue_out.qsize(), "time", time.monotonic())
         if chord.velocity > 127:
             chord.velocity = 127
         if chord.duration == 0:
@@ -121,7 +125,8 @@ class Player:
 
     def play_chord_arpeggio(self, track=np.array([])):
         chord = self.queue_out.get()
-        print("player get", chord, "vel", chord.velocity, "queue", self.queue_out.qsize(), "time", time.monotonic())
+        print("player get", chord, "vel", chord.velocity, "queue",
+              self.queue_out.qsize(), "time", time.monotonic())
         if chord.velocity > 127:
             chord.velocity = 127
         if chord.duration == 0:
@@ -131,38 +136,43 @@ class Player:
                 print("an incorrect note in player")
                 return
         chord.notes = sorted(chord.notes)
-        if len(chord.notes) == 3:
-            chord.notes.append(Note(chord.notes[0].number + 12))
         if track == np.array([]):
             notes_numbers = np.arange(len(chord.notes))
-            notes_durations = np.array([int(128 / len(chord.notes)) for i in range(len(chord.notes))])
+            notes_durations = np.array([int(128 / len(chord.notes))
+                                        for i in range(len(chord.notes))])
             track = np.column_stack((notes_numbers, notes_durations))
 
         notes_sum_durations = np.cumsum(track.transpose(), axis=1)[1]
         if self.last_note_number is not None:
-            note_off = Message('note_off', note=self.last_note_number, velocity=min_velocity,
+            note_off = Message('note_off', note=self.last_note_number,
+                               velocity=min_velocity,
                                channel=default_channel).bytes()
             self.midiout.send_message(note_off)
         self.start_chord = time.monotonic()
         pair = 0
         note_number = track[pair][0]
-        note_on = Message('note_on', note=chord.notes[note_number].number, velocity=chord.velocity,
+        note_on = Message('note_on', note=chord.notes[note_number].number,
+                          velocity=chord.velocity,
                           channel=default_channel).bytes()
         self.midiout.send_message(note_on)
         while (pair < len(track) - 1):
             # TODO
-            if time.monotonic() > self.start_chord + max((self.deadline.value - self.start_chord) *
-                                                         notes_sum_durations[pair] /
-                                                         notes_sum_durations[-1],
-                                                         len_in_s(notes_sum_durations[pair],
-                                                         self.tempo.value)):
-                note_off = Message('note_off', note=chord.notes[note_number].number,
-                                   velocity=min_velocity, channel=default_channel).bytes()
+            if (time.monotonic() > self.start_chord +
+                    max((self.deadline.value - self.start_chord) *
+                        notes_sum_durations[pair] / notes_sum_durations[-1],
+                        len_in_s(notes_sum_durations[pair],
+                                 self.tempo.value))):
+                note_off = Message('note_off',
+                                   note=chord.notes[note_number].number,
+                                   velocity=min_velocity,
+                                   channel=default_channel).bytes()
                 self.midiout.send_message(note_off)
                 pair += 1
                 note_number = track[pair][0]
-                note_on = Message('note_on', note=chord.notes[note_number].number,
-                                  velocity=chord.velocity, channel=default_channel).bytes()
+                note_on = Message('note_on',
+                                  note=chord.notes[note_number].number,
+                                  velocity=chord.velocity,
+                                  channel=default_channel).bytes()
                 self.midiout.send_message(note_on)
                 self.last_note_number = chord.notes[note_number].number
             time.sleep(0.01)

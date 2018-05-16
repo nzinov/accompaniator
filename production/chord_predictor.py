@@ -1,8 +1,14 @@
-import pickle
 import time
 import numpy as np
+import pandas as pd
 from structures import Note, Chord
 from multiprocessing import Queue, Process, Value
+
+from keras.models import Sequential
+from keras.layers import Embedding
+from keras.layers import Merge
+from keras.layers import LSTM
+from keras.layers.core import Dense
 
 defualt_predicted_len = 128
 defualt_velocity = 100
@@ -47,21 +53,25 @@ def chord_notes(chord):
 
 
 def run_queue(predictor):
-    predictor.load_model("rf_nottingham.pkl")
+    predictor.load_model("NN_model")
+    predictor.load_unique_chords("vocab.csv")
 
     while predictor.running.value:
         if not predictor.queue_in.empty():
             # print("predictor get")
             chord = predictor.try_predict()
             if chord is not None:
-                predictor.queue_out.put(chord, defualt_predicted_len, defualt_velocity)
+                predictor.queue_out.put(chord, defualt_predicted_len,
+                                        defualt_velocity)
                 # print("predictor put")
 
 
 class ChordPredictor:
     model = None
+    unique_chords = None
 
-    def __init__(self, queue_in=Queue(), queue_out=Queue(), deadline=Value('f', 0)):
+    def __init__(self, queue_in=Queue(), queue_out=Queue(),
+                 deadline=Value('f', 0)):
         self.queue_in = queue_in
         self.queue_out = queue_out
         self.running = Value('i', False)
@@ -72,6 +82,7 @@ class ChordPredictor:
         self.chords_list = []
         self.deadline = deadline
         self.prediction_for_beat = False
+        self.current_chord_num = 0  # TODO
 
     def run(self):
         self.running.value = True
@@ -82,65 +93,74 @@ class ChordPredictor:
         self.running.value = False
         self.process.join()
 
+    def create_coded(self, X):
+        return np.zeros(len(X))
+
+    def encode(self, X, coded_X):
+        for j, k in enumerate(X):
+            for i, unique_chord in enumerate(self.unique_chords):
+                if np.array_equal(k, unique_chord):
+                    coded_X[j] = i
+
     def load_model(self, filename):
-        with open(filename, 'rb') as fid:
-            self.model = pickle.load(fid)
+        model_chords = Sequential()
+        model_notes = Sequential()
+
+        model_chords.add(Embedding(10000, 20, input_length=1,
+                                   batch_input_shape=(1, 1)))
+        model_notes.add(Embedding(128, 20, input_length=1,
+                                  batch_input_shape=(1, 1)))
+
+        self.model = Sequential()
+        merged = Merge([model_chords, model_notes])
+        self.model.add(merged)
+        self.model.add(LSTM(20, stateful=True))
+        self.model.add(Dense(10000, activation='softmax'))
+
+        self.model.load_weights("NN_model.h5")
+        self.model.compile(optimizer='adam',
+                           loss='sparse_categorical_crossentropy',
+                           metrics=['accuracy'])
+
+    def load_unique_chords(self, filename):
+        self.unique_chords = pd.read_csv(filename)
+        self.unique_chords = self.unique_chords.values.T[1:].T
+
+    def make_suitable(self, notes_list):
+        new_list = list(filter(lambda x: x != -1, notes_list))
+        # TODO
+        if len(new_list) == 1:
+            note = new_list[0]
+            new_list.extend([note + 4, note + 7, note + 12])  # major triad
+        elif len(new_list) == 2:
+            note1 = new_list[0]
+            note2 = new_list[1]
+            new_list.extend([note1 + 12, note2 + 12])
+        elif len(new_list) == 3:
+            note = new_list[0]
+            if note + 12 < new_list[2]:
+                new_list.append(note + 12)
+            else:
+                new_list.append(new_list[2] + 3)
+        else:
+            new_list = new_list[:4]
+        return list(map(lambda x: Note(int(x)), new_list))
 
     def try_predict(self):
-        chord = self.queue_in.get()
-        # print(chord.downbeat)
-        if chord.downbeat is False and self.second_downbeat is False:
-            return None
-        self.chords_list.append(chord)
-        self.chords_len += chord.duration
-        if chord.downbeat:
+        notes = self.queue_in.get()
+        print(notes.duration)
+        # what TODO if more then one notes?
+        note = notes.notes[0]
+        self.current_chord_num = self.model.predict([
+                                 np.array([self.current_chord_num]),
+                                 np.array([note.number])],
+                                                    batch_size=1,
+                                                    verbose=1).argmax()
+        if notes.downbeat:
             self.prediction_for_beat = False
-            if not self.second_downbeat:
-                self.second_downbeat = True
-            else:
-                self.chords_count_before_4_4 = len(self.chords_list)
-                self.chords_len_before_4_4 = 128  # self.chords_len
-        if self.chords_len > 128 * 2 * 7 / 8:
+        if (time.monotonic() > self.deadline.value - prediction_time and
+                self.prediction_for_beat is False):
+            chord_notes = self.unique_chords[self.current_chord_num]
             self.prediction_for_beat = True
-            prediction = self.predict(self.chords_list)
-            self.chords_list = self.chords_list[self.chords_count_before_4_4:]
-            self.chords_len = self.chords_len - self.chords_len_before_4_4
-            self.chords_len_before_4_4 = self.chords_len
-            self.chords_count_before_4_4 = len(self.chords_list)
-            return prediction
-        if time.monotonic() > self.deadline.value - prediction_time and self.prediction_for_beat is False:
-            print("because of deadline")
-            self.prediction_for_beat = True
-            self.chords_list.append(Chord([Note(-1)], 128 * 2 * 7 / 8 - self.chords_len, 0))
-            prediction = self.predict(self.chords_list)
-            self.chords_list.pop()
-            return prediction
+            return Chord(self.make_suitable(chord_notes), 128, notes.velocity)
         return None
-
-    def predict(self, chords_list):
-        # передаётся два такта, кроме последней доли (то есть от двух тактов доступно 7/8 или 14/16 информации)
-        numbers = np.array([])  # midi numbers!
-        for chord in chords_list:
-            num_notes_to_add = round(chord.len() / 8)
-            note = chord.notes[0]
-            for i in range(num_notes_to_add):
-                numbers = np.append(numbers, note.number)
-        # shift midi notes to our notes
-        numbers = numbers % 12
-        # generate beat
-        beat = np.hstack([np.ones(4), np.zeros(12), np.ones(4), np.ones(8)])
-        if numbers.size != 28:
-            # print("Number of notes is wrong: " + str(numbers_size))
-            if numbers.size < 28:
-                numbers = np.hstack([numbers, np.zeros(28 - len(numbers)) + 12])
-            else:
-                numbers = numbers[:28]
-        # сначала номера, потом биты
-        chord = self.model.predict(np.hstack([numbers, beat]).reshape(1, -1))
-        # print(chord)
-        notes = chord_notes(chord[0])
-        list_notes = []
-        for note in notes:
-            list_notes.append(Note(note + 12 * 4))
-        # here you need to set the duration of the chord
-        return Chord(list_notes, 128, int(np.mean(list(map(lambda chord: chord.velocity, chords_list)))))
