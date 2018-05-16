@@ -21,6 +21,10 @@ def home(request):
 def recordings(request):
     context_dict = {}
 
+    session_key = request.session.session_key
+
+    context_dict['filenames'] = os.listdir(os.path.join(settings.MEDIA_ROOT, session_key))
+
     return render(request, 'base_app/recordings.html', context_dict)
 
 
