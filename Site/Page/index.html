@@ -7,9 +7,7 @@
 <body>
 
 <div>
-    <button id="button" onclick="Init(this);">INIT</button>
-    <button id="stop" onclick="Stop();" disabled>STOP</button>
-    <!-- <button id="play" onclick="TestPlay();">Test Play</button> !-->
+    <button onclick="Init();">BUTTON</button>
 </div>
 
 <script>
@@ -23,12 +21,18 @@
     var prev_length = 0;
     var isRecording = false;
     var frames = [];
-    var frames_per_send = 40;
+    var frames_per_send = 10;
     var frame_size = 1024;
     var isInited = false;
     var numChannels = 1;
     var mimeType = 'audio/wav';
     var sampleRate = 44100;
+    var state = "init";
+    var delay = [];
+    var send_queve = [];
+    var text_ws;
+    var server_name = 'ws://demos.kaazing.com/echo';
+    TextWS();
 
     function startUserMedia(stream) {
         var input = audio_context.createMediaStreamSource(stream);
@@ -47,20 +51,18 @@
     }
 
 
-    function WS(message) {
-        ws = new WebSocket('ws://demos.kaazing.com/echo');
-        ws.onopen = function(){
-            ws.send(message);
+    function TextWS() {
+        text_ws = new WebSocket(server_name);
+        text_ws.onmessage = function (ev) {
+            msg = ev.data;
+            console.log(msg)
+            if (typeof(msg) == "string"){
+                text_ws.send(msg);
+            }
         };
-        ws.onmessage = function (ev) {
-            var s = ev.data;
-            console.log(s);
-            Push(s);
-        };
-        ws.onclose = function () {
-            setTimeout(WS, 1);
-        };
-
+        text_ws.onclose = function (){
+            TextWS();
+        }
     }
 
 
@@ -98,14 +100,14 @@
     function simpleExportWAV() {
         interleaved = mergeBuffers(frames, frames.length * frame_size);
         dataview = encodeWAV(interleaved);
-        return new Blob([dataview], { type: 'audio/wav' });
+        return new Blob([dataview], { type: mimeType });
     }
 
 
     function exportWAV(array_frames) {
         interleaved = mergeBuffers(array_frames, array_frames.length * frame_size);
         dataview = encodeWAV(interleaved);
-        return new Blob([dataview], { type: 'audio/wav' });
+        return new Blob([dataview], { type: mimeType });
     }
 
 
@@ -178,11 +180,24 @@
         Push(simpleExportWAV());
     }
 
-    function Send(array){
+    function WSSend(){
+        num = send_queve.length;
+        for(var i = 0; i < num; i++){
+            if (send_queve.length > 0) {
+                blob = send_queve.shift();
+                if (ws.readyState == 1) {
+                    ws.send(blob);
+                    _now = new Date().getTime();
+                    delay.push(_now);
+                }
+                else {
+                    send_queve.unshift(blob);
+                }
+            }
+        }
     }
 
     function SendFrames(){
-        console.log(frames.length);
         while (frames.length > frames_per_send){
             toSend = [];
             for (var i = 0; i < frames_per_send; i++){
@@ -191,9 +206,8 @@
             }
             //toSendStr = JSON.stringify(toSend);
             toSendBlob = exportWAV(toSend);
-            console.log("toSendBlob", toSendBlob);
-            //Push(toSendBlob);
-            WS(toSendBlob);
+            send_queve.push(toSendBlob);
+            WSSend();
         }
         if (isRecording) {
             setTimeout(SendFrames, 300);
@@ -202,37 +216,40 @@
 
 
     function Stop() {
-        document.getElementById("stop").disabled = true;
-        document.getElementById("button").innerText = "stopping";
+        state = 'stopping';
         recorder && recorder.stop();
         recorder.clear();
         isRecording=false;
         setTimeout(function () {
-            document.getElementById("button").innerText = "RECORD";
-            document.getElementById("button").disabled = false;
-        }, 1000)
+            state = 'record';
+        }, 1000);
+        ws.close();
     }
 
 
-    function Recording(button) {
-        if (button.innerText == "RECORD") {
-            //WS();
+    function Recording() {
+        if (state == "record") {
+            ws = new WebSocket('ws://demos.kaazing.com/echo');
+            ws.onmessage = function (ev) {
+                var s = ev.data;
+                _now = new Date().getTime();
+                //console.log("Delay is", _now - delay.pop(), "ms.");
+                Push(s);
+            };
             queve = [];
             frames = [];
             isRecording=true;
             recorder && recorder.record();
-            button.innerText = "recording";
-            button.disabled = true;
-            document.getElementById('stop').disabled = false;
+            state = "recording";
             setTimeout(SendFrames, 100);
-            Recording(button);
+            Recording();
             RealPlay();
 
         }
-        else if (button.innerText == "recording"){
+        else if (state == "recording"){
             setTimeout(WriteBuffer, 100);
             setTimeout(function () {
-                Recording(button)
+                Recording()
             }, 200);
         }
     }
@@ -253,9 +270,14 @@
         });
     }
 
-    function Init(button) {
+    function Init() {
         if (isInited){
-            Recording(button);
+            if (state == 'recording') {
+                Stop();
+            }
+            else if(state == 'record'){
+                Recording();
+            }
         }
         else {
             try {
@@ -266,7 +288,7 @@
 
                 audio_context = new window.AudioContext;
                 isInited = true;
-                button.innerText="RECORD";
+                state = 'record';
             } catch (e) {
                 alert('No web audio support in this browser!');
             }
