@@ -135,7 +135,7 @@ def run_queue_in(listener):
 
 
 class Listener:
-    def __init__(self, input_queue, queue_from_listener_to_predictor, running=Value('i', False),
+    def __init__(self, input_queue=None, queue_from_listener_to_predictor=None, running=Value('i', False),
                  tempo=Value('i', default_tempo),
                  deadline=Value('f', 0)):
         self.queue_in = input_queue
