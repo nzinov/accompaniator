@@ -67,7 +67,6 @@ def run_queue_in(listener):
     prev_time = 0
     start_time = time.monotonic()
 
-
     # downbeat's structures' initialization
     latest_onsets_velocities = []
     i_onset = 0
@@ -126,8 +125,8 @@ def run_queue_in(listener):
             print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic())
             bar_start = False
             listener.queue_from_listener_to_predictor.put(chord)
-            KOLYA_time = start_time - listener.web_delay + (beat_groups[downbeat_group] + (4 - count_beat) * 60 * 1000.0 /
-                                                            listener.tempo.value) / 1000.0
+            KOLYA_time = start_time - listener.web_delay + (beat_groups[downbeat_group] + (4 - count_beat) * 60 * 1000.0
+                                                            / listener.tempo.value) / 1000.0
             # print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic(), KOLYA_time)
             # print(count_beat, time.monotonic(), KOLYA_time, listener.deadline.value)
             if count_beat != downbeat_group:
