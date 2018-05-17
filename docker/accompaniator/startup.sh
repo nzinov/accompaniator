@@ -10,4 +10,6 @@ else
   echo "Fluidsynth ran successfully"
 fi
 
+python3 web/tornado_server.py
+
 bash

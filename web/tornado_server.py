@@ -1,3 +1,5 @@
+# import sys
+# sys.path.append("../")
 import numpy as np
 import io
 import scipy.io.wavfile
@@ -13,7 +15,7 @@ from datetime import datetime
 import time
 
 buffer_size = 256
-time_between_delay_measurings_in_secs = 5.0
+time_between_delay_measurings_in_secs = 1.5
 
 
 def send_time_stamps(websocket):
@@ -40,9 +42,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.accompanist.set_websocket(self)
         self.accompanist.set_queue_in(self.in_queue)
 
-        self.running = True
         self.accompanist.run()
 
+        self.running = True
         self.time_send_process = Process(target=send_time_stamps, args=(self,))
         self.time_send_process.start()
 
@@ -64,6 +66,7 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
         self.running = False
 
     def send_audio(self, message):
+        print("delay ok!")
         output = io.BytesIO()
         scipy.io.wavfile.write(output, 44100, message)
         self.write_message(output.getvalue(), binary=True)
@@ -80,5 +83,5 @@ def main():
 if __name__ == "__main__":
     app = main()
     http_server = tornado.httpserver.HTTPServer(app)
-    http_server.listen(8070, address='127.0.0.1')
+    http_server.listen(8110, address='127.0.0.1')
     ioloop.IOLoop.instance().start()
