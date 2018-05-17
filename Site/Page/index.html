@@ -229,7 +229,7 @@
 
     function Recording() {
         if (state == "record") {
-            ws = new WebSocket('ws://demos.kaazing.com/echo');
+            ws = new WebSocket(server_name);
             ws.onmessage = function (ev) {
                 var s = ev.data;
                 _now = new Date().getTime();
