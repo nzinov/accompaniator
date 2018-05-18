@@ -16,24 +16,24 @@
                 </div>
             </div>
             <div class="row">
-                    <p><span id="mark" style="display: none" >00:00</span></p>
+                <p><span id="mark" style="display: none">00:00</span></p>
             </div>
             <div class="row">
 
 
                 <div class="col-sm-4 col-sm-offset-3">
                     <ul class="list-inline">
-                        <li><a id="star1" href="#" onclick="star(1, this)" class="social-icons"><img src="{% static 'img/star_dark.png' %}" width="100%" height="100%"></img></a></li>
-                        <li><a id="star2" href="#" onclick="star(2, this)" class="social-icons"><img src="{% static 'img/star_dark.png' %}" width="100%" height="100%"></img></a></li>
-                        <li><a id="star3" href="#" onclick="star(3, this)" class="social-icons"><img src="{% static 'img/star_dark.png' %}" width="100%" height="100%"></img></a></li>
-                        <li><a id="star4" href="#" onclick="star(4, this)" class="social-icons"><img src="{% static 'img/star_dark.png' %}" width="100%" height="100%"></img></a></li>
-                        <li><a id="star5" href="#" onclick="star(5, this)" class="social-icons"><img src="{% static 'img/star_dark.png' %}" width="100%" height="100%"></img></a></li>
+                        {% for i in stars_range %}
+                        <li><a id="star{{i}}" href="#" onclick="star({{i}}, this)" class="social-icons"><img
+                                src="{% static 'img/star_dark.png' %}" width="100%" height="100%"></a></li>
+
+                        {%endfor%}
                     </ul>
                 </div>
             </div>
 
             <div class="row">
-                    <p><span id="mark1" style="display: none" >00:00</span></p>
+                <p><span id="mark1" style="display: none">00:00</span></p>
             </div>
             <div class="row">
                 <div class="col-sm-1 col-sm-offset-4">

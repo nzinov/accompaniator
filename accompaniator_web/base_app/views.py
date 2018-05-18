@@ -61,4 +61,6 @@ def results(request):
         form = FeedbackForm()
 
     context_dict['feedback_form'] = form
+
+    context_dict['stars_range'] = range(1, 6)
     return render(request, 'base_app/results.html', context_dict)
