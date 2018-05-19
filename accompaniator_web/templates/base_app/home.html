@@ -16,7 +16,7 @@
             <div class="col-sm-offset-3">
                 <div class="promo-block-img-wrap">
                     <a class='btn btn-secondary'>
-                        <img class= img-responsive" src="{% static 'img/button.png' %}" class="img-circle" align="Avatar" onclick="document.getElementById('start_button').style.display = 'none'; document.getElementById('stop_button').style.display = 'block'; startTimer(); Init();">
+                        <img class="img-responsive img-circle" src="{% static 'img/button.png' %}" align="Avatar" onclick="document.getElementById('start_button').style.display = 'none'; document.getElementById('stop_button').style.display = 'block'; startTimer(); Init();">
                     </a>
                 </div>
             </div>
@@ -26,7 +26,7 @@
             <div class="col-sm-offset-3">
                 <div class="promo-block-img-wrap">
                     <a class='btn btn-secondary' href="{% url 'results' %}" >
-                        <img class= img-responsive" src="{% static 'img/button_stop.png' %}" class="img-circle" align="Avatar">
+                        <img class="img-circle img-responsive" src="{% static 'img/button_stop.png' %}" align="Avatar">
                         <p><span id="my_timer" style="font-size: 300%;">00:00</span></p>
                     </a>
                 </div>
