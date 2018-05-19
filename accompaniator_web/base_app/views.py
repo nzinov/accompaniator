@@ -13,7 +13,7 @@ def index(request):
 
 
 def home(request):
-    context_dict = {}
+    context_dict = {'after_landing': False}
 
     return render(request, 'base_app/home.html', context_dict)
 
@@ -33,14 +33,9 @@ def preferences(request):
     return render(request, 'base_app/settings.html', context_dict)
 
 
-def process(request):
-    context_dict = {}
-    return render(request, 'base_app/process.html', context_dict)
-
-
 def home_after_landing(request):
-    context_dict = {}
-    return render(request, 'base_app/home_after_landing.html', context_dict)
+    context_dict = {'after_landing': True}
+    return render(request, 'base_app/home.html', context_dict)
 
 
 def results(request):
