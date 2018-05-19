@@ -258,3 +258,42 @@ function Init() {
         });
     }
 }
+
+function MyInit() {
+
+    try {
+        // webkit shim
+        window.AudioContext = window.AudioContext || window.webkitAudioContext;
+        navigator.getUserMedia = (navigator.getUserMedia ||
+            navigator.webkitGetUserMedia ||
+            navigator.mozGetUserMedia ||
+            navigator.msGetUserMedia);
+        // navigator.getUserMedia = navigator.mediaDevices.getUserMedia;
+
+        window.URL = window.URL || window.webkitURL;
+
+        audio_context = new window.AudioContext;
+        isInited = true;
+        state = 'record';
+    } catch (e) {
+        alert('No web audio support in this browser!');
+    }
+
+    navigator.getUserMedia({audio: true}, startUserMedia, function (e) {
+        alert('No live audio input: ' + e);
+    });
+
+}
+
+function MyStart() {
+    audio_context.resume().then(() => {
+        console.log('Playback resumed successfully');
+    }).catch(() => {
+        alert('Unable to resume playback');
+    });
+    Recording();
+}
+
+function MyStop() {
+    Stop();
+}

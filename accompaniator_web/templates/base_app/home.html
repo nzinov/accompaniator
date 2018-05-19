@@ -6,7 +6,7 @@
 {% block idea %}
 
     <script src="{% static 'js/timer.js' %}"></script>
-    <script src="{% static 'js/home.js' %}"></script>
+    <script src="{% static 'js/home.js' %}" onload="MyInit();"></script>
     <script src="{% static 'js/recorder.js' %}"></script>
 
     <!--========== SLIDER ==========-->
@@ -26,7 +26,7 @@
                             <a class='btn btn-secondary'>
                                 <img class="promo-block-img img-responsive img-circle" src="{% static 'img/button.png' %}"
                                      align="Avatar"
-                                     onclick="document.getElementById('start_button').style.display = 'none'; document.getElementById('stop_button').style.display = 'inline-block'; startTimer(); Init();">
+                                     onclick="document.getElementById('start_button').style.display = 'none'; document.getElementById('stop_button').style.display = 'inline-block'; startTimer(); MyStart();">
                             </a>
                         </div>
                 </div>
@@ -35,7 +35,8 @@
                         <div class="promo-block-img-wrap">
                             <a class='btn btn-secondary' href="{% url 'results' %}">
                                 <img class="promo-block-img img-circle img-responsive" src="{% static 'img/button_stop.png' %}"
-                                     align="Avatar">
+                                     align="Avatar"
+                                     onclick="MyStop();">
                                 <p><span id="my_timer" style="font-size: 300%;">00:00</span></p>
                             </a>
                         </div>
@@ -43,8 +44,6 @@
 
 
             </div>
-        <button onclick="Init()">Buutton</button>
-            <!--// end row -->
         </div>
     </div>
     <!--========== SLIDER ==========-->
