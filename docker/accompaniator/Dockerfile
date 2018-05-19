@@ -13,21 +13,21 @@ RUN pacman -S --noconfirm python python-pip python-virtualenv git htop \
     && python3 -m venv env/ \
     && source env/bin/activate
 
+RUN pacman -S --noconfirm npm yarn
 RUN paccache -rk 0
 
 # By copying over requirements first, we make sure that Docker will cache
 # our installed requirements rather than reinstall them on every build
 ADD requirements.txt /build/
+ADD package.json /build/
 
 RUN pip install --upgrade pip \
     && pip install -r requirements.txt
+
+RUN yarn install
 
 ADD . /build/
 
 RUN mv asound.conf /etc/asound.conf
 RUN cat ./.bashrc >> ~/.bashrc
 RUN mv piano_and_ultrasound.sf2 /piano_and_ultrasound.sf2
-
-RUN git clone https://github.com/nzinov/accompaniator
-
-CMD ./startup.sh

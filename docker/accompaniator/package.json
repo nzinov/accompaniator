@@ -1,0 +1,19 @@
+{
+  "name": "accompaniator_web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {
+    "csshint": "^0.3.3",
+    "fixmyjs": "^2.0.0",
+    "htmlhint": "^0.9.13",
+    "jshint": "^2.9.5"
+  },
+  "dependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

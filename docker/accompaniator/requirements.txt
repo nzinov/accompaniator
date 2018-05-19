@@ -21,6 +21,7 @@ coverage
 # Common stuff
 tqdm
 
-# Web
+# Web stuff
+django
 tornado
 six

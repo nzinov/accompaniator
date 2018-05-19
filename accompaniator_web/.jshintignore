@@ -1,0 +1,4 @@
+node_modules/
+static/vendor/
+static/simple_files/
+*.min.js

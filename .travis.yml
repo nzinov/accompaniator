@@ -26,7 +26,10 @@ script:
     coverage run -m unittest &&
     coverage xml &&
     flake8 --config=.flake8 --ignore=F405,F403 --exclude=.git,__pycache__,test*.py,nottingham_test --max-line-length=120 &&
-    ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT"
+    ./cc-test-reporter after-build --exit-code $TRAVIS_TEST_RESULT &&
+    cd accompaniator_web &&
+    npx htmlhint . &&
+    npx jshint ."
 notifications:
   email: false
   slack:
