@@ -40,8 +40,8 @@ services:
       - 8000:8000
 
   accompaniator-test:
-    image: accompaniator
-    build: accompaniator
+    image: accompaniator-test
+    build: accompaniator-test
     environment:
     - CC_TEST_REPORTER_ID
     - CODECLIMATE_REPO_TOKEN
