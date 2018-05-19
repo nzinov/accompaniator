@@ -13,6 +13,11 @@ var numChannels = 1;
 var mimeType = 'audio/wav';
 var sampleRate = 44100;
 var state = "init";
+var delay = [];
+var send_queve = [];
+var text_ws;
+var server_name = 'ws://demos.kaazing.com/echo';
+TextWS();
 
 function startUserMedia(stream) {
     var input = audio_context.createMediaStreamSource(stream);
@@ -30,8 +35,18 @@ function sleep(milliseconds) {
 }
 
 
-function WS() {
-
+function TextWS() {
+    text_ws = new WebSocket(server_name);
+    text_ws.onmessage = function (ev) {
+        msg = ev.data;
+        console.log(msg)
+        if (typeof(msg) == "string") {
+            text_ws.send(msg);
+        }
+    };
+    text_ws.onclose = function () {
+        TextWS();
+    }
 }
 
 
@@ -144,11 +159,24 @@ function TestPlay() {
     Push(simpleExportWAV());
 }
 
-function Send(array) {
+function WSSend() {
+    num = send_queve.length;
+    for (var i = 0; i < num; i++) {
+        if (send_queve.length > 0) {
+            blob = send_queve.shift();
+            if (ws.readyState == 1) {
+                ws.send(blob);
+                _now = new Date().getTime();
+                delay.push(_now);
+            }
+            else {
+                send_queve.unshift(blob);
+            }
+        }
+    }
 }
 
 function SendFrames() {
-    console.log(frames.length);
     while (frames.length > frames_per_send) {
         toSend = [];
         for (var i = 0; i < frames_per_send; i++) {
@@ -157,14 +185,8 @@ function SendFrames() {
         }
         //toSendStr = JSON.stringify(toSend);
         toSendBlob = exportWAV(toSend);
-        console.log("toSendBlob", toSendBlob);
-        //Push(toSendBlob);
-        if (ws.readyState == 1) {
-            ws.send(toSendBlob);
-        }
-        else {
-            console.log("blob is lost")
-        }
+        send_queve.push(toSendBlob);
+        WSSend();
     }
     if (isRecording) {
         setTimeout(SendFrames, 300);
@@ -186,10 +208,11 @@ function Stop() {
 
 function Recording() {
     if (state == "record") {
-        ws = new WebSocket('ws://demos.kaazing.com/echo');
+        ws = new WebSocket(server_name);
         ws.onmessage = function (ev) {
             var s = ev.data;
-            console.log(s);
+            _now = new Date().getTime();
+            //console.log("Delay is", _now - delay.pop(), "ms.");
             Push(s);
         };
         queve = [];
@@ -224,39 +247,6 @@ function WriteBuffer() {
         Write(blob[0]);
         recorder.clear();
     });
-}
-
-function Init() {
-    if (isInited) {
-        if (state == 'recording') {
-            Stop();
-        }
-        else if (state == 'record') {
-            Recording();
-        }
-    }
-    else {
-        try {
-            // webkit shim
-            window.AudioContext = window.AudioContext || window.webkitAudioContext;
-            navigator.getUserMedia = (navigator.getUserMedia ||
-                navigator.webkitGetUserMedia ||
-                navigator.mozGetUserMedia ||
-                navigator.msGetUserMedia);
-
-            window.URL = window.URL || window.webkitURL;
-
-            audio_context = new window.AudioContext;
-            isInited = true;
-            state = 'record';
-        } catch (e) {
-            alert('No web audio support in this browser!');
-        }
-
-        navigator.getUserMedia({audio: true}, startUserMedia, function (e) {
-            __log('No live audio input: ' + e);
-        });
-    }
 }
 
 function MyInit() {
