@@ -11,7 +11,7 @@ else
 fi
 
 cd accompaniator
-git checkout ACCOMPANIST-154_site_on_django
+git checkout web_tornado_server
 cd accompaniator_web
 
 # Start django

@@ -16,7 +16,7 @@ var state = "init";
 var delay = [];
 var send_queve = [];
 var text_ws;
-var server_name = 'ws://demos.kaazing.com/echo';
+var server_name = 'ws://localhost:8110/ws'; // 'ws://demos.kaazing.com/echo'; for testing
 TextWS();
 
 function startUserMedia(stream) {
