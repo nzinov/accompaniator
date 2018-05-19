@@ -5,28 +5,44 @@
 
 {% block idea %}
 
+<script src = "{% static 'js/timer.js' %}"> </script>
+<script src = "{% static 'js/home.js' %}"> </script>
+<script src = "{% static 'js/recorder.js' %}"> </script>
 
 <!--========== SLIDER ==========-->
 <div class="promo-block">
     <div class="container">
-        <div class="row">
-            <div class="col-sm-5 sm-margin-b-60">
-                <div class="margin-b-30">
-                    <h2 class="promo-block-title">To start singing <br> Push the button </h2>
-                    <p class="promo-block-text">you can talk about us in social networks</p>
-                </div>
-            </div>
-            <div class="col-sm-6">
+        <div id="start_button" class="row">
+            <div class="col-sm-offset-3">
                 <div class="promo-block-img-wrap">
-                    <a class="btn btn-secondary" href="{% url 'process' %}">
-                        <img class="promo-block-img img-responsive img-circle" src="{% static 'img/button.png' %}" href="{% url 'process' %}" align="Avatar">
+                    <a class='btn btn-secondary'>
+                        <img class= img-responsive" src="{% static 'img/button.png' %}" class="img-circle" align="Avatar" onclick="document.getElementById('start_button').style.display = 'none'; document.getElementById('stop_button').style.display = 'block'; startTimer(); Init();">
                     </a>
                 </div>
             </div>
         </div>
+        <button onclick="Init()">Buutton</button>
+        <div id="stop_button" class="row" style="display: none">
+            <div class="col-sm-offset-3">
+                <div class="promo-block-img-wrap">
+                    <a class='btn btn-secondary' href="{% url 'results' %}" >
+                        <img class= img-responsive" src="{% static 'img/button_stop.png' %}" class="img-circle" align="Avatar">
+                        <p><span id="my_timer" style="font-size: 300%;">00:00</span></p>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
+        <br>
         <!--// end row -->
     </div>
 </div>
+<!--========== SLIDER ==========-->
 
 
 
