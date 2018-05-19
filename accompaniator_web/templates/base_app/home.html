@@ -23,7 +23,7 @@
                 {%  endif %}
                 <div id="start_button" class="col-sm-6" style="display:inline-block;float:none;">
                         <div class="promo-block-img-wrap">
-                            <a class='btn btn-secondary'>
+                            <a class="btn btn-secondary">
                                 <img class="promo-block-img img-responsive img-circle" src="{% static 'img/button.png' %}"
                                      align="Avatar"
                                      onclick="document.getElementById('start_button').style.display = 'none'; document.getElementById('stop_button').style.display = 'inline-block'; startTimer(); MyStart();">
@@ -33,7 +33,7 @@
 
                 <div id="stop_button" class="col-sm-6" style="display:none;float:none;">
                         <div class="promo-block-img-wrap">
-                            <a class='btn btn-secondary' href="{% url 'results' %}">
+                            <a class="btn btn-secondary" href="{% url 'results' %}">
                                 <img class="promo-block-img img-circle img-responsive" src="{% static 'img/button_stop.png' %}"
                                      align="Avatar"
                                      onclick="MyStop();">
