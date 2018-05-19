@@ -1,22 +1,24 @@
 <!DOCTYPE html>
-
 <html>
-<head>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <script src="../../static/js/recorder.js"></script>
-    <script src="../../static/js/home2.js"></script>
-</head>
-<body>
+ <head>
+  <meta charset="utf-8">
+  <title>Горизонтальный список</title>
+  <style>
+   ul.hr {
+    margin: 0; /* Обнуляем значение отступов */
+    padding: 4px; /* Значение полей */
+   }
+   ul.hr li {
+    display: inline; /* Отображать как строчный элемент */
+    }
+  </style>
+ </head>
+ <body>
+  <ul class="hr">
+   <li><a >  <img src="../../static/img/star_dark.png" width="10%" height="10%"></a></li>
+   <li><a >  <img src="../../static/img/star_dark.png" width="10%" height="10%"></a></li>
+   <li><a >  <img src="../../static/img/star_dark.png" width="10%" height="10%"></a></li>
 
-<div>
-    <button id="button" onclick="Init(this);">INIT</button>
-    <button id="stop" onclick="Stop();" disabled>STOP</button>
-    <!-- <button id="play" onclick="TestPlay();">Test Play</button> !-->
-</div>
-
-<script>
-
-</script>
-
-</body>
+  </ul>
+ </body>
 </html>

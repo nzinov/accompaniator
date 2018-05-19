@@ -1,0 +1,7 @@
+ul.myinline {
+    margin: 0; /* Обнуляем значение отступов */
+    padding: 4px; /* Значение полей */
+}
+ul.myinline li {
+    display: inline; /* Отображать как строчный элемент */
+}
