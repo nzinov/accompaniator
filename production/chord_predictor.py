@@ -44,7 +44,7 @@ def chord_notes(chord):
 
 
 def run_queue(predictor):
-    predictor.load_model("../production/rf_nottingham.pkl")
+    predictor.load_model("production/rf_nottingham.pkl")
 
     while predictor.running.value:
         if not predictor.queue_in.empty():
