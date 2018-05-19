@@ -83,5 +83,5 @@ def main():
 if __name__ == "__main__":
     app = main()
     http_server = tornado.httpserver.HTTPServer(app)
-    http_server.listen(8110, address='127.0.0.1')
+    http_server.listen(8110, address='0.0.0.0')
     ioloop.IOLoop.instance().start()

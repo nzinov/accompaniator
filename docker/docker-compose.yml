@@ -22,6 +22,9 @@ services:
       - /run/dbus/:/run/dbus/:rw
       - /dev/shm:/dev/shm
       - ./../:/build/accompaniator
+    ports:
+      - 8110:8110
+      - 8000:8000
 
   accompaniator-prod:
     image: accompaniator-prod
