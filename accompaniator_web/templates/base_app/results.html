@@ -21,15 +21,17 @@
                 <div class="row">
 
 
-                    <div class="col-sm-4 col-sm-offset-3">
-                        <ul class="list-inline">
-                            {% for i in stars_range %}
-                                <li><a id="star{{ i }}" href="javascript:void(0);" class="social-icons"
+                    <div class="col-sm-6 col-sm-offset-2">
+                      <ul class="myinline">
+                          {% for i in stars_range %}
+                                <li><a id="star{{ i }}" href="javascript:void(0);"
                                        onclick="star({{ i }}, this)">
-                                    <img src="{% static 'img/star_dark.png' %}" width="100%" height="100%"></a></li>
+                                    <img src="{% static 'img/star_dark.png' %}" width="70px" height="70px"></a></li>
 
                             {% endfor %}
+
                         </ul>
+                    <br/>
                     </div>
                 </div>
 
