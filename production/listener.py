@@ -86,6 +86,8 @@ def run_queue_in(listener):
             samples = np.fromstring(audiobuffer, dtype=np.float32)
         else:
             samples = listener.queue_in.get()
+            if samples is None:
+                break
 
         if onset_o(samples):
             last_onset = onset_o.get_last_ms()
@@ -159,6 +161,7 @@ class Listener:
 
     def stop(self):
         self.running.value = False
+        self.queue_in.put_nowait(None)
         self.process.join()
         self.queue_in = Queue()
 

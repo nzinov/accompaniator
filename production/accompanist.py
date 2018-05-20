@@ -20,7 +20,6 @@ class Accompanist:
         self.queue_into_listener = None
         self.queue_from_listener_to_predictor = Queue()
         self.queue_from_predictor_to_player = Queue()
-        self.predictor_queue = Queue()
         self.running = Value('i', False)
         self.tempo = Value('f', default_tempo)
         self.deadline = Value('f', 0)
@@ -43,8 +42,9 @@ class Accompanist:
         self.player.stop()
         self.listener.stop()
         self.predictor.stop()
-        self.queue_in = Queue()
-        self.queue_out = Queue()
+        self.queue_into_listener = None
+        self.queue_from_listener_to_predictor = Queue()
+        self.queue_from_predictor_to_player = Queue()
 
     def set_tempo(self, tempo=default_tempo):
         self.tempo.value = tempo

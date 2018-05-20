@@ -62,8 +62,9 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             self.accompanist.set_web_delay(delay)
 
     def on_close(self):
-        self.accompanist.stop()
         self.running = False
+        self.time_send_process.join()
+        self.accompanist.stop()
 
     def send_audio(self, message):
         print("delay ok!")

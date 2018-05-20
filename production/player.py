@@ -50,6 +50,8 @@ def send_output_queue_to_client(player):
     count = 0
     while player.running.value:
         small_chunk = player.real_queue_out.get()
+        if small_chunk is None:
+            break
         if count == 0:
             chunk = small_chunk
         else:
@@ -93,7 +95,6 @@ class Player:
         self.output_to_websocket = None
 
         self.fluid_synth = None
-        self.real_queue_out = None
         self.fluid_synth = fluidsynth.Synth()
         sfid = self.fluid_synth.sfload(default_soundfont_path)
         self.fluid_synth.program_select(0, sfid, 0, 0)
@@ -282,21 +283,25 @@ class Player:
             self.set_up_instrument()
         # self.set_up_ultrasound_instrument()
 
-        self.queue_process = Process(target=run_queue_out, args=(self,))
-        self.queue_process.start()
+        self.process_queue_out = Process(target=run_queue_out, args=(self,))
+        self.process_queue_out.start()
 
-        self.queue_process = Process(target=run_peak, args=(self,))
-        self.queue_process.start()
+        self.process_run_peak = Process(target=run_peak, args=(self,))
+        self.process_run_peak.start()
 
-        self.queue_process = Process(target=send_output_queue_to_client, args=(self,))
-        self.queue_process.start()
+        self.process_queue_to_client = Process(target=send_output_queue_to_client, args=(self,))
+        self.process_queue_to_client.start()
 
     def stop(self):
         """ All chords that already sound will continue to sound """
         self.running.value = False
-        self.queue_process.join()
-        self.queue_process.join()
+        self.real_queue_out.put_nowait(None)
+        self.process_queue_out.join()
+        self.process_run_peak.join()
+        self.process_queue_to_client.join()
         self.queue_out = Queue()
+        self.real_queue_out = Queue()
+
 
     queue_out = None
     running = None
@@ -304,8 +309,9 @@ class Player:
     deadline = None
     start_peak = None
     start_chord = None
-    queue_process = None
-    peak_process = None
+    process_queue_out = None
+    process_run_peak = None
+    process_queue_to_client = None
     midiout = None
     midi_for_file = None
     last_chord = None
