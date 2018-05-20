@@ -22,7 +22,10 @@ def send_time_stamps(websocket):
     while websocket.running is True:
         now = datetime.now()
         output = now.strftime("%Y-%m-%d %H:%M:%S")
-        websocket.write_message(output, binary=False)
+        try:
+            websocket.write_message(output, binary=False)
+        except tornado.iostream.StreamClosedError or tornado.websocket.WebSocketClosedError:
+            break
         time.sleep(time_between_delay_measurings_in_secs)
 
 
@@ -62,15 +65,20 @@ class WebSocketHandler(tornado.websocket.WebSocketHandler):
             self.accompanist.set_web_delay(delay)
 
     def on_close(self):
+        print("stopping")
         self.running = False
         self.time_send_process.join()
         self.accompanist.stop()
+        print("stopped")
 
     def send_audio(self, message):
         print("delay ok!")
         output = io.BytesIO()
         scipy.io.wavfile.write(output, 44100, message)
-        self.write_message(output.getvalue(), binary=True)
+        try:
+            self.write_message(output.getvalue(), binary=True)
+        except tornado.iostream.StreamClosedError or tornado.websocket.WebSocketClosedError:
+            print("Caught this fucker")
 
     def send_time(self):
         pass

@@ -164,6 +164,7 @@ class Listener:
         self.queue_in.put_nowait(None)
         self.process_queue_in.join()
         self.queue_in = Queue()
+        print("listener stopped")
 
     def get(self):
         if self.queue_in.empty() is False:

@@ -76,6 +76,7 @@ class ChordPredictor:
     def stop(self):
         self.running.value = False
         self.process.join()
+        print("predictor stopped")
 
     def load_model(self, filename):
         with open(filename, 'rb') as fid:

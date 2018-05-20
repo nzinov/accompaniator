@@ -79,8 +79,7 @@ def run_queue_out(player):
             player.play_chord_arpeggio(np.array([[0, 19], [1, 18], [2, 18], [3, 18], [2, 18], [1, 18], [0, 19]]))
         time.sleep(0.01)
     if player.last_note_number is not None:
-        player.note_off(default_channel, player.last_note_number, )
-        player.fluid_synth.noteoff(default_ultrasound_channel, player.last_note_number, min_velocity)
+        player.note_off(default_channel, player.last_note_number, min_velocity)
 
 
 class Player:
@@ -286,8 +285,8 @@ class Player:
         self.process_queue_out = Process(target=run_queue_out, args=(self,))
         self.process_queue_out.start()
 
-        self.process_run_peak = Process(target=run_peak, args=(self,))
-        self.process_run_peak.start()
+        # self.process_run_peak = Process(target=run_peak, args=(self,))
+        # self.process_run_peak.start()
 
         self.process_queue_to_client = Process(target=send_output_queue_to_client, args=(self,))
         self.process_queue_to_client.start()
@@ -297,10 +296,11 @@ class Player:
         self.running.value = False
         self.real_queue_out.put_nowait(None)
         self.process_queue_out.join()
-        self.process_run_peak.join()
+        #self.process_run_peak.join()
         self.process_queue_to_client.join()
         self.queue_out = Queue()
         self.real_queue_out = Queue()
+        print("player stopped")
 
 
     queue_out = None
