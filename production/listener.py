@@ -156,13 +156,13 @@ class Listener:
 
     def run(self):
         self.running.value = True
-        self.process = Process(target=run_queue_in, args=(self, ))
-        self.process.start()
+        self.process_queue_in = Process(target=run_queue_in, args=(self, ))
+        self.process_queue_in.start()
 
     def stop(self):
         self.running.value = False
         self.queue_in.put_nowait(None)
-        self.process.join()
+        self.process_queue_in.join()
         self.queue_in = Queue()
 
     def get(self):
@@ -186,7 +186,7 @@ class Listener:
     running = None
     tempo = None
     deadline = None
-    process = None
+    process_queue_in = None
 
 
 if __name__ == '__main__':
