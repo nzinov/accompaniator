@@ -57,13 +57,13 @@ def run_queue(predictor):
     predictor.load_unique_chords("vocab.csv")
 
     while predictor.running.value:
-        if not predictor.queue_in.empty():
-            # print("predictor get")
-            chord = predictor.try_predict()
-            if chord is not None:
-                predictor.queue_out.put(chord, defualt_predicted_len,
-                                        defualt_velocity)
-                # print("predictor put")
+        # print("predictor get")
+        chord = predictor.try_predict()
+        if chord is not None:
+            predictor.queue_out.put(chord, defualt_predicted_len,
+                                    defualt_velocity)
+            # print("predictor put")
+        sleep(0.01)
 
 
 class ChordPredictor:
@@ -82,7 +82,9 @@ class ChordPredictor:
         self.chords_list = []
         self.deadline = deadline
         self.prediction_for_beat = False
-        self.current_chord_num = 0  # TODO
+        self.currently_playing_chord_num = 0  # TODO
+        self.predicted_chord_num = 0
+        
 
     def run(self):
         self.running.value = True
@@ -127,7 +129,7 @@ class ChordPredictor:
         self.unique_chords = self.unique_chords.values.T[1:].T
 
     def make_suitable(self, notes_list):
-        new_list = list(filter(lambda x: x != -1, notes_list))
+        new_list = [el + 60 for el in filter(lambda x: x != -1, notes_list)]
         # TODO
         if len(new_list) == 1:
             note = new_list[0]
@@ -147,20 +149,20 @@ class ChordPredictor:
         return list(map(lambda x: Note(int(x)), new_list))
 
     def try_predict(self):
-        notes = self.queue_in.get()
-        print(notes.duration)
-        # what TODO if more then one notes?
-        note = notes.notes[0]
-        self.current_chord_num = self.model.predict([
-                                 np.array([self.current_chord_num]),
-                                 np.array([note.number])],
-                                                    batch_size=1,
-                                                    verbose=1).argmax()
+        while not self.queue_in.empty():
+            notes = self.queue_in.get()
+            note = notes.notes[0]
+            self.predicted_chord_num = self.model.predict([
+                                           np.array([self.currently_playing_chord_num]),
+                                           np.array([note.number])],
+                                           batch_size=1,
+                                           verbose=1).argmax()
         if notes.downbeat:
             self.prediction_for_beat = False
         if (time.monotonic() > self.deadline.value - prediction_time and
                 self.prediction_for_beat is False):
-            chord_notes = self.unique_chords[self.current_chord_num]
+            chord_notes = self.unique_chords[self.predicted_chord_num]
             self.prediction_for_beat = True
+            self.currently_playing_chord_num = self.predicted_chord_num
             return Chord(self.make_suitable(chord_notes), 128, notes.velocity)
         return None
