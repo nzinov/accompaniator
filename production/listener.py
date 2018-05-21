@@ -1,5 +1,6 @@
 import sys
 import time
+import aubio
 import numpy as np
 import pyaudio
 from time import sleep

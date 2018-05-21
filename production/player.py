@@ -73,10 +73,14 @@ def run_peak(player):
 
 def run_queue_out(player):
     while player.running.value:
-        if not player.queue_out.empty() and time.monotonic() > player.deadline.value:
-            """ track is array of pairs: first is note number in chord, second is note len (duration) in 1/128.
+        if (not player.queue_out.empty() and
+                time.monotonic() > player.deadline.value):
+            """ track is array of pairs: first is note number in chord,
+                second is note len (duration) in 1/128.
                 Sum of durations MUST be equal to 128 """
-            player.play_chord_arpeggio(np.array([[0, 19], [1, 18], [2, 18], [3, 18], [2, 18], [1, 18], [0, 19]]))
+            player.play_chord_arpeggio(np.array([[0, 19], [1, 18], [2, 18],
+                                                 [3, 18], [2, 18], [1, 18],
+                                                 [0, 19]]))
         time.sleep(0.01)
     if player.last_note_number is not None:
         player.note_off(default_channel, player.last_note_number, min_velocity)
@@ -175,7 +179,8 @@ class Player:
             chord.notes.append(Note(chord.notes[0].number + 12))
         if track == np.array([]):
             notes_numbers = np.arange(len(chord.notes))
-            notes_durations = np.array([int(128 / len(chord.notes)) for i in range(len(chord.notes))])
+            notes_durations = np.array([int(128 / len(chord.notes))
+                                        for i in range(len(chord.notes))])
             track = np.column_stack((notes_numbers, notes_durations))
 
         notes_sum_durations = np.cumsum(track.transpose(), axis=1)[1]

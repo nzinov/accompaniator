@@ -13,6 +13,7 @@ services:
       - /dev/shm:/dev/shm
 
   accompaniator-dev:
+    tty: true
     image: accompaniator-dev
     build: accompaniator-dev
     devices:
