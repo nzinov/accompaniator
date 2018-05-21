@@ -2,9 +2,9 @@ import sys
 import time
 from time import sleep
 from multiprocessing import Queue, Value
-from listener import Listener
-from player import Player
-from chord_predictor import ChordPredictor
+from production.listener import Listener
+from production.player import Player
+from production.chord_predictor import ChordPredictor
 
 
 default_tempo = 124
@@ -17,19 +17,17 @@ deadline is the time in seconds since the beginning of the era, float
 
 class Accompanist:
     def __init__(self):
-        self.queue_in = Queue()
-        self.queue_out = Queue()
-        self.predictor_queue = Queue()
+        self.queue_into_listener = None
+        self.queue_from_listener_to_predictor = Queue()
+        self.queue_from_predictor_to_player = Queue()
         self.running = Value('i', False)
         self.tempo = Value('f', default_tempo)
         self.deadline = Value('f', 0)
 
         self.websocket = None
 
-        self.player = Player(self.queue_from_predictor_to_player, self.running, self.tempo,
-                             self.deadline)
-        self.predictor = ChordPredictor(self.queue_from_listener_to_predictor, self.queue_from_predictor_to_player,
-                                        self.deadline)
+        self.player = Player(self.queue_from_predictor_to_player, self.running, self.tempo, self.deadline)
+        self.predictor = ChordPredictor(self.queue_from_listener_to_predictor, self.queue_from_predictor_to_player, self.deadline)
         self.listener = Listener(self.queue_into_listener, self.queue_from_listener_to_predictor, self.running,
                                  self.tempo, self.deadline)
 

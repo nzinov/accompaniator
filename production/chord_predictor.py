@@ -1,6 +1,6 @@
 import time
 import numpy as np
-mport pandas as pd
+import pandas as pd
 from production.structures import Note, Chord
 from multiprocessing import Queue, Process, Value
 
@@ -53,7 +53,7 @@ def chord_notes(chord):
 
 
 def run_queue(predictor):
-    predictor.load_model("production/NN_model")
+    predictor.load_model("production/NN_model.h5")
     predictor.load_unique_chords("production/vocab.csv")
 
     while predictor.running.value:
@@ -63,7 +63,7 @@ def run_queue(predictor):
             predictor.queue_out.put(chord, defualt_predicted_len,
                                     defualt_velocity)
             # print("predictor put")
-        sleep(0.01)
+        time.sleep(0.01)
 
 
 class ChordPredictor:
@@ -84,7 +84,6 @@ class ChordPredictor:
         self.prediction_for_beat = False
         self.currently_playing_chord_num = 0  # TODO
         self.predicted_chord_num = 0
-        
 
     def run(self):
         self.running.value = True
@@ -108,7 +107,7 @@ class ChordPredictor:
         model_chords = Sequential()
         model_notes = Sequential()
 
-        model_chords.add(Embedding(10000, 20, input_length=1,
+        model_chords.add(Embedding(794, 20, input_length=1,
                                    batch_input_shape=(1, 1)))
         model_notes.add(Embedding(128, 20, input_length=1,
                                   batch_input_shape=(1, 1)))
@@ -117,9 +116,9 @@ class ChordPredictor:
         merged = Merge([model_chords, model_notes])
         self.model.add(merged)
         self.model.add(LSTM(20, stateful=True))
-        self.model.add(Dense(10000, activation='softmax'))
+        self.model.add(Dense(794, activation='softmax'))
 
-        self.model.load_weights("NN_model.h5")
+        self.model.load_weights(filename)
         self.model.compile(optimizer='adam',
                            loss='sparse_categorical_crossentropy',
                            metrics=['accuracy'])
@@ -130,6 +129,7 @@ class ChordPredictor:
 
     def make_suitable(self, notes_list):
         new_list = [el + 60 for el in filter(lambda x: x != -1, notes_list)]
+        print(new_list)
         # TODO
         if len(new_list) == 1:
             note = new_list[0]
@@ -152,17 +152,20 @@ class ChordPredictor:
         while not self.queue_in.empty():
             notes = self.queue_in.get()
             note = notes.notes[0]
+            print(note)
             self.predicted_chord_num = self.model.predict([
-                                           np.array([self.currently_playing_chord_num]),
-                                           np.array([note.number])],
-                                           batch_size=1,
-                                           verbose=1).argmax()
-        if notes.downbeat:
-            self.prediction_for_beat = False
+                np.array([self.currently_playing_chord_num]),
+                np.array([note.number])],
+                batch_size=1,
+                verbose=1).argmax()
+            print("next:", self.predicted_chord_num)
+            if notes.downbeat:
+                self.prediction_for_beat = False
         if (time.monotonic() > self.deadline.value - prediction_time and
                 self.prediction_for_beat is False):
             chord_notes = self.unique_chords[self.predicted_chord_num]
             self.prediction_for_beat = True
             self.currently_playing_chord_num = self.predicted_chord_num
-            return Chord(self.make_suitable(chord_notes), 128, notes.velocity)
+            if self.predicted_chord_num > 0:
+                return Chord(self.make_suitable(chord_notes), 128, 128)
         return None
