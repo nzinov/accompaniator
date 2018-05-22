@@ -44,11 +44,12 @@ def results(request):
 
     if request.method == 'POST':
         form = FeedbackForm(request.POST, request.FILES)
+        print(form)
         if form.is_valid():
             instance = form.save(commit=False)
             instance.session_key = session_key
             instance.save()
-            return HttpResponseRedirect('/results')
+            return HttpResponseRedirect('/home')
 
         else:
             print(form.errors)

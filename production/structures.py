@@ -46,7 +46,8 @@ class Chord:
         return "{%s %s %s}" % (self.duration, self.velocity, str(self.notes))
 
     def __eq__(self, other):
-        return self.duration == other.duration and self.velocity == other.velocity and self.notes == other.notes
+        return self.duration == other.duration and \
+            self.velocity == other.velocity and self.notes == other.notes
 
     def add_notes(self, notes_list):
         self.notes.extend(notes_list)

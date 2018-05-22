@@ -23,3 +23,5 @@ tqdm
 
 # Web stuff
 django
+tornado
+six

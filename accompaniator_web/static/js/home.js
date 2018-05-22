@@ -16,7 +16,7 @@ var state = "init";
 var delay = [];
 var send_queve = [];
 var text_ws;
-var server_name = 'ws://demos.kaazing.com/echo';
+var server_name = 'ws://localhost:8110/ws'; // 'ws://demos.kaazing.com/echo'; for testing
 TextWS();
 
 function startUserMedia(stream) {
@@ -40,8 +40,11 @@ function TextWS() {
     text_ws.onmessage = function (ev) {
         msg = ev.data;
         console.log(msg)
-        if (typeof(msg) == "string") {
+        if (msg[0] != "R") {
             text_ws.send(msg);
+        }
+        else{
+            Push(msg);
         }
     };
     text_ws.onclose = function () {
@@ -51,6 +54,7 @@ function TextWS() {
 
 
 function Push(blob) {
+    if (blob)
     var url = URL.createObjectURL(blob);
     var au = document.createElement('audio');
 
@@ -203,6 +207,7 @@ function Stop() {
         state = 'record';
     }, 1000);
     ws.close();
+    text_ws.close();
 }
 
 
@@ -213,7 +218,11 @@ function Recording() {
             var s = ev.data;
             _now = new Date().getTime();
             //console.log("Delay is", _now - delay.pop(), "ms.");
-            Push(s);
+            if (s[0] == "R") {
+                Push(s);
+            }else{
+                text_ws.send(s);
+            }
         };
         queve = [];
         frames = [];

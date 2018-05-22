@@ -11,10 +11,9 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /run/dbus/:/run/dbus/:rw
       - /dev/shm:/dev/shm
-    ports:
-      - 8000:8000
 
   accompaniator-dev:
+    tty: true
     image: accompaniator-dev
     build: accompaniator-dev
     devices:
@@ -25,6 +24,7 @@ services:
       - /dev/shm:/dev/shm
       - ./../:/build/accompaniator
     ports:
+      - 8110:8110
       - 8000:8000
 
   accompaniator-prod:
@@ -37,6 +37,7 @@ services:
       - /run/dbus/:/run/dbus/:rw
       - /dev/shm:/dev/shm
     ports:
+      - 8110:8110
       - 8000:8000
 
   accompaniator-test:

@@ -11,7 +11,7 @@ else
 fi
 
 cd accompaniator
-git checkout ACCOMPANIST-154_site_on_django
+git checkout web_tornado_server
 cd accompaniator_web
 
 # Start django
@@ -22,6 +22,17 @@ if [ $status -ne 0 ]; then
   exit $status
 else
   echo "Django ran successfully"
+fi
+
+# Start tornado
+cd ..
+nohup python -m accompaniator_web.tornado_server &
+status=$?
+if [ $status -ne 0 ]; then
+  echo "Failed to start tornado: $status"
+  exit $status
+else
+  echo "Tornado ran successfully"
 fi
 
 bash
