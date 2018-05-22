@@ -16,14 +16,11 @@
                     </div>
                 </div>
                 <div class="row">
-                    <p><span id="mark" style="display: none">00:00</span></p>
-                </div>
-                <div class="row">
 
 
                     <div class="col-sm-6 col-sm-offset-2">
-                      <ul class="myinline">
-                          {% for i in stars_range %}
+                        <ul class="myinline">
+                            {% for i in stars_range %}
                                 <li><a id="star{{ i }}" href="javascript:void(0);"
                                        onclick="star({{ i }}, this)">
                                     <img src="{% static 'img/star_dark.png' %}" width="70px" height="70px"></a></li>
@@ -31,18 +28,22 @@
                             {% endfor %}
 
                         </ul>
-                    <br/>
+                        <br/>
                     </div>
                 </div>
 
                 <div class="row">
-                    <p><span id="mark1" style="display: none">00:00</span></p>
-                </div>
-                <div class="row">
+                    <form action="{% url 'results' %}" id='post_results' method="post">
+                        {% csrf_token %}
+                        {{ feedback_form }}
+<!--                        <input type="hidden" id="mark" value="-1"/>-->
+                    </form>
                     <div class="col-sm-1 col-sm-offset-4">
-                        <a href="{% url 'home' %}">
-                            <button type="button" class="btn btn-primary">По новой</button>
-                        </a>
+
+                        <button type="button" class="btn btn-primary"
+                                onclick="document.getElementById('post_results').submit()">По новой
+                        </button>
+
                     </div>
                 </div>
 

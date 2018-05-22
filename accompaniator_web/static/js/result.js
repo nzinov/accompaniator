@@ -10,5 +10,5 @@ function star(num, star) {
         for (var i = num + 1; i <= 5; i++) {
             document.getElementById("star" + i).innerHTML = '<img src="../../static/img/star_dark.png" width="70px" height="70px">';
         }
-        document.getElementById("mark").innerHTML = num;
+        document.getElementById("id_mark").value = num;
 }
