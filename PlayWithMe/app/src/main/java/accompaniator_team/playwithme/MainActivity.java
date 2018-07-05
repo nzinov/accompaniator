@@ -1,8 +1,11 @@
 package accompaniator_team.playwithme;
 
 import android.Manifest;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.SystemClock;
+import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -165,5 +168,10 @@ public class MainActivity extends AppCompatActivity {
         msg[2] = (byte) v;
 
         midiDriver.write(msg);
+    }
+
+    public void settings(View view) {
+        Intent intent = new Intent(this, SettingsActivity.class);
+        startActivity(intent);
     }
 }
