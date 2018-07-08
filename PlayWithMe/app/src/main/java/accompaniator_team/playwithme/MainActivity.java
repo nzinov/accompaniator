@@ -2,6 +2,7 @@ package accompaniator_team.playwithme;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.SystemClock;
@@ -14,7 +15,8 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import org.billthefarmer.mididriver.MidiDriver;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.AudioEvent;
@@ -26,7 +28,8 @@ import be.tarsos.dsp.pitch.PitchProcessor;
 
 public class MainActivity extends AppCompatActivity {
 
-    MidiDriver midiDriver;
+    //Player player;
+    LinkedBlockingQueue<Player.Chord> queueOut;
     TextView noteText, pitchText;
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
 
@@ -51,7 +54,12 @@ public class MainActivity extends AppCompatActivity {
         hardwareSoundInfo.setText(String.format("hasLowLatencyFeature: %b\nhasProFeature: %b",
                 hasLowLatencyFeature, hasProFeature));
 
-        midiDriver = new MidiDriver();
+        //player = new Player();
+
+        Intent playerIntent = new Intent(MainActivity.this, Player.class);
+        queueOut = new LinkedBlockingQueue<>();
+        playerIntent.putExtra(Player.QUEUE_NAME, queueOut);
+        startService(playerIntent);
 
         AudioDispatcher dispatcher = AudioDispatcherFactory.fromDefaultMicrophone(22050,1024,0);
 
@@ -115,10 +123,8 @@ public class MainActivity extends AppCompatActivity {
     {
         super.onResume();
 
-        // Start midi
+        //player.onResume();
 
-        if (midiDriver != null)
-            midiDriver.start();
     }
 
     @Override
@@ -126,48 +132,16 @@ public class MainActivity extends AppCompatActivity {
     {
         super.onPause();
 
-        // Stop midi
-
-        if (midiDriver != null)
-            midiDriver.stop();
-
+        //player.onPause();
     }
 
     public void playTestSound(View view) {
         TextView info = (TextView)findViewById(R.id.textViewSoundInfo);
         info.setText("Playing");
-        sendMidi(0xC0, 79);
-        sendMidi(0x90, 48, 63);
-        sendMidi(0x90, 52, 63);
-        sendMidi(0x90, 55, 63);
-        SystemClock.sleep(1000);
-        sendMidi(0x80, 48, 0);
-        sendMidi(0x80, 52, 0);
-        sendMidi(0x80, 55, 0);
+        //player.playTestSound();
+        Player.Note[] notes = {new Player.Note(100)};
+        queueOut.add(new Player.Chord(notes, 127, 127));
         info.setText("Not playing");
-    }
-
-    // Send a midi message
-
-    protected void sendMidi(int m, int p) {
-        byte msg[] = new byte[2];
-
-        msg[0] = (byte) m;
-        msg[1] = (byte) p;
-
-        midiDriver.write(msg);
-    }
-
-    // Send a midi message
-
-    protected void sendMidi(int m, int n, int v) {
-        byte msg[] = new byte[3];
-
-        msg[0] = (byte) m;
-        msg[1] = (byte) n;
-        msg[2] = (byte) v;
-
-        midiDriver.write(msg);
     }
 
     public void settings(View view) {

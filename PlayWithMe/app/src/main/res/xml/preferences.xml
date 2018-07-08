@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="Basic Settings">
+        <ListPreference
+            android:defaultValue="Guitar"
+            android:entries="@array/preferences_array_instruments_entries"
+            android:entryValues="@array/preferences_array_instruments_entryValues"
+            android:key="pref_Instrument"
+            android:summary="Guitar"
+            android:title="Instrument" />
+    </PreferenceCategory>
+</PreferenceScreen>
