@@ -22,6 +22,7 @@ public class PlayerThread extends Thread {
         queueOut = queueOut_;
         midiDriver = midiDriver_;
         midiDriver.start();
+        sendMidi(0xC0, 79);
     }
 
     private float lenInSeconds(int duration, int tempo) {
@@ -49,17 +50,7 @@ public class PlayerThread extends Thread {
 
     public void playChord() {
         try {
-            // TODO: not working.
-            //PlayerService.Chord chord = queueOut.take();
-            PlayerService.Chord chord;
-            while (true) {
-                if (!queueOut.isEmpty()) {
-                    chord = queueOut.take();
-                    break;
-                } else {
-                    SystemClock.sleep(10);
-                }
-            }
+            PlayerService.Chord chord = queueOut.take();
 
             Assert.that(chord.duration > 0);
             Assert.that(chord.velocity < 128);

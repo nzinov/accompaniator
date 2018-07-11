@@ -17,10 +17,8 @@ public class PlayerService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d(TAG, "onStartCommand");
-        queueOut = (LinkedBlockingQueue<Chord>) intent.getSerializableExtra(QUEUE_NAME);
 
-        PlayerService.Note[] notes = {new PlayerService.Note(100)};
-        queueOut.add(new PlayerService.Chord(notes, 127, 127));
+        queueOut = SingletonClass.getInstance().queueOut;
 
         midiDriver = new MidiDriver();
         mThread = new PlayerThread(queueOut, midiDriver);

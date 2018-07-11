@@ -51,7 +51,9 @@ public class MainActivity extends AppCompatActivity {
         //player = new PlayerService();
 
         Intent playerIntent = new Intent(MainActivity.this, PlayerService.class);
-        queueOut = new LinkedBlockingQueue<>();
+
+        //queueOut = new LinkedBlockingQueue<>();
+        queueOut = SingletonClass.getInstance().queueOut;
         playerIntent.putExtra(PlayerService.QUEUE_NAME, queueOut);
         startService(playerIntent);
 
