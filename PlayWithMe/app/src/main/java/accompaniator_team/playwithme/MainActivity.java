@@ -2,20 +2,14 @@ package accompaniator_team.playwithme;
 
 import android.Manifest;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.os.SystemClock;
-import android.preference.PreferenceManager;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import be.tarsos.dsp.AudioDispatcher;
@@ -28,8 +22,8 @@ import be.tarsos.dsp.pitch.PitchProcessor;
 
 public class MainActivity extends AppCompatActivity {
 
-    //Player player;
-    LinkedBlockingQueue<Player.Chord> queueOut;
+    //PlayerService player;
+    LinkedBlockingQueue<PlayerService.Chord> queueOut;
     TextView noteText, pitchText;
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
 
@@ -54,11 +48,11 @@ public class MainActivity extends AppCompatActivity {
         hardwareSoundInfo.setText(String.format("hasLowLatencyFeature: %b\nhasProFeature: %b",
                 hasLowLatencyFeature, hasProFeature));
 
-        //player = new Player();
+        //player = new PlayerService();
 
-        Intent playerIntent = new Intent(MainActivity.this, Player.class);
+        Intent playerIntent = new Intent(MainActivity.this, PlayerService.class);
         queueOut = new LinkedBlockingQueue<>();
-        playerIntent.putExtra(Player.QUEUE_NAME, queueOut);
+        playerIntent.putExtra(PlayerService.QUEUE_NAME, queueOut);
         startService(playerIntent);
 
         AudioDispatcher dispatcher = AudioDispatcherFactory.fromDefaultMicrophone(22050,1024,0);
@@ -139,8 +133,8 @@ public class MainActivity extends AppCompatActivity {
         TextView info = (TextView)findViewById(R.id.textViewSoundInfo);
         info.setText("Playing");
         //player.playTestSound();
-        Player.Note[] notes = {new Player.Note(100)};
-        queueOut.add(new Player.Chord(notes, 127, 127));
+        PlayerService.Note[] notes = {new PlayerService.Note(100)};
+        queueOut.add(new PlayerService.Chord(notes, 127, 127));
         info.setText("Not playing");
     }
 

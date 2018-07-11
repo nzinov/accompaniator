@@ -27,7 +27,7 @@
                 android:value=".MainActivity" />
         </activity>
 
-        <service android:name=".Player" />
+        <service android:name=".PlayerService" />
     </application>
 
 </manifest>
