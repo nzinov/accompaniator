@@ -16,14 +16,21 @@ import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.AudioEvent;
 import be.tarsos.dsp.AudioProcessor;
 import be.tarsos.dsp.io.android.AudioDispatcherFactory;
+import be.tarsos.dsp.onsets.ComplexOnsetDetector;
+import be.tarsos.dsp.onsets.OnsetHandler;
+import be.tarsos.dsp.onsets.PrintOnsetHandler;
 import be.tarsos.dsp.pitch.PitchDetectionHandler;
 import be.tarsos.dsp.pitch.PitchDetectionResult;
 import be.tarsos.dsp.pitch.PitchProcessor;
 
+import static android.os.SystemClock.sleep;
+
 public class MainActivity extends AppCompatActivity {
+    private static final int SAMPLE_RATE = 44100;
 
     //PlayerService player;
     LinkedBlockingQueue<PlayerService.Chord> queueOut;
+    LinkedBlockingQueue<PlayerService.Note> queueIn;
     TextView noteText, pitchText;
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
 
@@ -48,91 +55,64 @@ public class MainActivity extends AppCompatActivity {
         hardwareSoundInfo.setText(String.format("hasLowLatencyFeature: %b\nhasProFeature: %b",
                 hasLowLatencyFeature, hasProFeature));
 
-        //player = new PlayerService();
+        queueOut = SingletonClass.getInstance().queueOut;
+        queueIn = SingletonClass.getInstance().queueIn;
 
         Intent playerIntent = new Intent(MainActivity.this, PlayerService.class);
-
-        //queueOut = new LinkedBlockingQueue<>();
-        queueOut = SingletonClass.getInstance().queueOut;
-        playerIntent.putExtra(PlayerService.QUEUE_NAME, queueOut);
         startService(playerIntent);
+
+        /*Intent listenerIntent = new Intent(MainActivity.this, ListenerService.class);
+        startService(listenerIntent);*/
 
         AudioDispatcher dispatcher = AudioDispatcherFactory.fromDefaultMicrophone(22050,1024,0);
 
-        PitchDetectionHandler pdh = new PitchDetectionHandler() {
+        OnsetHandler odh = new PrintOnsetHandler() {
 
             @Override
-            public void handlePitch(PitchDetectionResult res, AudioEvent e){
-                final float pitchInHz = res.getPitch();
+            public void handleOnset(double time, double salience){
+                final double time_ = time;
+                final double salience_ = salience;
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        processPitch(pitchInHz);
+                        //queueIn.offer(new PlayerService.Note((int)pitchInHz));
+                        pitchText.setText("" + time_+" " + salience_);
                     }
                 });
             }
         };
 
-        AudioProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN, 22050, 1024, pdh);
-        dispatcher.addAudioProcessor(pitchProcessor);
+        AudioProcessor onsetProcessor = new ComplexOnsetDetector(256, 0.3, -70, 0.004);
+        dispatcher.addAudioProcessor(onsetProcessor);
 
         Thread audioThread = new Thread(dispatcher, "Audio Thread");
         audioThread.start();
     }
 
-    public void processPitch(float pitchInHz) {
-
-        pitchText.setText("" + pitchInHz);
-
-        if(pitchInHz >= 110 && pitchInHz < 123.47) {
-            //A
-            noteText.setText("A");
-        }
-        else if(pitchInHz >= 123.47 && pitchInHz < 130.81) {
-            //B
-            noteText.setText("B");
-        }
-        else if(pitchInHz >= 130.81 && pitchInHz < 146.83) {
-            //C
-            noteText.setText("C");
-        }
-        else if(pitchInHz >= 146.83 && pitchInHz < 164.81) {
-            //D
-            noteText.setText("D");
-        }
-        else if(pitchInHz >= 164.81 && pitchInHz <= 174.61) {
-            //E
-            noteText.setText("E");
-        }
-        else if(pitchInHz >= 174.61 && pitchInHz < 185) {
-            //F
-            noteText.setText("F");
-        }
-        else if(pitchInHz >= 185 && pitchInHz < 196) {
-            //G
-            noteText.setText("G");
-        }
-    }
-
     @Override
-    protected void onResume()
-    {
+    protected void onResume() {
         super.onResume();
 
         //player.onResume();
+        /*while (true) {
+            PlayerService.Note note = queueIn.peek();
+            if (note != null) {
+                pitchText.setText("Note " + note.number);
+            }
+            sleep(100);
+        }*/
 
     }
 
     @Override
-    protected void onPause()
-    {
+    protected void onPause() {
         super.onPause();
 
         //player.onPause();
     }
 
     public void playTestSound(View view) {
-        TextView info = (TextView)findViewById(R.id.textViewSoundInfo);
+        TextView info = (TextView) findViewById(R.id.textViewSoundInfo);
         info.setText("Playing");
         //player.playTestSound();
         PlayerService.Note[] notes = {new PlayerService.Note(100)};

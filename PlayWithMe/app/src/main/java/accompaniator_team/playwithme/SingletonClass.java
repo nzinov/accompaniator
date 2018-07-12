@@ -10,6 +10,7 @@ class SingletonClass {
     }
 
     public LinkedBlockingQueue<PlayerService.Chord> queueOut = new LinkedBlockingQueue<>();
+    public LinkedBlockingQueue<PlayerService.Note> queueIn = new LinkedBlockingQueue<>();
 
     private SingletonClass() {
     }
