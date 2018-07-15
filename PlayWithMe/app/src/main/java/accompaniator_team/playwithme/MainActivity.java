@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
 
         AudioDispatcher dispatcher = AudioDispatcherFactory.fromDefaultMicrophone(22050,1024,0);
 
-        OnsetHandler odh = new PrintOnsetHandler() {
+        OnsetHandler odh = new OnsetHandler() {
 
             @Override
             public void handleOnset(double time, double salience){
@@ -82,7 +82,8 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        AudioProcessor onsetProcessor = new ComplexOnsetDetector(256, 0.3, -70, 0.004);
+        ComplexOnsetDetector onsetProcessor = new ComplexOnsetDetector(1024, 0.4);
+        onsetProcessor.setHandler(odh);
         dispatcher.addAudioProcessor(onsetProcessor);
 
         Thread audioThread = new Thread(dispatcher, "Audio Thread");

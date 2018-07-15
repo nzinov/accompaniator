@@ -31,8 +31,7 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation 'com.github.billthefarmer:mididriver:v1.14'
     implementation files('libs/TarsosDSP-Android-latest.jar')
-    implementation 'com.github.LeffelMania:android-midi-lib:-SNAPSHOT'
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation 'org.tensorflow:tensorflow-android:+'
 }
 repositories {
     mavenCentral()
