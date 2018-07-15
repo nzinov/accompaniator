@@ -1,6 +1,8 @@
 package accompaniator_team.playwithme;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 class SingletonClass {
     private static final SingletonClass ourInstance = new SingletonClass();
@@ -11,6 +13,8 @@ class SingletonClass {
 
     public LinkedBlockingQueue<PlayerService.Chord> queueOut = new LinkedBlockingQueue<>();
     public LinkedBlockingQueue<PlayerService.Note> queueIn = new LinkedBlockingQueue<>();
+    public AtomicBoolean working;
+    public AtomicInteger deadline;
 
     private SingletonClass() {
     }

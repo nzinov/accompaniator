@@ -28,7 +28,6 @@ import static android.os.SystemClock.sleep;
 public class MainActivity extends AppCompatActivity {
     private static final int SAMPLE_RATE = 44100;
 
-    //PlayerService player;
     LinkedBlockingQueue<PlayerService.Chord> queueOut;
     LinkedBlockingQueue<PlayerService.Note> queueIn;
     TextView noteText, pitchText;
