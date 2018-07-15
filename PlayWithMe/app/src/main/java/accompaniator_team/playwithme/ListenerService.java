@@ -14,6 +14,8 @@ import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.AudioEvent;
 import be.tarsos.dsp.AudioProcessor;
 import be.tarsos.dsp.io.android.AudioDispatcherFactory;
+import be.tarsos.dsp.onsets.ComplexOnsetDetector;
+import be.tarsos.dsp.onsets.OnsetHandler;
 import be.tarsos.dsp.pitch.PitchDetectionHandler;
 import be.tarsos.dsp.pitch.PitchDetectionResult;
 import be.tarsos.dsp.pitch.PitchProcessor;
@@ -29,35 +31,44 @@ public class ListenerService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "onStartCommand");
-
         queueIn = SingletonClass.getInstance().queueIn;
 
-        AudioDispatcher dispatcher = AudioDispatcherFactory.fromDefaultMicrophone(22050, 1024, 0);
+        AudioDispatcher dispatcher = AudioDispatcherFactory.fromDefaultMicrophone(22050,1024,0);
 
-        PitchDetectionHandler pdh = new PitchDetectionHandler() {
-
-            LinkedBlockingQueue<PlayerService.Note> queueIn;
+        OnsetHandler odh = new OnsetHandler() {
 
             @Override
-            public void handlePitch(PitchDetectionResult res, AudioEvent e) {
-                final float pitchInHz = res.getPitch();
-                (new Runnable() {
+            public void handleOnset(double time, double salience){
+                final double time_ = time;
+                final double salience_ = salience;
+                new Runnable() {
                     @Override
                     public void run() {
-                        try {
-                            queueIn = SingletonClass.getInstance().queueIn;
-                            Log.w(TAG, "PITCH!!!!!!!!!!");
-                            queueIn.put(new PlayerService.Note(hzToMidiNumber(pitchInHz)));
-                        } catch (InterruptedException e) {
-                            Log.d(TAG, "", e);
-                        }
+                        //queueIn.offer(new PlayerService.Note(...));
                     }
-                }).run();
+                }.run();
             }
         };
 
-        AudioProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN, 22050, 1024, pdh);
+        ComplexOnsetDetector onsetProcessor = new ComplexOnsetDetector(1024, 0.4);
+        onsetProcessor.setHandler(odh);
+        dispatcher.addAudioProcessor(onsetProcessor);
+
+        PitchDetectionHandler pitchHandler = new PitchDetectionHandler() {
+            @Override
+            public void handlePitch(PitchDetectionResult pitchDetectionResult, AudioEvent audioEvent) {
+                if(pitchDetectionResult.getPitch() != -1){
+                    double timeStamp = audioEvent.getTimeStamp();
+                    float pitch = pitchDetectionResult.getPitch();
+                    float probability = pitchDetectionResult.getProbability();
+                    double rms = audioEvent.getRMS() * 100;
+                    String message = String.format("Pitch detected at %.2fs: %.2fHz ( %.2f probability, RMS: %.5f )\n", timeStamp,pitch,probability,rms);
+                }
+            }
+        };
+
+        PitchProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN,
+                22050, 1024, pitchHandler);
         dispatcher.addAudioProcessor(pitchProcessor);
 
         Thread audioThread = new Thread(dispatcher, "Audio Thread");
