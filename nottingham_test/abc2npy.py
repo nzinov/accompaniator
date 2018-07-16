@@ -130,7 +130,7 @@ fnames = ['jigs.abc', 'ashover.abc', 'hpps.abc', 'morris.abc', 'playford.abc', '
 songs = []
 
 for fname in fnames:
-    flines = open(fname).readlines()
+    flines = open('data/'+fname).readlines()
 
     current_key = 'C'
     current_meter = None

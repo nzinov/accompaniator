@@ -103,3 +103,4 @@ ENV/
 # MIDI files
 *.mid
 
+.idea
