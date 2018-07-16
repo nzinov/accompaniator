@@ -11,6 +11,10 @@ import org.billthefarmer.mididriver.MidiDriver;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static java.lang.Math.log;
+import static java.lang.Math.pow;
+import static java.lang.Math.round;
+
 public class PlayerService extends Service {
     private static final String TAG = "PlayerService";
 
@@ -37,6 +41,15 @@ public class PlayerService extends Service {
 
         public Note(int number) {
             this.number = number;
+        }
+
+        double toFrequency() {
+            return pow(2, ((number - 69) / 12.))* 440;
+        }
+
+        static Note fromFrequency(float freq) {
+            int num = (int)round(log(freq/440.0)/log(2)*12+69);
+            return new Note(num);
         }
     }
 

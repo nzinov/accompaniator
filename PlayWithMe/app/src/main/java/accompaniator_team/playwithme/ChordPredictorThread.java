@@ -18,28 +18,31 @@ public class ChordPredictorThread extends Thread {
         queueOut = SingletonClass.getInstance().queueOut;
         queueIn = SingletonClass.getInstance().queueIn;
 
-        tensorflow = new TensorFlowInferenceInterface(assets, "NN_model.h5");
+        //tensorflow = new TensorFlowInferenceInterface(assets, "NN_model.h5");
     }
 
-    PlayerService.Chord tryPredict() {
+    private PlayerService.Chord tryPredict() {
         PlayerService.Note note;
         PlayerService.Chord predictedChord = null;
 
-        while (true) {
+        do {
             note = queueIn.peek();
             if (note == null) {
-                break;
+                continue;
             }
             // TODO
             //tensorflow.feed();
-            predictedChord = null; //tensorflow.fetch()
-        }
+            //note.number -= 12;
+            PlayerService.Note[] notes = {note};
+            predictedChord = new PlayerService.Chord(notes, 127, 128); //tensorflow.fetch()
+        } while (note == null);
 
-        if (Instant.now().isAfter(predictionTime)) {
+        return predictedChord;
+        /*if (Instant.now().isAfter(predictionTime)) {
             return predictedChord;
         } else {
             return null;
-        }
+        }*/
     }
 
     @Override

@@ -3,6 +3,7 @@ package accompaniator_team.playwithme;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.provider.ContactsContract;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -45,8 +46,12 @@ public class MainActivity extends AppCompatActivity {
                     String pitchStr = "none";
                     if(mLastTimeStamp < time_) {
                         pitchStr = String.format("%.2fHz", mPitch);
+                        PlayerService.Note note = PlayerService.Note.fromFrequency(mPitch);
+                        queueIn.offer(note);
                     }
-                    String message = String.format("Onset detected at %.2fs with salience %.2f with pitch %s,\n lastTimeStamp %.2fs", time_, salience_, pitchStr, mLastTimeStamp);
+                    String message =
+                            String.format("Onset detected at %.2fs\nsalience %.2f\npitch %s\nnote number %d\nlastTimeStamp %.2fs",
+                            time_, salience_, pitchStr, PlayerService.Note.fromFrequency(mPitch).number, mLastTimeStamp);
                     onsetText.setText(message);
                 }
             });
@@ -104,6 +109,9 @@ public class MainActivity extends AppCompatActivity {
         Intent playerIntent = new Intent(MainActivity.this, PlayerService.class);
         startService(playerIntent);
 
+        Intent predictorIntent = new Intent(MainActivity.this, ChordPredictorService.class);
+        startService(predictorIntent);
+
         /*Intent listenerIntent = new Intent(MainActivity.this, ListenerService.class);
         startService(listenerIntent);*/
 
@@ -126,22 +134,12 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
         //player.onResume();
-        /*while (true) {
-            PlayerService.Note note = queueIn.peek();
-            if (note != null) {
-                pitchText.setText("Note " + note.number);
-            }
-            sleep(100);
-        }*/
-
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-
         //player.onPause();
     }
 

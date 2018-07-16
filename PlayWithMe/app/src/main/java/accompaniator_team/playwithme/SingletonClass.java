@@ -20,5 +20,6 @@ class SingletonClass {
     public Activity mainActivity; // TODO: make atomic
 
     private SingletonClass() {
+        working = new AtomicBoolean(true);
     }
 }
