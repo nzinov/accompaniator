@@ -8,6 +8,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.TextView;
 
 import java.util.concurrent.LinkedBlockingQueue;
@@ -29,6 +30,49 @@ public class MainActivity extends AppCompatActivity {
     TextView onsetText, pitchText;
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
 
+    class PitchOnsetHandler implements OnsetHandler, PitchDetectionHandler {
+
+        double mLastTimeStamp;
+        float mPitch;
+
+        @Override
+        public void handleOnset(final double time, double salience){
+            final double time_ = time;
+            final double salience_ = salience;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    String pitchStr = "none";
+                    if(mLastTimeStamp < time_) {
+                        pitchStr = String.format("%.2fHz", mPitch);
+                    }
+                    String message = String.format("Onset detected at %.2fs with salience %.2f with pitch %s,\n lastTimeStamp %.2fs", time_, salience_, pitchStr, mLastTimeStamp);
+                    onsetText.setText(message);
+                }
+            });
+        }
+        @Override
+        public void handlePitch(PitchDetectionResult pitchDetectionResult, AudioEvent audioEvent) {
+            if(pitchDetectionResult.getPitch() != -1){
+                double timeStamp = audioEvent.getTimeStamp();
+                float pitch = pitchDetectionResult.getPitch();
+                float probability = pitchDetectionResult.getProbability();
+                double rms = audioEvent.getRMS() * 100;
+                mPitch = pitch;
+                mLastTimeStamp = timeStamp;
+
+                final String message = String.format("Pitch detected at %.2fs: %.2fHz ( %.2f probability, RMS: %.5f )\n", timeStamp,pitch,probability,rms);
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        pitchText.setText(message);
+                    }
+                });
+            }
+        }
+    }
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,6 +81,8 @@ public class MainActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_RECORD_AUDIO_PERMISSION);
         }
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         SingletonClass.getInstance().mainActivity = this;
 
@@ -63,47 +109,14 @@ public class MainActivity extends AppCompatActivity {
 
         AudioDispatcher dispatcher = AudioDispatcherFactory.fromDefaultMicrophone(22050,1024,0);
 
-        OnsetHandler odh = new OnsetHandler() {
-
-            @Override
-            public void handleOnset(double time, double salience){
-                final double time_ = time;
-                final double salience_ = salience;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        String message = String.format("Onset detected at %.2fs with salience %.2f", time_, salience_);
-                        onsetText.setText(message);
-                    }
-                });
-            }
-        };
+        PitchOnsetHandler pitchOnsetHandler = new MainActivity.PitchOnsetHandler();
 
         ComplexOnsetDetector onsetProcessor = new ComplexOnsetDetector(1024, 0.4);
-        onsetProcessor.setHandler(odh);
+        onsetProcessor.setHandler(pitchOnsetHandler);
         dispatcher.addAudioProcessor(onsetProcessor);
 
-        PitchDetectionHandler pitchHandler = new PitchDetectionHandler() {
-            @Override
-            public void handlePitch(PitchDetectionResult pitchDetectionResult, AudioEvent audioEvent) {
-                if(pitchDetectionResult.getPitch() != -1){
-                    double timeStamp = audioEvent.getTimeStamp();
-                    float pitch = pitchDetectionResult.getPitch();
-                    float probability = pitchDetectionResult.getProbability();
-                    double rms = audioEvent.getRMS() * 100;
-                    final String message = String.format("Pitch detected at %.2fs: %.2fHz ( %.2f probability, RMS: %.5f )\n", timeStamp,pitch,probability,rms);
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            pitchText.setText(message);
-                        }
-                    });
-                }
-            }
-        };
-
         PitchProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN,
-                22050, 1024, pitchHandler);
+                22050, 1024, pitchOnsetHandler);
         dispatcher.addAudioProcessor(pitchProcessor);
 
         Thread audioThread = new Thread(dispatcher, "Audio Thread");
