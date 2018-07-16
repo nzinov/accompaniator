@@ -41,7 +41,7 @@
         app:layout_constraintTop_toBottomOf="@+id/buttonTestSound" />
 
     <TextView
-        android:id="@+id/textViewNoteText"
+        android:id="@+id/textViewOnsetText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="16dp"
@@ -60,7 +60,7 @@
         android:layout_marginTop="8dp"
         android:text="TextView"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewNoteText" />
+        app:layout_constraintTop_toBottomOf="@+id/textViewOnsetText" />
 
     <Button
         android:id="@+id/buttonSettings"

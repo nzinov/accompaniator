@@ -14,23 +14,19 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.AudioEvent;
-import be.tarsos.dsp.AudioProcessor;
 import be.tarsos.dsp.io.android.AudioDispatcherFactory;
 import be.tarsos.dsp.onsets.ComplexOnsetDetector;
 import be.tarsos.dsp.onsets.OnsetHandler;
-import be.tarsos.dsp.onsets.PrintOnsetHandler;
 import be.tarsos.dsp.pitch.PitchDetectionHandler;
 import be.tarsos.dsp.pitch.PitchDetectionResult;
 import be.tarsos.dsp.pitch.PitchProcessor;
-
-import static android.os.SystemClock.sleep;
 
 public class MainActivity extends AppCompatActivity {
     private static final int SAMPLE_RATE = 44100;
 
     LinkedBlockingQueue<PlayerService.Chord> queueOut;
     LinkedBlockingQueue<PlayerService.Note> queueIn;
-    TextView noteText, pitchText;
+    TextView onsetText, pitchText;
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
 
     @Override
@@ -42,13 +38,15 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, REQUEST_RECORD_AUDIO_PERMISSION);
         }
 
+        SingletonClass.getInstance().mainActivity = this;
+
         boolean hasLowLatencyFeature =
                 getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_LOW_LATENCY);
 
         boolean hasProFeature =
                 getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_PRO);
 
-        noteText = findViewById(R.id.textViewNoteText);
+        onsetText = findViewById(R.id.textViewOnsetText);
         pitchText = findViewById(R.id.textViewPitchText);
         TextView hardwareSoundInfo = findViewById(R.id.textViewHardwareSoundInfo);
         hardwareSoundInfo.setText(String.format("hasLowLatencyFeature: %b\nhasProFeature: %b",
@@ -74,8 +72,8 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        //queueIn.offer(new PlayerService.Note((int)pitchInHz));
-                        pitchText.setText("" + time_+" " + salience_);
+                        String message = String.format("Onset detected at %.2fs with salience %.2f", time_, salience_);
+                        onsetText.setText(message);
                     }
                 });
             }
@@ -84,6 +82,29 @@ public class MainActivity extends AppCompatActivity {
         ComplexOnsetDetector onsetProcessor = new ComplexOnsetDetector(1024, 0.4);
         onsetProcessor.setHandler(odh);
         dispatcher.addAudioProcessor(onsetProcessor);
+
+        PitchDetectionHandler pitchHandler = new PitchDetectionHandler() {
+            @Override
+            public void handlePitch(PitchDetectionResult pitchDetectionResult, AudioEvent audioEvent) {
+                if(pitchDetectionResult.getPitch() != -1){
+                    double timeStamp = audioEvent.getTimeStamp();
+                    float pitch = pitchDetectionResult.getPitch();
+                    float probability = pitchDetectionResult.getProbability();
+                    double rms = audioEvent.getRMS() * 100;
+                    final String message = String.format("Pitch detected at %.2fs: %.2fHz ( %.2f probability, RMS: %.5f )\n", timeStamp,pitch,probability,rms);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            pitchText.setText(message);
+                        }
+                    });
+                }
+            }
+        };
+
+        PitchProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN,
+                22050, 1024, pitchHandler);
+        dispatcher.addAudioProcessor(pitchProcessor);
 
         Thread audioThread = new Thread(dispatcher, "Audio Thread");
         audioThread.start();
@@ -109,6 +130,12 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
 
         //player.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        SingletonClass.getInstance().mainActivity = null;
+        super.onDestroy();
     }
 
     public void playTestSound(View view) {
