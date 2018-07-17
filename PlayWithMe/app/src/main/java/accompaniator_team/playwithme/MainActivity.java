@@ -1,8 +1,11 @@
 package accompaniator_team.playwithme;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.AudioManager;
+import android.media.audiofx.AcousticEchoCanceler;
 import android.provider.ContactsContract;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -22,6 +25,8 @@ import be.tarsos.dsp.onsets.OnsetHandler;
 import be.tarsos.dsp.pitch.PitchDetectionHandler;
 import be.tarsos.dsp.pitch.PitchDetectionResult;
 import be.tarsos.dsp.pitch.PitchProcessor;
+
+import static android.support.v4.content.ContextCompat.getSystemService;
 
 public class MainActivity extends AppCompatActivity {
     private static final int SAMPLE_RATE = 44100;
@@ -96,12 +101,13 @@ public class MainActivity extends AppCompatActivity {
 
         boolean hasProFeature =
                 getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_PRO);
+        boolean hasAcousticEchoCancellation = AcousticEchoCanceler.isAvailable();
 
         onsetText = findViewById(R.id.textViewOnsetText);
         pitchText = findViewById(R.id.textViewPitchText);
         TextView hardwareSoundInfo = findViewById(R.id.textViewHardwareSoundInfo);
-        hardwareSoundInfo.setText(String.format("hasLowLatencyFeature: %b\nhasProFeature: %b",
-                hasLowLatencyFeature, hasProFeature));
+        hardwareSoundInfo.setText(String.format("hasLowLatencyFeature: %b\nhasProFeature: %b\nhasAcousticEchoCancellation: %b",
+                hasLowLatencyFeature, hasProFeature, hasAcousticEchoCancellation));
 
         queueOut = SingletonClass.getInstance().queueOut;
         queueIn = SingletonClass.getInstance().queueIn;
@@ -114,8 +120,9 @@ public class MainActivity extends AppCompatActivity {
 
         /*Intent listenerIntent = new Intent(MainActivity.this, ListenerService.class);
         startService(listenerIntent);*/
-
-        AudioDispatcher dispatcher = AudioDispatcherFactory.fromDefaultMicrophone(22050,1024,0);
+        AudioManager audioManager = (AudioManager)getSystemService(Context.AUDIO_SERVICE);
+        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        AudioDispatcher dispatcher = EchoCancellationAudioDispatcherFactory.fromDefaultMicrophoneEchoCancellation(22050,1024,0);
 
         PitchOnsetHandler pitchOnsetHandler = new MainActivity.PitchOnsetHandler();
 
