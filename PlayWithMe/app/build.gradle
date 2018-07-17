@@ -32,6 +32,8 @@ dependencies {
     implementation 'com.github.billthefarmer:mididriver:v1.14'
     implementation files('libs/TarsosDSP-Android-latest.jar')
     implementation 'org.tensorflow:tensorflow-android:+'
+    //implementation 'org.webrtc:google-webrtc:1.0.+'
+    //implementation 'io.openwebrtc:openwebrtc-android:0.3'
 }
 repositories {
     mavenCentral()
