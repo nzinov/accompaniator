@@ -1,6 +1,7 @@
 package accompaniator_team.playwithme;
 
 import android.app.Activity;
+import android.content.Context;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,6 +19,7 @@ class SingletonClass {
     public AtomicBoolean working;
     public AtomicInteger deadline;
     public Activity mainActivity; // TODO: make atomic
+    public Context context;
 
     private SingletonClass() {
         working = new AtomicBoolean(true);

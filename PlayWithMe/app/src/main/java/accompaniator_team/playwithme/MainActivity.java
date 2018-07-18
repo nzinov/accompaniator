@@ -95,6 +95,7 @@ public class MainActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         SingletonClass.getInstance().mainActivity = this;
+        SingletonClass.getInstance().context = getApplicationContext();
 
         boolean hasLowLatencyFeature =
                 getPackageManager().hasSystemFeature(PackageManager.FEATURE_AUDIO_LOW_LATENCY);
