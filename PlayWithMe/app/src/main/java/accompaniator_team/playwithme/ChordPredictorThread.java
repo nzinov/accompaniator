@@ -3,10 +3,13 @@ package accompaniator_team.playwithme;
 import android.content.res.AssetManager;
 import android.util.Log;
 
+import org.dmg.pmml.PMML;
 import org.jpmml.android.EvaluatorUtil;
 import org.jpmml.evaluator.Evaluator;
 import org.jpmml.evaluator.InputField;
 import org.jpmml.evaluator.ModelEvaluator;
+import org.jpmml.evaluator.ModelEvaluatorFactory;
+import org.nustaq.serialization.FSTObjectInput;
 import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
 
 import java.io.FileInputStream;
@@ -32,13 +35,14 @@ public class ChordPredictorThread extends Thread {
         //tensorflow = new TensorFlowInferenceInterface(assets, "NN_model.h5");
 
         try {
-            modelEvaluator = loadSer("model.ser");
+            modelEvaluator = (Evaluator)loadSer("model_fst.ser");
             Log.e(TAG, modelEvaluator.getSummary());
             Log.e(TAG, "Evaluator loaded");
             for(InputField inf: modelEvaluator.getInputFields()){
                 Log.e(TAG, inf.getName().toString());
             }
         } catch(Exception e) {
+
             Log.e(TAG, "Evaluator not loaded", e);
         }
 
@@ -52,9 +56,20 @@ public class ChordPredictorThread extends Thread {
             return evaluator;
         }*/
         InputStream is = assetManager.open(serName);
-        Evaluator evaluator = org.jpmml.android.EvaluatorUtil.createEvaluator(is);
+        PMML pmml = (PMML)myReadMethod(is);
+        ModelEvaluatorFactory modelEvaluatorFactory = ModelEvaluatorFactory.newInstance();
+        ModelEvaluator<?> evaluator = modelEvaluatorFactory.newModelEvaluator(pmml);
+        evaluator.verify();
         is.close();
         return evaluator;
+    }
+
+    public Object myReadMethod( InputStream stream ) throws IOException, ClassNotFoundException
+    {
+        FSTObjectInput in = new FSTObjectInput(stream);
+        Object result = (Object)in.readObject();
+        in.close(); // required !
+        return result;
     }
 
     private PlayerService.Chord tryPredict() {
