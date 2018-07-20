@@ -26,7 +26,6 @@ import be.tarsos.dsp.pitch.PitchDetectionHandler;
 import be.tarsos.dsp.pitch.PitchDetectionResult;
 import be.tarsos.dsp.pitch.PitchProcessor;
 
-import static android.support.v4.content.ContextCompat.getSystemService;
 
 public class MainActivity extends AppCompatActivity {
     private static final int SAMPLE_RATE = 44100;
