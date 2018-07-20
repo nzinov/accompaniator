@@ -18,6 +18,12 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    externalNativeBuild {
+        ndkBuild {
+            path 'jni/Android.mk'
+        }
+    }
+    buildToolsVersion '28.0.1'
 }
 
 dependencies {
@@ -34,18 +40,14 @@ dependencies {
     implementation 'org.tensorflow:tensorflow-android:+'
     //implementation 'org.webrtc:google-webrtc:1.0.+'
     //implementation 'io.openwebrtc:openwebrtc-android:0.3'
-
     // Not working here, only .jar in libs folder work
     // https://mvnrepository.com/artifact/org.jpmml/jpmml-evaluator
     //implementation group: 'org.jpmml', name: 'jpmml-evaluator', version: '1.4.2'
     // https://mvnrepository.com/artifact/org.jpmml/jpmml-model
     //implementation group: 'org.jpmml', name: 'jpmml-model', version: '1.4.2'
-
     // https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api
     //implementation group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.0'
-
     implementation 'de.ruedigermoeller:fst:2.56'
-
 }
 repositories {
     mavenCentral()
