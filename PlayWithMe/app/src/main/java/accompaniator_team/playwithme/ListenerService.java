@@ -1,19 +1,17 @@
 package accompaniator_team.playwithme;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.media.AudioManager;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
-import org.billthefarmer.mididriver.MidiDriver;
-
+import java.io.Serializable;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.AudioEvent;
-import be.tarsos.dsp.AudioProcessor;
-import be.tarsos.dsp.io.android.AudioDispatcherFactory;
 import be.tarsos.dsp.onsets.ComplexOnsetDetector;
 import be.tarsos.dsp.onsets.OnsetHandler;
 import be.tarsos.dsp.pitch.PitchDetectionHandler;
@@ -25,50 +23,80 @@ public class ListenerService extends Service {
 
     LinkedBlockingQueue<PlayerService.Note> queueIn;
 
-    int hzToMidiNumber(float hz) {
-        return (int) (12 * Math.log(hz / 440) / Math.log(2));
+    class PitchOnsetHandler implements OnsetHandler, PitchDetectionHandler {
+
+        double mLastTimeStamp;
+        float mPitch;
+        int onsetCnt = 0;
+        int pitchCnt = 0;
+
+        GuiLogger mGuiLog;
+
+        PitchOnsetHandler(Context context) {
+            mGuiLog = new GuiLogger(context);
+        }
+
+        @Override
+        public void handleOnset(final double time, double salience) {
+            String pitchStr;
+            if (mLastTimeStamp < time) {
+                pitchStr = String.format("%.2fHz", mPitch);
+                PlayerService.Note note = PlayerService.Note.fromFrequency(mPitch);
+                queueIn.offer(note);
+            } else {
+                return;
+            }
+            String message =
+                    String.format("%d Onset detected at %.2fs\nsalience %.2f\npitch %s\nnote number %d\nlastTimeStamp %.2fs",
+                            onsetCnt, time, salience, pitchStr, PlayerService.Note.fromFrequency(mPitch).number, mLastTimeStamp);
+
+            MainActivity.GuiMessage l = (Serializable & MainActivity.GuiMessage) (MainActivity a) -> {
+                a.onsetText.setText(message);
+            };
+            mGuiLog.sendResult(l);
+
+            ++onsetCnt;
+        }
+
+        @Override
+        public void handlePitch(PitchDetectionResult pitchDetectionResult, AudioEvent audioEvent) {
+            if (pitchDetectionResult.getPitch() != -1) {
+                double timeStamp = audioEvent.getTimeStamp();
+                float pitch = pitchDetectionResult.getPitch();
+                float probability = pitchDetectionResult.getProbability();
+                double rms = audioEvent.getRMS() * 100;
+                mPitch = pitch;
+                mLastTimeStamp = timeStamp;
+
+                final String message = String.format("%d Pitch detected at %.2fs\nfreq %.2fHz\nprobability %.2f\nRMS %.5f",
+                        pitchCnt, timeStamp, pitch, probability, rms);
+
+                MainActivity.GuiMessage l = (Serializable & MainActivity.GuiMessage) (MainActivity a) -> {
+                    a.pitchText.setText(message);
+                };
+                mGuiLog.sendResult(l);
+
+                ++pitchCnt;
+            }
+        }
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         queueIn = SingletonClass.getInstance().queueIn;
 
-        AudioDispatcher dispatcher = AudioDispatcherFactory.fromDefaultMicrophone(22050,1024,0);
+        AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
+        AudioDispatcher dispatcher = EchoCancellationAudioDispatcherFactory.fromDefaultMicrophoneEchoCancellation(22050, 1024, 0);
 
-        OnsetHandler odh = new OnsetHandler() {
-
-            @Override
-            public void handleOnset(double time, double salience){
-                final double time_ = time;
-                final double salience_ = salience;
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        //queueIn.offer(new PlayerService.Note(...));
-                    }
-                }.run();
-            }
-        };
+        PitchOnsetHandler pitchOnsetHandler = new PitchOnsetHandler(this);
 
         ComplexOnsetDetector onsetProcessor = new ComplexOnsetDetector(1024, 0.4);
-        onsetProcessor.setHandler(odh);
+        onsetProcessor.setHandler(pitchOnsetHandler);
         dispatcher.addAudioProcessor(onsetProcessor);
 
-        PitchDetectionHandler pitchHandler = new PitchDetectionHandler() {
-            @Override
-            public void handlePitch(PitchDetectionResult pitchDetectionResult, AudioEvent audioEvent) {
-                if(pitchDetectionResult.getPitch() != -1){
-                    double timeStamp = audioEvent.getTimeStamp();
-                    float pitch = pitchDetectionResult.getPitch();
-                    float probability = pitchDetectionResult.getProbability();
-                    double rms = audioEvent.getRMS() * 100;
-                    String message = String.format("Pitch detected at %.2fs: %.2fHz ( %.2f probability, RMS: %.5f )\n", timeStamp,pitch,probability,rms);
-                }
-            }
-        };
-
         PitchProcessor pitchProcessor = new PitchProcessor(PitchProcessor.PitchEstimationAlgorithm.FFT_YIN,
-                22050, 1024, pitchHandler);
+                22050, 1024, pitchOnsetHandler);
         dispatcher.addAudioProcessor(pitchProcessor);
 
         Thread audioThread = new Thread(dispatcher, "Audio Thread");

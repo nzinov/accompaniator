@@ -25,7 +25,7 @@ public class PlayerService extends Service {
         queueOut = SingletonClass.getInstance().queueOut;
 
         midiDriver = new MidiDriver();
-        mThread = new PlayerThread(queueOut, midiDriver);
+        mThread = new PlayerThread(this, queueOut, midiDriver);
         mThread.start();
         return super.onStartCommand(intent, flags, startId);
     }

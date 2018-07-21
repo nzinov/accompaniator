@@ -18,6 +18,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    buildToolsVersion '28.0.1'
+    compileOptions {
+        targetCompatibility 1.8
+        sourceCompatibility 1.8
+    }
 }
 
 dependencies {
@@ -31,21 +36,8 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation 'com.github.billthefarmer:mididriver:v1.14'
     implementation files('libs/TarsosDSP-Android-latest.jar')
-    implementation 'org.tensorflow:tensorflow-android:+'
-    //implementation 'org.webrtc:google-webrtc:1.0.+'
-    //implementation 'io.openwebrtc:openwebrtc-android:0.3'
-
-    // Not working here, only .jar in libs folder work
-    // https://mvnrepository.com/artifact/org.jpmml/jpmml-evaluator
-    //implementation group: 'org.jpmml', name: 'jpmml-evaluator', version: '1.4.2'
-    // https://mvnrepository.com/artifact/org.jpmml/jpmml-model
-    //implementation group: 'org.jpmml', name: 'jpmml-model', version: '1.4.2'
-
-    // https://mvnrepository.com/artifact/javax.xml.bind/jaxb-api
-    //implementation group: 'javax.xml.bind', name: 'jaxb-api', version: '2.3.0'
-
+    //implementation 'org.tensorflow:tensorflow-android:+'
     implementation 'de.ruedigermoeller:fst:2.56'
-
 }
 repositories {
     mavenCentral()

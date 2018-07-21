@@ -62,6 +62,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textViewOnsetText" />
 
+    <TextView
+        android:id="@+id/textViewPredictorText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="16dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="8dp"
+        android:text="TextView"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textViewPitchText" />
+
     <Button
         android:id="@+id/buttonSettings"
         android:layout_width="118dp"
@@ -72,5 +83,5 @@
         android:onClick="settings"
         android:text="Button"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textViewPitchText" />
+        app:layout_constraintTop_toBottomOf="@+id/textViewPredictorText" />
 </android.support.constraint.ConstraintLayout>

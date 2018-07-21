@@ -6,14 +6,13 @@ import android.content.res.AssetManager;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 
-import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class ChordPredictorService  extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        ChordPredictorThread thread = new ChordPredictorThread(getAssets());
+        ChordPredictorThread thread = new ChordPredictorThread(this, getAssets());
         thread.start();
 
         return super.onStartCommand(intent, flags, startId);
@@ -24,5 +23,4 @@ public class ChordPredictorService  extends Service {
     public IBinder onBind(Intent intent) {
         return null;
     }
-
 }

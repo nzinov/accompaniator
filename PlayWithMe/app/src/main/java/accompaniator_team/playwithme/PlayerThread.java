@@ -1,11 +1,12 @@
 package accompaniator_team.playwithme;
 
+import android.content.Context;
 import android.os.SystemClock;
 import android.util.Log;
-import android.widget.Toast;
 
 import org.billthefarmer.mididriver.MidiDriver;
 
+import java.io.Serializable;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class PlayerThread extends Thread {
@@ -15,9 +16,10 @@ public class PlayerThread extends Thread {
     private PlayerService.Chord currentChord;
     private MidiDriver midiDriver;
     private LinkedBlockingQueue<PlayerService.Chord> queueOut;
+    private GuiLogger guiLog;
 
-
-    PlayerThread(LinkedBlockingQueue<PlayerService.Chord> queueOut_, MidiDriver midiDriver_) {
+    PlayerThread(Context context, LinkedBlockingQueue<PlayerService.Chord> queueOut_, MidiDriver midiDriver_) {
+        guiLog = new GuiLogger(context);
         tempo = 60;
         queueOut = queueOut_;
         midiDriver = midiDriver_;
@@ -48,7 +50,9 @@ public class PlayerThread extends Thread {
         midiDriver.write(msg);
     }
 
-    public void playChord() {
+    private static int cnt = 0;
+
+    private void playChord() {
         try {
             PlayerService.Chord chord = queueOut.take();
 
@@ -57,8 +61,6 @@ public class PlayerThread extends Thread {
             for (PlayerService.Note note : chord.notes) {
                 Assert.that(note.number < 128);
             }
-
-            //Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show();
 
             // Off notes of previous chord when next chord is playing
             if (currentChord != null) {
@@ -74,7 +76,7 @@ public class PlayerThread extends Thread {
 
             float durationInSeconds = lenInSeconds(chord.duration, tempo);
 
-            SystemClock.sleep(1000 * (int) durationInSeconds);
+            SystemClock.sleep(500 * (int) durationInSeconds);
 
             // Off notes of chord after timeout.
             if (currentChord == chord) {
@@ -82,8 +84,15 @@ public class PlayerThread extends Thread {
                     sendMidi(0x80, note.number, chord.velocity);
                 }
             }
+
+            ++cnt;
+            MainActivity.GuiMessage l = (Serializable & MainActivity.GuiMessage) (MainActivity a) -> {
+                String message = String.format("%d Note %d played", cnt, chord.notes[0].number);
+                a.soundText.setText(message);
+            };
+            guiLog.sendResult(l);
         } catch (InterruptedException e) {
-            Log.d(TAG, "", e);
+            Log.e(TAG, "", e);
         }
     }
 
