@@ -109,9 +109,8 @@ public class PlayerThread extends Thread {
     }
 
     public void run() {
-        while (true) {
+        while (SingletonClass.getInstance().working.get()) {
             playChord();
-            //playTestSound();
         }
     }
 }

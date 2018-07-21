@@ -6,6 +6,7 @@ import android.util.Log;
 
 import org.dmg.pmml.PMML;
 import org.jpmml.evaluator.Evaluator;
+import org.jpmml.evaluator.InputField;
 import org.jpmml.evaluator.ModelEvaluator;
 import org.jpmml.evaluator.ModelEvaluatorFactory;
 import org.nustaq.serialization.FSTObjectInput;
@@ -19,12 +20,12 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class ChordPredictorThread extends Thread {
     private static final String TAG = "ChordPredictorThread";
 
-    LinkedBlockingQueue<PlayerService.Chord> queueOut;
-    LinkedBlockingQueue<PlayerService.Note> queueIn;
+    private LinkedBlockingQueue<PlayerService.Chord> queueOut;
+    private LinkedBlockingQueue<PlayerService.Chord> queueIn;
     //TensorFlowInferenceInterface tensorflow;
     Instant predictionTime;
-    Evaluator modelEvaluator = null;
-    GuiLogger guiLog;
+    private Evaluator modelEvaluator = null;
+    private GuiLogger guiLog;
 
     ChordPredictorThread(Context context, AssetManager assets) {
         guiLog = new GuiLogger(context);
@@ -33,7 +34,7 @@ public class ChordPredictorThread extends Thread {
 
         //tensorflow = new TensorFlowInferenceInterface(assets, "NN_model.h5");
 
-        /*try {
+        try {
             modelEvaluator = (Evaluator)loadSer("model_fst.ser");
             Log.e(TAG, modelEvaluator.getSummary());
             Log.e(TAG, "Evaluator loaded");
@@ -43,11 +44,11 @@ public class ChordPredictorThread extends Thread {
         } catch(Exception e) {
 
             Log.e(TAG, "Evaluator not loaded", e);
-        }*/
+        }
 
     }
 
-    public Evaluator loadSer(String serName) throws Exception {
+    private Evaluator loadSer(String serName) throws Exception {
         AssetManager assetManager = SingletonClass.getInstance().context.getAssets();
 
         /*try(InputStream is = assetManager.open(serName)){
@@ -63,7 +64,7 @@ public class ChordPredictorThread extends Thread {
         return evaluator;
     }
 
-    public Object myReadMethod( InputStream stream ) throws IOException, ClassNotFoundException
+    private Object myReadMethod(InputStream stream) throws IOException, ClassNotFoundException
     {
         FSTObjectInput in = new FSTObjectInput(stream);
         Object result = (Object)in.readObject();
@@ -72,12 +73,15 @@ public class ChordPredictorThread extends Thread {
     }
 
     private PlayerService.Chord tryPredict() {
+        PlayerService.Chord chord;
         PlayerService.Note note;
         PlayerService.Chord predictedChord = null;
 
         try {
             do {
-                note = queueIn.take();
+                chord = queueIn.take();
+                note = chord.notes[0];
+
                 if (note == null) {
                     continue;
                 }

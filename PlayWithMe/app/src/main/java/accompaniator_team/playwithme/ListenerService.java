@@ -18,10 +18,12 @@ import be.tarsos.dsp.pitch.PitchDetectionHandler;
 import be.tarsos.dsp.pitch.PitchDetectionResult;
 import be.tarsos.dsp.pitch.PitchProcessor;
 
+import static java.lang.Math.min;
+
 public class ListenerService extends Service {
     private static final String TAG = "ListenerService";
 
-    LinkedBlockingQueue<PlayerService.Note> queueIn;
+    LinkedBlockingQueue<PlayerService.Chord> queueIn;
 
     class PitchOnsetHandler implements OnsetHandler, PitchDetectionHandler {
 
@@ -42,7 +44,9 @@ public class ListenerService extends Service {
             if (mLastTimeStamp < time) {
                 pitchStr = String.format("%.2fHz", mPitch);
                 PlayerService.Note note = PlayerService.Note.fromFrequency(mPitch);
-                queueIn.offer(note);
+                PlayerService.Note[] notes = { note };
+                PlayerService.Chord chord = new PlayerService.Chord(notes, min((int)salience, 500), 0);
+                queueIn.offer(chord);
             } else {
                 return;
             }

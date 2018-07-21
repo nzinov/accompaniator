@@ -15,7 +15,7 @@ class SingletonClass {
     }
 
     public LinkedBlockingQueue<PlayerService.Chord> queueOut = new LinkedBlockingQueue<>();
-    public LinkedBlockingQueue<PlayerService.Note> queueIn = new LinkedBlockingQueue<>();
+    public LinkedBlockingQueue<PlayerService.Chord> queueIn = new LinkedBlockingQueue<>();
     public AtomicBoolean working;
     public AtomicInteger deadline;
     public Activity mainActivity; // TODO: make atomic

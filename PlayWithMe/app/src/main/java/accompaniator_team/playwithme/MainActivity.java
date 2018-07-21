@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
 
     private BroadcastReceiver broadcastReceiver;
     LinkedBlockingQueue<PlayerService.Chord> queueOut;
-    LinkedBlockingQueue<PlayerService.Note> queueIn;
+    LinkedBlockingQueue<PlayerService.Chord> queueIn;
     TextView onsetText, pitchText, soundText, predictorText;
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
 
