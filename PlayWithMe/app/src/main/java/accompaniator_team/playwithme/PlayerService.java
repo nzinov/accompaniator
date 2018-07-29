@@ -36,35 +36,6 @@ public class PlayerService extends Service {
         return null;
     }
 
-    public static class Note {
-        int number;
-
-        public Note(int number) {
-            this.number = number;
-        }
-
-        double toFrequency() {
-            return pow(2, ((number - 69) / 12.))* 440;
-        }
-
-        static Note fromFrequency(float freq) {
-            int num = (int)round(log(freq/440.0)/log(2)*12+69);
-            return new Note(num);
-        }
-    }
-
-    public static class Chord {
-        Note[] notes;
-        int velocity;
-        int duration;
-
-        public Chord(Note[] notes, int velocity, int duration) {
-            this.notes = notes;
-            this.velocity = velocity;
-            this.duration = duration;
-        }
-    }
-
     public static final String QUEUE_NAME = "playQueue";
     LinkedBlockingQueue<Chord> queueOut;
     private MidiDriver midiDriver;

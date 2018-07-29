@@ -13,12 +13,12 @@ public class PlayerThread extends Thread {
     private static final String TAG = "PlayerThread";
 
     private int tempo;
-    private PlayerService.Chord currentChord;
+    private Chord currentChord;
     private MidiDriver midiDriver;
-    private LinkedBlockingQueue<PlayerService.Chord> queueOut;
+    private LinkedBlockingQueue<Chord> queueOut;
     private GuiLogger guiLog;
 
-    PlayerThread(Context context, LinkedBlockingQueue<PlayerService.Chord> queueOut_, MidiDriver midiDriver_) {
+    PlayerThread(Context context, LinkedBlockingQueue<Chord> queueOut_, MidiDriver midiDriver_) {
         guiLog = new GuiLogger(context);
         tempo = 60;
         queueOut = queueOut_;
@@ -54,21 +54,21 @@ public class PlayerThread extends Thread {
 
     private void playChord() {
         try {
-            PlayerService.Chord chord = queueOut.take();
+            Chord chord = queueOut.take();
 
             Assert.that(chord.duration > 0);
             Assert.that(chord.velocity < 128);
-            for (PlayerService.Note note : chord.notes) {
+            for (Note note : chord.notes) {
                 Assert.that(note.number < 128);
             }
 
             // Off notes of previous chord when next chord is playing
             if (currentChord != null) {
-                for (PlayerService.Note note : currentChord.notes) {
+                for (Note note : currentChord.notes) {
                     sendMidi(0x80, note.number, chord.velocity);
                 }
             }
-            for (PlayerService.Note note : chord.notes) {
+            for (Note note : chord.notes) {
                 sendMidi(0x90, note.number, chord.velocity);
             }
 
@@ -80,7 +80,7 @@ public class PlayerThread extends Thread {
 
             // Off notes of chord after timeout.
             if (currentChord == chord) {
-                for (PlayerService.Note note : currentChord.notes) {
+                for (Note note : currentChord.notes) {
                     sendMidi(0x80, note.number, chord.velocity);
                 }
             }

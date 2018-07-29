@@ -14,8 +14,8 @@ class SingletonClass {
         return ourInstance;
     }
 
-    public LinkedBlockingQueue<PlayerService.Chord> queueOut = new LinkedBlockingQueue<>();
-    public LinkedBlockingQueue<PlayerService.Chord> queueIn = new LinkedBlockingQueue<>();
+    public LinkedBlockingQueue<Chord> queueOut = new LinkedBlockingQueue<>();
+    public LinkedBlockingQueue<Chord> queueIn = new LinkedBlockingQueue<>();
     public AtomicBoolean working;
     public AtomicInteger deadline;
     public Activity mainActivity; // TODO: make atomic

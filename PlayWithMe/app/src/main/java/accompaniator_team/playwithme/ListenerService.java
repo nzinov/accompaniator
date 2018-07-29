@@ -23,7 +23,7 @@ import static java.lang.Math.min;
 public class ListenerService extends Service {
     private static final String TAG = "ListenerService";
 
-    LinkedBlockingQueue<PlayerService.Chord> queueIn;
+    LinkedBlockingQueue<Chord> queueIn;
 
     class PitchOnsetHandler implements OnsetHandler, PitchDetectionHandler {
 
@@ -40,19 +40,28 @@ public class ListenerService extends Service {
 
         @Override
         public void handleOnset(final double time, double salience) {
-            String pitchStr;
-            if (mLastTimeStamp < time) {
-                pitchStr = String.format("%.2fHz", mPitch);
-                PlayerService.Note note = PlayerService.Note.fromFrequency(mPitch);
-                PlayerService.Note[] notes = { note };
-                PlayerService.Chord chord = new PlayerService.Chord(notes, min((int)salience, 500), 0);
-                queueIn.offer(chord);
-            } else {
+            if (mLastTimeStamp >= time) {
                 return;
             }
+            Note note = Note.fromFrequency(mPitch);
+            double exactFreq = note.toFrequency();
+            Note[] notes = {note};
+            Chord chord = new Chord(notes, min((int) salience, 500), 0);
+            queueIn.offer(chord);
+
             String message =
-                    String.format("%d Onset detected at %.2fs\nsalience %.2f\npitch %s\nnote number %d\nlastTimeStamp %.2fs",
-                            onsetCnt, time, salience, pitchStr, PlayerService.Note.fromFrequency(mPitch).number, mLastTimeStamp);
+                    String.format("%d Onset detected at %.2fs\n" +
+                                    "salience %.2f\n" +
+                                    "pitch %.2fHz\n" +
+                                    "exact pitch %.2fHz\n" +
+                                    "divergence %.2fHz (%.2f%%)\n"+
+                                    "note number %d\n" +
+                                    "lastTimeStamp %.2fs",
+                            onsetCnt, time, salience, mPitch, exactFreq,
+                            Math.abs(mPitch-exactFreq),
+                            100*(Note.NumToFreq(note.number)-mPitch)/
+                                    Math.abs((Note.NumToFreq(note.number)-Note.NumToFreq(note.number+1))),
+                            note.number, mLastTimeStamp);
 
             MainActivity.GuiMessage l = (Serializable & MainActivity.GuiMessage) (MainActivity a) -> {
                 a.onsetText.setText(message);

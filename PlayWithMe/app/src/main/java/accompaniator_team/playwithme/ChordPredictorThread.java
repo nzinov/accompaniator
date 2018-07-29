@@ -20,8 +20,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class ChordPredictorThread extends Thread {
     private static final String TAG = "ChordPredictorThread";
 
-    private LinkedBlockingQueue<PlayerService.Chord> queueOut;
-    private LinkedBlockingQueue<PlayerService.Chord> queueIn;
+    private LinkedBlockingQueue<Chord> queueOut;
+    private LinkedBlockingQueue<Chord> queueIn;
     //TensorFlowInferenceInterface tensorflow;
     Instant predictionTime;
     private Evaluator modelEvaluator = null;
@@ -34,7 +34,7 @@ public class ChordPredictorThread extends Thread {
 
         //tensorflow = new TensorFlowInferenceInterface(assets, "NN_model.h5");
 
-        try {
+        /*try {
             modelEvaluator = (Evaluator)loadSer("model_fst.ser");
             Log.e(TAG, modelEvaluator.getSummary());
             Log.e(TAG, "Evaluator loaded");
@@ -44,7 +44,7 @@ public class ChordPredictorThread extends Thread {
         } catch(Exception e) {
 
             Log.e(TAG, "Evaluator not loaded", e);
-        }
+        }*/
 
     }
 
@@ -72,10 +72,10 @@ public class ChordPredictorThread extends Thread {
         return result;
     }
 
-    private PlayerService.Chord tryPredict() {
-        PlayerService.Chord chord;
-        PlayerService.Note note;
-        PlayerService.Chord predictedChord = null;
+    private Chord tryPredict() {
+        Chord chord;
+        Note note;
+        Chord predictedChord = null;
 
         try {
             do {
@@ -91,8 +91,8 @@ public class ChordPredictorThread extends Thread {
 
                 //modelEvaluator.evaluate()
                 //note.number -= 12;
-                PlayerService.Note[] notes = {note};
-                predictedChord = new PlayerService.Chord(notes, 127, 128);
+                Note[] notes = {note};
+                predictedChord = new Chord(notes, 127, 128);
                 //tensorflow.fetch()
             } while (note == null);
 
@@ -114,7 +114,7 @@ public class ChordPredictorThread extends Thread {
     @Override
     public void run() {
         while (SingletonClass.getInstance().working.get()) {
-            PlayerService.Chord chord = tryPredict();
+            Chord chord = tryPredict();
             if (chord != null) {
                 ++cntOut;
                 MainActivity.GuiMessage l = (Serializable & MainActivity.GuiMessage) (MainActivity a) -> {

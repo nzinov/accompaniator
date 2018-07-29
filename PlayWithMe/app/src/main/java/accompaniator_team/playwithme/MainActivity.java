@@ -24,8 +24,8 @@ public class MainActivity extends AppCompatActivity {
     public static final String MESSAGE_GUI = "message.gui";
 
     private BroadcastReceiver broadcastReceiver;
-    LinkedBlockingQueue<PlayerService.Chord> queueOut;
-    LinkedBlockingQueue<PlayerService.Chord> queueIn;
+    LinkedBlockingQueue<Chord> queueOut;
+    LinkedBlockingQueue<Chord> queueIn;
     TextView onsetText, pitchText, soundText, predictorText;
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
 
@@ -120,8 +120,8 @@ public class MainActivity extends AppCompatActivity {
         TextView info = (TextView) findViewById(R.id.textViewSoundInfo);
         info.setText("Playing");
         //player.playTestSound();
-        PlayerService.Note[] notes = {new PlayerService.Note(100)};
-        queueOut.add(new PlayerService.Chord(notes, 127, 127));
+        Note[] notes = {new Note(100)};
+        queueOut.add(new Chord(notes, 127, 127));
         info.setText("Not playing");
     }
 
