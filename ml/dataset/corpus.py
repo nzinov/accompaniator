@@ -118,16 +118,20 @@ class SongCorpus:
 
                     track = Track()
 
-                    def get_item_or_default(track, name, func, default=''):
+                    # Trick to detect drums
+                    if mid_track[0].channel == 9:
+                        track.instrument_name = 'drums'
+
+                    def get_item_or_default(track, name, func, default):
                         try:
                             vars(track)[name] = func(list(filter(lambda msg: msg.type == name, mid_track))[0])
                         except IndexError:
                             vars(track)[name] = default
 
-                    get_item_or_default(track, 'track_name', lambda x: x.name)
-                    get_item_or_default(track, 'instrument_name', lambda x: x.name)
+                    get_item_or_default(track, 'track_name', lambda x: x.name, '')
+                    get_item_or_default(track, 'instrument_name', lambda x: x.name, '')
                     get_item_or_default(track, 'program_change', lambda x: int(x.program), default=-1)
-                    get_item_or_default(track, 'key_signature', lambda x: x.key)
+                    get_item_or_default(track, 'key_signature', lambda x: x.key, '')
 
                     notes_list = list(filter(lambda msg: msg.type == 'note_on' or msg.type == 'note_off', mid_track))
 

@@ -90,7 +90,7 @@ class UnneededInstrumentsMapper(BaseMapper):
                 self.increment_stat('sound_effects')
             elif 80 <= track.program <= 103:
                 self.increment_stat('synth')
-            elif track.program == 9:
+            elif track.instrument_name == 'drums':
                 self.increment_stat('drums')
             else:
                 self.increment_stat('normal')

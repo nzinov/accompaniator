@@ -91,6 +91,74 @@ class MelodyDetectionMapper(BaseMapper):
             assert False
 
 
+class RhythmDetectionMapper(BaseMapper):
+    """ Detects a melody according to strategy """
+
+    def __init__(self, strategy='most probable', fun=np.min, min_notes_in_chord=3, min_unique_notes=5,
+                 min_normal_chords_ratio=0.8, **kwargs):
+        """
+        :param strategy: 'most probable' to leave only the most probable melody or 'split' to leave all combinations.
+        :param fun: function of note numbers. The biggest value indicates 'most probable' melody.
+        :param min_unique_notes: minimum number of unique note heights to consider the track a valid melody.
+        """
+        super().__init__(**kwargs)
+        self.stats['unique notes in rhythm track'] = dict()
+        self.stats['normal chords ratio'] = dict()
+        self.stats['likely rhythm tracks count'] = dict()
+        self.fun = fun
+        self.strategy = strategy
+        self.min_unique_notes = min_unique_notes
+        self.min_notes_in_chord = min_notes_in_chord
+        self.min_normal_chords_ratio = min_normal_chords_ratio
+
+    def is_likely_rhythm(self, track):
+        total_chords_cnt = len(track.chords)
+        normal_chords_cnt = \
+            len([chord for chord in track.chords
+                 if len(chord.notes) == 0 or len(chord.notes) >= self.min_notes_in_chord])
+        self.increment_stat(normal_chords_cnt / total_chords_cnt, self.stats['normal chords ratio'])
+        if normal_chords_cnt < self.min_normal_chords_ratio * total_chords_cnt:
+            return False
+
+        notes = sum([[note.number for note in chord.notes] for chord in track.chords], [])
+        unique = set(notes)
+        self.increment_stat(len(unique), self.stats['unique notes in rhythm track'])
+        if len(unique) < self.min_unique_notes:
+            return False
+
+        return True
+
+    def process(self, song):
+
+        likely_rhythm = [i for i, track in enumerate(song.tracks) if self.is_likely_rhythm(track)]
+        self.increment_stat(len(likely_rhythm), self.stats['likely rhythm tracks count'])
+
+        if not likely_rhythm:
+            raise MapperError('no rhythm tracks')
+
+        if len(likely_rhythm) == 1:
+            song.tracks = [song.tracks[0], song.tracks[likely_rhythm[0]]]
+            return song
+
+        if self.strategy == 'most probable':
+            values = []
+            for i in likely_rhythm:
+                values.append(np.mean([len(chord.notes) for chord in song.tracks[i].chords]))
+            index = np.argmax(values)
+            song.tracks = [song.tracks[0], song.tracks[likely_rhythm[index]]]
+            return song
+        elif self.strategy == 'split':
+            songs = []
+            for rhythm_index in likely_rhythm:
+                song_res = deepcopy(song)
+                song_res.tracks = [song.tracks[0], song.tracks[rhythm_index]]
+                assert song_res.melody_track.has_one_note_at_time()
+                songs.append(song_res)
+            return songs
+        else:
+            assert False
+
+
 class SplitNonMelodiesToGcdMapper(BaseMapper):
     """Gets the GCD of chords duration and splits all chords longer to pieces."""
 

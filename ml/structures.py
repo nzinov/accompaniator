@@ -148,6 +148,9 @@ class Track:
 
 
 class Song:
+    melody_index = 0
+    rhythm_index = 1
+
     def __init__(self, tracks=[], bpm=0, name=""):
         self.tracks = tracks[:]
         self.name = name
