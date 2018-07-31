@@ -9,7 +9,7 @@ import android.support.annotation.Nullable;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
-public class ChordPredictorService  extends Service {
+public class ChordPredictorService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         ChordPredictorThread thread = new ChordPredictorThread(this, getAssets());

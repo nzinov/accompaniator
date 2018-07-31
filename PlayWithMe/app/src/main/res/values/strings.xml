@@ -73,4 +73,6 @@
     <string name="pref_ringtone_silent">Silent</string>
 
     <string name="pref_title_vibrate">Vibrate</string>
+    <string name="action_start">Start</string>
+    <string name="action_stop">Stop</string>
 </resources>

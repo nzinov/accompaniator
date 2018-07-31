@@ -24,6 +24,7 @@ public class ListenerService extends Service {
     private static final String TAG = "ListenerService";
 
     LinkedBlockingQueue<Chord> queueIn;
+    AudioDispatcher dispatcher;
 
     class PitchOnsetHandler implements OnsetHandler, PitchDetectionHandler {
 
@@ -100,7 +101,7 @@ public class ListenerService extends Service {
 
         AudioManager audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
-        AudioDispatcher dispatcher = EchoCancellationAudioDispatcherFactory.fromDefaultMicrophoneEchoCancellation(22050, 1024, 0);
+        dispatcher = EchoCancellationAudioDispatcherFactory.fromDefaultMicrophoneEchoCancellation(22050, 1024, 0);
 
         PitchOnsetHandler pitchOnsetHandler = new PitchOnsetHandler(this);
 
@@ -118,9 +119,24 @@ public class ListenerService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
+    void start() {
+        Thread audioThread = new Thread(dispatcher, "Audio Thread");
+        audioThread.start();
+    }
+
+    void stop() {
+        dispatcher.stop();
+    }
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        SingletonClass.getInstance().working.set(false);
+        super.onTaskRemoved(rootIntent);
     }
 }

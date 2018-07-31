@@ -77,11 +77,20 @@
         android:id="@+id/buttonSettings"
         android:layout_width="118dp"
         android:layout_height="43dp"
-        android:layout_marginLeft="16dp"
         android:layout_marginStart="16dp"
         android:layout_marginTop="8dp"
         android:onClick="settings"
-        android:text="Button"
+        android:text="Settings"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textViewPredictorText" />
+
+    <Button
+        android:id="@+id/buttonStartStop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:onClick="onButtonStartStopClick"
+        android:text="@string/action_start"
+        app:layout_constraintStart_toEndOf="@+id/buttonTestSound"
+        app:layout_constraintTop_toTopOf="@+id/buttonTestSound" />
 </android.support.constraint.ConstraintLayout>

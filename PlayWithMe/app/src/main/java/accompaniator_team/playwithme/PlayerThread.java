@@ -17,6 +17,7 @@ public class PlayerThread extends Thread {
     private MidiDriver midiDriver;
     private LinkedBlockingQueue<Chord> queueOut;
     private GuiLogger guiLog;
+    private static int сnt = 0;
 
     PlayerThread(Context context, LinkedBlockingQueue<Chord> queueOut_, MidiDriver midiDriver_) {
         guiLog = new GuiLogger(context);
@@ -49,8 +50,6 @@ public class PlayerThread extends Thread {
 
         midiDriver.write(msg);
     }
-
-    private static int cnt = 0;
 
     private void playChord() {
         try {
@@ -85,9 +84,9 @@ public class PlayerThread extends Thread {
                 }
             }
 
-            ++cnt;
+            ++сnt;
             MainActivity.GuiMessage l = (Serializable & MainActivity.GuiMessage) (MainActivity a) -> {
-                String message = String.format("%d Note %d played", cnt, chord.notes[0].number);
+                String message = String.format("%d Note %d played", сnt, chord.notes[0].number);
                 a.soundText.setText(message);
             };
             guiLog.sendResult(l);

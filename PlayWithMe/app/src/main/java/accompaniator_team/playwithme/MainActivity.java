@@ -14,6 +14,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.TextView;
 
 import java.util.concurrent.LinkedBlockingQueue;
@@ -116,17 +117,20 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
-    public void playTestSound(View view) {
-        TextView info = (TextView) findViewById(R.id.textViewSoundInfo);
-        info.setText("Playing");
-        //player.playTestSound();
-        Note[] notes = {new Note(100)};
-        queueOut.add(new Chord(notes, 127, 127));
-        info.setText("Not playing");
-    }
-
     public void settings(View view) {
         Intent intent = new Intent(this, SettingsActivity.class);
         startActivity(intent);
+    }
+
+    public void onButtonStartStopClick(View view) {
+        Button startStopButton = findViewById(R.id.buttonStartStop);
+        boolean working = SingletonClass.getInstance().working.get();
+        if (working) {
+            startStopButton.setText(R.string.action_start);
+            SingletonClass.getInstance().working.set(false);
+        } else {
+            startStopButton.setText(R.string.action_stop);
+            SingletonClass.getInstance().working.set(true);
+        }
     }
 }

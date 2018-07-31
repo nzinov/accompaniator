@@ -27,6 +27,9 @@ public class ChordPredictorThread extends Thread {
     private Evaluator modelEvaluator = null;
     private GuiLogger guiLog;
 
+    int cntIn = 0;
+    int cntOut = 0;
+
     ChordPredictorThread(Context context, AssetManager assets) {
         guiLog = new GuiLogger(context);
         queueOut = SingletonClass.getInstance().queueOut;
@@ -107,9 +110,6 @@ public class ChordPredictorThread extends Thread {
         }*/
         return null;
     }
-
-    int cntIn = 0;
-    int cntOut = 0;
 
     @Override
     public void run() {
