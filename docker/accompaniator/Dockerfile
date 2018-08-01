@@ -4,6 +4,9 @@ RUN mkdir /build
 WORKDIR /build
 
 RUN pacman -Syu --noconfirm
+
+RUN pacman -S --noconfirm pacman-contrib
+
 RUN pacman -S --noconfirm alsa-lib alsa-utils alsa-plugins
 
 RUN pacman -S --noconfirm fluidsynth soundfont-fluid mpg123 rtmidi

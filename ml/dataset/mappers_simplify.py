@@ -74,14 +74,17 @@ class MelodyDetectionMapper(BaseMapper):
                     if chord.notes:
                         heights += list(map(lambda note: note.number, chord.notes))
                 values.append(self.fun(heights))
-            melody_index = np.argmax(values)
+            melody_index = likely_melody[np.argmax(values)]
+            assert song.tracks[melody_index].has_one_note_at_time()
             song.tracks[0], song.tracks[melody_index] = song.tracks[melody_index], song.tracks[0]
+            assert song.melody_track.has_one_note_at_time()
             return song
         elif self.strategy == 'split':
             songs = []
             for melody_index in likely_melody:
                 song_res = deepcopy(song)
                 song_res.tracks[0], song_res.tracks[melody_index] = song_res.tracks[melody_index], song_res.tracks[0]
+                assert song_res.melody_track.has_one_note_at_time()
                 songs.append(song_res)
             return songs
         else:
@@ -154,6 +157,8 @@ class SplitNonMelodiesToGcdMapper(BaseMapper):
 
         song.tracks = [melody] + tracks
 
+        assert song.melody_track.has_one_note_at_time()
+
         return song
 
 
@@ -200,6 +205,9 @@ class MergeTracksMapper(BaseMapper):
             new_tracks.append(tracks[indices[0]])
         song.tracks = ([melody] if melody else new_tracks) + new_tracks
         self.increment_stat(track_groups_per_song, self.stats['merging groups per song'])
+
+        assert song.melody_track.has_one_note_at_time()
+
         return song
 
 
@@ -230,6 +238,8 @@ class GetSongStatisticsMapper(BaseMapper):
             self.increment_stat(track.duration(), self.stats['track duration'])
             if track.duration() != 0:
                 self.increment_stat(track.pause_duration() / track.duration(), self.stats['track pause to all ratio'])
+
+        assert song.melody_track.has_one_note_at_time()
 
         return song
 
@@ -266,7 +276,10 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
 
     def cut_fragment_by_time_split(self, track, time1, time2):
         t1, t2 = self.cut_fragment_by_time_(track, time1, time2)
+        chords = track.chords
+        track.chords = None
         track1, track2 = deepcopy(track), deepcopy(track)
+        track.chords = chords
         track1.chords = t1
         track2.chords = t2
         return [track1, track2]
@@ -298,6 +311,7 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
             if len(song.tracks) <= 1:
                 self.increment_stat('not enough tracks')
             else:
+                assert song.melody_track.has_one_note_at_time()
                 new_songs.append(song)
 
         return new_songs
@@ -337,10 +351,12 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
 
             changing = False if times is None else True
             if changing:
+                tracks = song.tracks
+                song.tracks = None
                 song1, song2 = deepcopy(song), deepcopy(song)
                 track_pairs = list(map(lambda track:
                                        self.cut_fragment_by_time_split(track, times[0], times[1]),
-                                       song.tracks))
+                                       tracks))
                 song1.tracks = [pair[0] for pair in track_pairs]
                 song2.tracks = [pair[1] for pair in track_pairs]
                 self.increment_stat('total pauses cut')
