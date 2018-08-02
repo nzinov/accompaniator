@@ -1,13 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<android.support.v7.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:asp="http://schemas.android.com/apk/res-auto">
 
-    <PreferenceCategory android:title="Basic Settings">
-        <ListPreference
+    <android.support.v7.preference.PreferenceCategory android:title="Basic Settings">
+        <android.support.v7.preference.ListPreference
             android:defaultValue="Guitar"
             android:entries="@array/preferences_array_instruments_entries"
             android:entryValues="@array/preferences_array_instruments_entryValues"
             android:key="pref_Instrument"
             android:summary="Guitar"
             android:title="Instrument" />
-    </PreferenceCategory>
-</PreferenceScreen>
+        <android.support.v7.preference.SeekBarPreference
+            android:defaultValue="0"
+            android:key="seek_bar_key"
+            android:max="10"
+            android:summary="This is the summary"
+            android:title="This is a title"
+            asp:min="@dimen/listener_peakThreshold_min" />
+    </android.support.v7.preference.PreferenceCategory>
+</android.support.v7.preference.PreferenceScreen>

@@ -1,0 +1,3 @@
+<resources>
+    <item name="listener_peakThreshold_min" type="dimen" format="float">0.1</item>
+</resources>
