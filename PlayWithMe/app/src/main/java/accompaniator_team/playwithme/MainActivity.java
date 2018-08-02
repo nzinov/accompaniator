@@ -17,9 +17,15 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.io.Serializable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Logger;
+
+import be.tarsos.dsp.AudioDispatcher;
 
 public class MainActivity extends AppCompatActivity {
+    private static final Logger LOG = Logger.getLogger(MainActivity.class.getName());
 
     public static final String MESSAGE_GUI = "message.gui";
 
@@ -79,7 +85,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 GuiMessage s = (GuiMessage)intent.getSerializableExtra(MESSAGE_GUI);
-                //soundText.setText(s);
                 s.action(MainActivity.this);
             }
         };
@@ -131,6 +136,8 @@ public class MainActivity extends AppCompatActivity {
             startStopButton.setText(R.string.action_stop);
             SingletonClass.getInstance().working.set(true);
         }
+        SingletonClass.getInstance().latch.countDown();
+        SingletonClass.getInstance().latch = new CountDownLatch(1);
     }
 
     public void playTestSound(View view) {

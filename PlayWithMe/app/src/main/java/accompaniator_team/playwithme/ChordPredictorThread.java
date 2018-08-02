@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 import java.time.Instant;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class ChordPredictorThread extends Thread {
@@ -111,19 +112,35 @@ public class ChordPredictorThread extends Thread {
         return null;
     }
 
+    void predictChord() {
+        Chord chord = tryPredict();
+        if (chord != null) {
+            ++cntOut;
+            MainActivity.GuiMessage l = (Serializable & MainActivity.GuiMessage) (MainActivity a) -> {
+                String message = String.format("%d Note %d in queue",cntOut, chord.notes[0].number);
+                a.predictorText.setText(message);
+            };
+            guiLog.sendResult(l);
+            queueOut.offer(chord);
+        }
+    }
+
     @Override
     public void run() {
-        while (SingletonClass.getInstance().working.get()) {
-            Chord chord = tryPredict();
-            if (chord != null) {
-                ++cntOut;
-                MainActivity.GuiMessage l = (Serializable & MainActivity.GuiMessage) (MainActivity a) -> {
-                    String message = String.format("%d Note %d in queue",cntOut, chord.notes[0].number);
-                    a.predictorText.setText(message);
-                };
-                guiLog.sendResult(l);
-                queueOut.offer(chord);
+        while (!SingletonClass.getInstance().finished.get()) {
+            while (!SingletonClass.getInstance().finished.get()) {
+                CountDownLatch latch = SingletonClass.getInstance().latch;
+                while (SingletonClass.getInstance().working.get()) {
+                    predictChord();
+                }
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+
+                }
             }
+
+
         }
     }
 }

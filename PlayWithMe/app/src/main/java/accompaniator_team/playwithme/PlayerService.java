@@ -47,15 +47,6 @@ public class PlayerService extends Service {
         super.onCreate();
     }
 
-    void start() {
-        queueOut.clear();
-        midiDriver.start();
-    }
-
-    void stop() {
-        midiDriver.stop();
-    }
-
     /*@Override
     protected void onResume() {
         start();

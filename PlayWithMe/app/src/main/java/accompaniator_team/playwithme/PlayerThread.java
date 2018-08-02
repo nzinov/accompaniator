@@ -7,6 +7,7 @@ import android.util.Log;
 import org.billthefarmer.mididriver.MidiDriver;
 
 import java.io.Serializable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class PlayerThread extends Thread {
@@ -19,13 +20,25 @@ public class PlayerThread extends Thread {
     private GuiLogger guiLog;
     private static int сnt = 0;
 
+    //Stopper stopper;
+
     PlayerThread(Context context, LinkedBlockingQueue<Chord> queueOut_, MidiDriver midiDriver_) {
         guiLog = new GuiLogger(context);
         tempo = 60;
         queueOut = queueOut_;
         midiDriver = midiDriver_;
         midiDriver.start();
-        sendMidi(0xC0, 79);
+
+        //stopper = new Stopper(context, this);
+    }
+
+    public void mystart() {
+        queueOut.clear();
+        midiDriver.start();
+    }
+
+    public void mystop() {
+        midiDriver.stop();
     }
 
     private float lenInSeconds(int duration, int tempo) {
@@ -95,21 +108,18 @@ public class PlayerThread extends Thread {
         }
     }
 
-    private void playTestSound() {
-        sendMidi(0xC0, 79);
-        sendMidi(0x90, 48, 63);
-        sendMidi(0x90, 52, 63);
-        sendMidi(0x90, 55, 63);
-        SystemClock.sleep(500);
-        sendMidi(0x80, 48, 0);
-        sendMidi(0x80, 52, 0);
-        sendMidi(0x80, 55, 0);
-        SystemClock.sleep(500);
-    }
-
     public void run() {
-        while (SingletonClass.getInstance().working.get()) {
-            playChord();
+        while (!SingletonClass.getInstance().finished.get()) {
+            CountDownLatch latch = SingletonClass.getInstance().latch;
+            while (SingletonClass.getInstance().working.get()) {
+                playChord();
+            }
+            queueOut.clear();
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+
+            }
         }
     }
 }
