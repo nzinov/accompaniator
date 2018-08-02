@@ -20,7 +20,6 @@ import android.widget.TextView;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class MainActivity extends AppCompatActivity {
-    private static final int SAMPLE_RATE = 44100;
 
     public static final String MESSAGE_GUI = "message.gui";
 
@@ -132,5 +131,10 @@ public class MainActivity extends AppCompatActivity {
             startStopButton.setText(R.string.action_stop);
             SingletonClass.getInstance().working.set(true);
         }
+    }
+
+    public void playTestSound(View view) {
+        Note[] notes = {new Note(60)};
+        queueOut.add(new Chord(notes, 127, 127));
     }
 }
