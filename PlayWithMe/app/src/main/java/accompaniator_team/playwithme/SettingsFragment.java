@@ -15,23 +15,8 @@ public class SettingsFragment extends PreferenceFragmentCompat
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
-        //super.onCreate(savedInstanceState);
         addPreferencesFromResource(R.xml.preferences);
     }
-
-    /*@Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-
-        mListPreference = (ListPreference)  getPreferenceManager().findPreference("preference_key");
-        mListPreference.setOnPreferenceChangeListener(new Preference.OnPreferenceChangeListener() {
-            @Override
-            public boolean onPreferenceChange(Preference preference, Object newValue) {
-                // your code here
-            }
-        }
-
-        return inflater.inflate(R.layout.fragment_settings, container, false);
-    }*/
 
     @Override
     public void onResume() {
