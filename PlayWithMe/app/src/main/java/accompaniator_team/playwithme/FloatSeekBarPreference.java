@@ -13,12 +13,16 @@ import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+// Copied SeekBarPreference from android.support.v7.preference and modified for floats.
 public class FloatSeekBarPreference extends Preference {
     private static final String TAG = "FloatSeekBarPreference";
-    private int mSeekBarValue;
-    private int mMin;
-    private int mMax;
-    private int mSeekBarIncrement;
+
+    private float mSeekBarValue;
+    private float mMin;
+    private float mMax;
+    private float mSeekBarIncrement;
+    private int mNumPositions;
+
     private boolean mTrackingTouch;
     private SeekBar mSeekBar;
     private TextView mSeekBarValueTextView;
@@ -43,7 +47,7 @@ public class FloatSeekBarPreference extends Preference {
 
             public void onStopTrackingTouch(SeekBar seekBar) {
                 FloatSeekBarPreference.this.mTrackingTouch = false;
-                if (seekBar.getProgress() + FloatSeekBarPreference.this.mMin != FloatSeekBarPreference.this.mSeekBarValue) {
+                if (internalToFloat(seekBar.getProgress()) != FloatSeekBarPreference.this.mSeekBarValue) {
                     FloatSeekBarPreference.this.syncValueInternal(seekBar);
                 }
 
@@ -68,9 +72,9 @@ public class FloatSeekBarPreference extends Preference {
             }
         };
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.FloatSeekBarPreference, defStyleAttr, defStyleRes);
-        this.mMin = a.getInt(R.styleable.FloatSeekBarPreference_min, 0);
-        this.setMax(a.getInt(R.styleable.FloatSeekBarPreference_max, 100));
-        this.setSeekBarIncrement(a.getInt(R.styleable.FloatSeekBarPreference_increment, 0));
+        this.mMin = a.getFloat(R.styleable.FloatSeekBarPreference_min, 0);
+        this.setMax(a.getFloat(R.styleable.FloatSeekBarPreference_max, 100));
+        this.setSeekBarIncrement(a.getFloat(R.styleable.FloatSeekBarPreference_increment, 1));
         this.mAdjustable = a.getBoolean(R.styleable.FloatSeekBarPreference_adjustable, true);
         this.mShowSeekBarValue = a.getBoolean(R.styleable.FloatSeekBarPreference_showSeekBarValue, true);
         a.recycle();
@@ -88,8 +92,19 @@ public class FloatSeekBarPreference extends Preference {
         this(context, (AttributeSet)null);
     }
 
+    private int floatToInternal(float val) {
+        return Math.round((val-mMin)/(mMax-mMin)*mNumPositions);
+    }
+
+    private float internalToFloat(int val) {
+        return mMin+val*mSeekBarIncrement;
+    }
+
     public void onBindViewHolder(PreferenceViewHolder view) {
         super.onBindViewHolder(view);
+
+        mNumPositions = Math.round((mMax-mMin)/(float)mSeekBarIncrement);
+
         view.itemView.setOnKeyListener(this.mSeekBarKeyListener);
         this.mSeekBar = (SeekBar)view.findViewById(R.id.seekbar);
         this.mSeekBarValueTextView = (TextView)view.findViewById(R.id.seekbar_value);
@@ -104,14 +119,10 @@ public class FloatSeekBarPreference extends Preference {
             Log.e("SeekBarPreference", "SeekBar view is null in onBindViewHolder.");
         } else {
             this.mSeekBar.setOnSeekBarChangeListener(this.mSeekBarChangeListener);
-            this.mSeekBar.setMax(this.mMax - this.mMin);
-            if (this.mSeekBarIncrement != 0) {
-                this.mSeekBar.setKeyProgressIncrement(this.mSeekBarIncrement);
-            } else {
-                this.mSeekBarIncrement = this.mSeekBar.getKeyProgressIncrement();
-            }
+            this.mSeekBar.setMax(mNumPositions); //this.mMax - this.mMin
+            this.mSeekBar.setKeyProgressIncrement(1);
 
-            this.mSeekBar.setProgress(this.mSeekBarValue - this.mMin);
+            this.mSeekBar.setProgress(floatToInternal(mSeekBarValue)); //this.mSeekBarValue - this.mMin
             if (this.mSeekBarValueTextView != null) {
                 this.mSeekBarValueTextView.setText(String.valueOf(this.mSeekBarValue));
             }
@@ -121,14 +132,14 @@ public class FloatSeekBarPreference extends Preference {
     }
 
     protected void onSetInitialValue(boolean restoreValue, Object defaultValue) {
-        this.setValue(restoreValue ? this.getPersistedInt(this.mSeekBarValue) : (Integer)defaultValue);
+        this.setValue(floatToInternal(restoreValue ? this.getPersistedFloat(this.mSeekBarValue) : (Float)defaultValue));
     }
 
     protected Object onGetDefaultValue(TypedArray a, int index) {
         return a.getInt(index, 0);
     }
 
-    public void setMin(int min) {
+    public void setMin(float min) {
         if (min > this.mMax) {
             min = this.mMax;
         }
@@ -140,11 +151,11 @@ public class FloatSeekBarPreference extends Preference {
 
     }
 
-    public int getMin() {
+    public float getMin() {
         return this.mMin;
     }
 
-    public final void setMax(int max) {
+    public final void setMax(float max) {
         if (max < this.mMin) {
             max = this.mMin;
         }
@@ -156,18 +167,18 @@ public class FloatSeekBarPreference extends Preference {
 
     }
 
-    public final int getSeekBarIncrement() {
+    public final float getSeekBarIncrement() {
         return this.mSeekBarIncrement;
     }
 
-    public final void setSeekBarIncrement(int seekBarIncrement) {
+    public final void setSeekBarIncrement(float seekBarIncrement) {
         if (seekBarIncrement != this.mSeekBarIncrement) {
             this.mSeekBarIncrement = Math.min(this.mMax - this.mMin, Math.abs(seekBarIncrement));
             this.notifyChanged();
         }
     }
 
-    public int getMax() {
+    public float getMax() {
         return this.mMax;
     }
 
@@ -183,7 +194,7 @@ public class FloatSeekBarPreference extends Preference {
         this.setValueInternal(seekBarValue, true);
     }
 
-    private void setValueInternal(int seekBarValue, boolean notifyChanged) {
+    private void setValueInternal(float seekBarValue, boolean notifyChanged) {
         if (seekBarValue < this.mMin) {
             seekBarValue = this.mMin;
         }
@@ -198,7 +209,7 @@ public class FloatSeekBarPreference extends Preference {
                 this.mSeekBarValueTextView.setText(String.valueOf(this.mSeekBarValue));
             }
 
-            this.persistInt(seekBarValue);
+            this.persistFloat(seekBarValue);
             if (notifyChanged) {
                 this.notifyChanged();
             }
@@ -206,17 +217,17 @@ public class FloatSeekBarPreference extends Preference {
 
     }
 
-    public int getValue() {
+    public float getValue() {
         return this.mSeekBarValue;
     }
 
     private void syncValueInternal(SeekBar seekBar) {
-        int seekBarValue = this.mMin + seekBar.getProgress();
+        float seekBarValue = internalToFloat(seekBar.getProgress());
         if (seekBarValue != this.mSeekBarValue) {
             if (this.callChangeListener(seekBarValue)) {
                 this.setValueInternal(seekBarValue, false);
             } else {
-                seekBar.setProgress(this.mSeekBarValue - this.mMin);
+                seekBar.setProgress(floatToInternal(mSeekBarValue)); //this.mSeekBarValue - this.mMin
             }
         }
 
@@ -249,9 +260,9 @@ public class FloatSeekBarPreference extends Preference {
     }
 
     private static class SavedState extends BaseSavedState {
-        int seekBarValue;
-        int min;
-        int max;
+        float seekBarValue;
+        float min;
+        float max;
         public static final Creator<FloatSeekBarPreference.SavedState> CREATOR = new Creator<FloatSeekBarPreference.SavedState>() {
             public FloatSeekBarPreference.SavedState createFromParcel(Parcel in) {
                 return new FloatSeekBarPreference.SavedState(in);
@@ -271,9 +282,9 @@ public class FloatSeekBarPreference extends Preference {
 
         public void writeToParcel(Parcel dest, int flags) {
             super.writeToParcel(dest, flags);
-            dest.writeInt(this.seekBarValue);
-            dest.writeInt(this.min);
-            dest.writeInt(this.max);
+            dest.writeFloat(this.seekBarValue);
+            dest.writeFloat(this.min);
+            dest.writeFloat(this.max);
         }
 
         public SavedState(Parcelable superState) {

@@ -12,7 +12,10 @@
             android:summary="Guitar"
             android:title="Instrument" />
         <accompaniator_team.playwithme.FloatSeekBarPreference
-            android:layout="@layout/preference_widget_seekbar"/>
+            android:layout="@layout/preference_widget_seekbar"
+            app:min="-4"
+            app:max="4"
+            app:increment="0.5" />
 
     </android.support.v7.preference.PreferenceCategory>
 
