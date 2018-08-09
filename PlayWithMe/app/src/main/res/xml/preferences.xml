@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.v7.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:asp="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:sample="http://schemas.android.com/tools">
 
     <android.support.v7.preference.PreferenceCategory android:title="Basic Settings">
@@ -11,12 +11,17 @@
             android:key="pref_Instrument"
             android:summary="Guitar"
             android:title="Instrument" />
-        <android.support.v7.preference.SeekBarPreference
-            android:defaultValue="0"
-            android:key="seek_bar_key"
-            android:max="10"
-            android:summary="This is the summary"
-            android:title="This is a title"
-            asp:min="@integer/listener_peakThreshold_min_int" />
+        <accompaniator_team.playwithme.FloatSeekBarPreference
+            android:layout="@layout/preference_widget_seekbar"/>
+
+    </android.support.v7.preference.PreferenceCategory>
+
+    <android.support.v7.preference.PreferenceCategory android:title="Listener Settings">
+        <android.support.v7.preference.EditTextPreference
+            android:defaultValue="0.3"
+            android:key="pref_peakThreshold"
+            android:summary="Default is 0.3, if too many onsets are detected adjust to 0.4 or 0.5."
+            android:title="Peak Threshold" />
+
     </android.support.v7.preference.PreferenceCategory>
 </android.support.v7.preference.PreferenceScreen>

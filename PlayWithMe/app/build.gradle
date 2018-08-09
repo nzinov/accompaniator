@@ -39,6 +39,8 @@ dependencies {
     implementation files('libs/TarsosDSP-Android-latest.jar')
     //implementation 'org.tensorflow:tensorflow-android:+'
     implementation 'de.ruedigermoeller:fst:2.56'
+
+    implementation 'com.github.Jay-Goo:RangeSeekBar:v2.0.4'
 }
 repositories {
     mavenCentral()
