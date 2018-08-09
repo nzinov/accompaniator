@@ -39,6 +39,10 @@ public class SettingsFragment extends PreferenceFragmentCompat
         } else if (key.equals("pref_peakThreshold")) {
             Preference pref = findPreference(key);
 
+        } else if (key.equals("pref_minimumInterOnsetInterval")) {
+
+        } else if (key.equals("pref_silenceThreshold")) {
+            
         }
     }
 }
