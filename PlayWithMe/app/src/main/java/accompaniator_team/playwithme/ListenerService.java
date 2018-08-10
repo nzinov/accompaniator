@@ -24,13 +24,14 @@ public class ListenerService extends Service {
     private static final String TAG = "ListenerService";
 
     LinkedBlockingQueue<Chord> queueIn;
+    ListenerThread thread;
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         queueIn = SingletonClass.getInstance().queueIn;
+        SingletonClass.getInstance().listenerService = this;
 
-        ListenerThread thread = new ListenerThread(this);
-        thread.start();
+        myStart();
 
         return super.onStartCommand(intent, flags, startId);
     }
@@ -45,5 +46,14 @@ public class ListenerService extends Service {
     public void onTaskRemoved(Intent rootIntent) {
         SingletonClass.getInstance().working.set(false);
         super.onTaskRemoved(rootIntent);
+    }
+
+    void myStart() {
+        thread = new ListenerThread(this);
+        thread.start();
+    }
+
+    void myStop() {
+        thread.interrupt();
     }
 }

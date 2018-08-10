@@ -36,13 +36,16 @@ public class SettingsFragment extends PreferenceFragmentCompat
             Preference pref = findPreference(key);
             // TODO: name, not code!
             pref.setSummary("Code "+sharedPreferences.getString(key, ""));
-        } else if (key.equals("pref_peakThreshold")) {
-            Preference pref = findPreference(key);
+        } else {
+            if (key.equals("pref_peakThreshold")) {
+                Preference pref = findPreference(key);
+                SingletonClass.getInstance().listenerService.myStop();
+                SingletonClass.getInstance().listenerService.myStart();
+            } else if (key.equals("pref_minimumInterOnsetInterval")) {
 
-        } else if (key.equals("pref_minimumInterOnsetInterval")) {
+            } else if (key.equals("pref_silenceThreshold")) {
 
-        } else if (key.equals("pref_silenceThreshold")) {
-            
+            }
         }
     }
 }

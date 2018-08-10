@@ -2,7 +2,9 @@ package accompaniator_team.playwithme;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
+import android.support.v7.preference.PreferenceManager;
 
 import java.io.Serializable;
 import java.util.concurrent.CountDownLatch;
@@ -101,7 +103,12 @@ public class ListenerThread extends Thread {
 
         PitchOnsetHandler pitchOnsetHandler = new PitchOnsetHandler(context);
 
-        ComplexOnsetDetector onsetProcessor = new ComplexOnsetDetector(1024, 0.4);
+        //PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+        ComplexOnsetDetector onsetProcessor = new ComplexOnsetDetector(1024,
+                sp.getFloat("pref_peakThreshold", (float) 0.3),
+                sp.getFloat("pref_minimumInterOnsetInterval", (float) 0.004),
+                sp.getFloat("pref_silenceThreshold", -70));
         onsetProcessor.setHandler(pitchOnsetHandler);
         dispatcher.addAudioProcessor(onsetProcessor);
 
@@ -144,7 +151,7 @@ public class ListenerThread extends Thread {
             try {
                 latch.await();
             } catch (InterruptedException e) {
-
+                return;
             }
         }
     }

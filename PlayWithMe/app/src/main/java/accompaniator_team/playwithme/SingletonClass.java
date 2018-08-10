@@ -24,6 +24,10 @@ class SingletonClass {
     public Context context;
     public CountDownLatch latch = new CountDownLatch(1);
 
+    public ListenerService listenerService;
+    public ChordPredictorService chordPredictorService;
+    public PlayerService playerService;
+
     private SingletonClass() {
         //working = new AtomicBoolean(true);
     }

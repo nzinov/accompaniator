@@ -72,14 +72,16 @@ public class MainActivity extends AppCompatActivity {
         queueOut = SingletonClass.getInstance().queueOut;
         queueIn = SingletonClass.getInstance().queueIn;
 
-        Intent playerIntent = new Intent(MainActivity.this, PlayerService.class);
-        startService(playerIntent);
+        if (!SingletonClass.getInstance().working.get()) {
+            Intent playerIntent = new Intent(MainActivity.this, PlayerService.class);
+            startService(playerIntent);
 
-        Intent predictorIntent = new Intent(MainActivity.this, ChordPredictorService.class);
-        startService(predictorIntent);
+            Intent predictorIntent = new Intent(MainActivity.this, ChordPredictorService.class);
+            startService(predictorIntent);
 
-        Intent listenerIntent = new Intent(MainActivity.this, ListenerService.class);
-        startService(listenerIntent);
+            Intent listenerIntent = new Intent(MainActivity.this, ListenerService.class);
+            startService(listenerIntent);
+        }
 
         broadcastReceiver = new BroadcastReceiver() {
             @Override
