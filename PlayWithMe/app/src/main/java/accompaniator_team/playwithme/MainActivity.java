@@ -12,6 +12,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.preference.PreferenceManager;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
@@ -24,6 +25,7 @@ import java.util.logging.Logger;
 
 import be.tarsos.dsp.AudioDispatcher;
 
+// TODO: keep GUI info on rotation and settings change using https://medium.com/google-developers/viewmodels-a-simple-example-ed5ac416317e
 public class MainActivity extends AppCompatActivity {
     private static final Logger LOG = Logger.getLogger(MainActivity.class.getName());
 
@@ -33,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
     LinkedBlockingQueue<Chord> queueOut;
     LinkedBlockingQueue<Chord> queueIn;
     TextView onsetText, pitchText, soundText, predictorText;
+    Button startStopButton;
+
     private static final int REQUEST_RECORD_AUDIO_PERMISSION = 200;
 
     interface GuiMessage {
@@ -50,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
+        PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
+
         SingletonClass.getInstance().mainActivity = this;
         SingletonClass.getInstance().context = getApplicationContext();
 
@@ -64,6 +70,12 @@ public class MainActivity extends AppCompatActivity {
         pitchText = findViewById(R.id.textViewPitchText);
         soundText = findViewById(R.id.textViewSoundInfo);
         predictorText = findViewById(R.id.textViewPredictorText);
+        startStopButton = findViewById(R.id.buttonStartStop);
+        if (SingletonClass.getInstance().working.get()) {
+            startStopButton.setText(R.string.action_stop);
+        } else {
+            startStopButton.setText(R.string.action_start);
+        }
 
         TextView hardwareSoundInfo = findViewById(R.id.textViewHardwareSoundInfo);
         hardwareSoundInfo.setText(String.format("hasLowLatencyFeature: %b\nhasProFeature: %b\nhasAcousticEchoCancellation: %b",
@@ -86,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
         broadcastReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                GuiMessage s = (GuiMessage)intent.getSerializableExtra(MESSAGE_GUI);
+                GuiMessage s = (GuiMessage) intent.getSerializableExtra(MESSAGE_GUI);
                 s.action(MainActivity.this);
             }
         };
@@ -129,7 +141,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void onButtonStartStopClick(View view) {
-        Button startStopButton = findViewById(R.id.buttonStartStop);
         boolean working = SingletonClass.getInstance().working.get();
         if (working) {
             startStopButton.setText(R.string.action_start);

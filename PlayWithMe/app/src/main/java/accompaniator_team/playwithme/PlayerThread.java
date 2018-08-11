@@ -1,7 +1,9 @@
 package accompaniator_team.playwithme;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.SystemClock;
+import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
 
 import org.billthefarmer.mididriver.MidiDriver;
@@ -20,8 +22,6 @@ public class PlayerThread extends Thread {
     private GuiLogger guiLog;
     private static int сnt = 0;
 
-    //Stopper stopper;
-
     PlayerThread(Context context, LinkedBlockingQueue<Chord> queueOut_, MidiDriver midiDriver_) {
         guiLog = new GuiLogger(context);
         tempo = 60;
@@ -29,7 +29,8 @@ public class PlayerThread extends Thread {
         midiDriver = midiDriver_;
         midiDriver.start();
 
-        //stopper = new Stopper(context, this);
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+        setProgram(Integer.parseInt(sp.getString("pref_instrument", "1")));
     }
 
     public void mystart() {
@@ -39,6 +40,10 @@ public class PlayerThread extends Thread {
 
     public void mystop() {
         midiDriver.stop();
+    }
+
+    public void setProgram(int program) {
+        sendMidi(0xC0, program);
     }
 
     private float lenInSeconds(int duration, int tempo) {
@@ -118,7 +123,7 @@ public class PlayerThread extends Thread {
             try {
                 latch.await();
             } catch (InterruptedException e) {
-
+                return;
             }
         }
     }

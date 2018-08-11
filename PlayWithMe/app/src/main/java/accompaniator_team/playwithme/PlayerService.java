@@ -23,10 +23,10 @@ public class PlayerService extends Service {
         Log.d(TAG, "onStartCommand");
 
         queueOut = SingletonClass.getInstance().queueOut;
+        SingletonClass.getInstance().playerService = this;
 
         midiDriver = new MidiDriver();
-        mThread = new PlayerThread(this, queueOut, midiDriver);
-        mThread.start();
+        myStart();
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -47,15 +47,14 @@ public class PlayerService extends Service {
         super.onCreate();
     }
 
-    /*@Override
-    protected void onResume() {
-        start();
+    public void myStart() {
+        mThread = new PlayerThread(this, queueOut, midiDriver);
+        mThread.start();
     }
 
-    @Override
-    protected void onPause() {
-        stop();
-    }*/
+    public void myStop() {
+        mThread.interrupt();
+    }
 
     @Override
     public void onDestroy() {

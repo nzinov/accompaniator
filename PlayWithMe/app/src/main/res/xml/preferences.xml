@@ -3,51 +3,44 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:sample="http://schemas.android.com/tools">
 
-    <android.support.v7.preference.PreferenceCategory android:title="Basic Settings">
+    <android.support.v7.preference.PreferenceCategory android:title="Player Settings">
         <android.support.v7.preference.ListPreference
             android:defaultValue="Guitar"
             android:entries="@array/preferences_array_instruments_entries"
             android:entryValues="@array/preferences_array_instruments_entryValues"
-            android:key="pref_Instrument"
-            android:summary="Guitar"
+            android:key="pref_instrument"
+            android:summary=" "
             android:title="Instrument" />
 
     </android.support.v7.preference.PreferenceCategory>
 
     <android.support.v7.preference.PreferenceCategory android:title="Listener Settings">
         <accompaniator_team.playwithme.FloatSeekBarPreference
-            android:layout="@layout/preference_widget_seekbar"
+            android:defaultValue="0.3"
             android:key="pref_peakThreshold"
+            android:layout="@layout/preference_widget_seekbar"
             android:summary="Default is 0.3, if too many onsets are detected adjust to 0.4 or 0.5."
             android:title="Peak Threshold"
-            android:defaultValue="0.3"
-            app:minValue="0.1"
+            app:increment="0.05"
             app:max="0.8"
-            app:increment="0.05" />
+            app:minValue="0.1" />
         <accompaniator_team.playwithme.FloatSeekBarPreference
-            android:layout="@layout/preference_widget_seekbar"
+            android:defaultValue="0.004"
             android:key="pref_minimumInterOnsetInterval"
+            android:layout="@layout/preference_widget_seekbar"
             android:summary="The minimum inter-onset-interval in seconds. When two onsets are detected within this interval the last one does not count. Default is 0.004 seconds."
             android:title="Minimum InterOnset Interval"
-            android:defaultValue="0.004"
-            app:minValue="0"
+            app:increment="0.001"
             app:max="0.5"
-            app:increment="0.001" />
+            app:minValue="0" />
         <accompaniator_team.playwithme.FloatSeekBarPreference
-            android:layout="@layout/preference_widget_seekbar"
+            android:defaultValue="-70"
             android:key="pref_silenceThreshold"
+            android:layout="@layout/preference_widget_seekbar"
             android:summary="The threshold that defines when a buffer is silent. Default is -70dBSPL. -90 is also used."
             android:title="Silence Threshold"
-            android:defaultValue="-70"
-            app:minValue="-200"
+            app:increment="5"
             app:max="0"
-            app:increment="5" />
-
-        <!--<android.support.v7.preference.EditTextPreference
-            android:defaultValue="0.3"
-            android:key="pref_peakThreshold"
-            android:summary="Default is 0.3, if too many onsets are detected adjust to 0.4 or 0.5."
-            android:title="Peak Threshold" />-->
-
+            app:minValue="-200" />
     </android.support.v7.preference.PreferenceCategory>
 </android.support.v7.preference.PreferenceScreen>

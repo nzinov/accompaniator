@@ -2,10 +2,16 @@
 <resources>
     <string-array name="preferences_array_instruments_entries">
         <item>Guitar</item>
+        <item>Overdriven Guitar</item>
         <item>Piano</item>
+        <item>Violin</item>
+        <item>Flute</item>
     </string-array>
     <string-array name="preferences_array_instruments_entryValues">
         <item>26</item>
+        <item>30</item>
         <item>1</item>
+        <item>41</item>
+        <item>74</item>
     </string-array>
 </resources>
