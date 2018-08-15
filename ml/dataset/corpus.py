@@ -112,26 +112,31 @@ class SongCorpus:
 
             for mid_track in mid.tracks:
                 try:
-                    # Треки с метаданными не обрабатываем
-                    if len(list(filter(lambda msg: msg.type == 'note_on', mid_track))) == 0:
+                    # Треки лишь с метаданными не обрабатываем
+                    try:
+                        next(filter(lambda msg: msg.type == 'note_on', mid_track))
+                    except StopIteration:
                         continue
 
                     track = Track()
 
-                    # Trick to detect drums
-                    if mid_track[0].channel == 9:
-                        track.instrument_name = 'drums'
-
-                    def get_item_or_default(track, name, func, default):
+                    def get_item_or_default(mid_track, msg_name, midi_getter_func, default):
                         try:
-                            vars(track)[name] = func(list(filter(lambda msg: msg.type == name, mid_track))[0])
-                        except IndexError:
-                            vars(track)[name] = default
+                            return midi_getter_func(next(filter(lambda msg: msg.type == msg_name, mid_track)))
+                        except StopIteration:
+                            return default
 
-                    get_item_or_default(track, 'track_name', lambda x: x.name, '')
-                    get_item_or_default(track, 'instrument_name', lambda x: x.name, '')
-                    get_item_or_default(track, 'program_change', lambda x: int(x.program), default=-1)
-                    get_item_or_default(track, 'key_signature', lambda x: x.key, '')
+                    track.track_name = get_item_or_default(mid_track, 'track_name', lambda x: x.name, '')
+                    track.instrument_name = get_item_or_default(mid_track, 'instrument_name', lambda x: x.name, '')
+                    track.program = get_item_or_default(mid_track, 'program_change', lambda x: int(x.program), default=-1)
+                    track.key_signature = get_item_or_default(mid_track, 'key_signature', lambda x: x.key, '')
+
+                    # Trick to detect drums
+                    try:
+                        if next(filter(lambda msg: type(msg) == mido.Message, mid_track)).channel == 9:
+                            track.instrument_name = 'drums'
+                    except StopIteration:
+                        raise IndexError('No messages in track')
 
                     notes_list = list(filter(lambda msg: msg.type == 'note_on' or msg.type == 'note_off', mid_track))
 
