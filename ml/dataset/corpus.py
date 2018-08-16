@@ -173,6 +173,19 @@ class SongCorpus:
             SongCorpus.process_recursive_from_directory(subdir, output_file, with_progressbar=False)
 
     @staticmethod
+    def collect_from_subdirs(dirname, output_file_name):
+        with open(output_file_name, 'wb') as output_file:
+            pair_flatten = lambda l: [(location, item) for (location, sublist) in l for item in sublist]
+            filenames = (os.path.join(location, filename)
+                         for (location, filename)
+                         in pair_flatten((location, files) for location, dirs, files in os.walk(dirname))
+                         if filename == 'out.pickle')
+            for filename in filenames:
+                with open(filename, 'rb') as input_file:
+                    output_file.write(input_file.read())
+
+
+    @staticmethod
     def process_parallel_from_directory(dirname):
         pool = Pool(None)
         subdirs = [os.path.join(dirname, subdirname)
