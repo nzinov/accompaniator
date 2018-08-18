@@ -73,7 +73,7 @@ class TestSplitChordsToGcdMapper(unittest.TestCase):
         track = Track([chord1, chord2, chord3])
         song = Song([track, track])
 
-        tscgm = SplitNonMelodiesToGcdMapper(min_gcd=1)
+        tscgm = SplitToGcdMapper(min_gcd=1)
         self.assertEqual(
             '[{4 127 [1]}, {4 127 [1]}, {4 127 [1]}, {4 127 [1]}, {4 127 [1]}, {4 127 [1]}]',
             str(tscgm.process(song).tracks[0].chords))

@@ -159,7 +159,7 @@ class RhythmDetectionMapper(BaseMapper):
             assert False
 
 
-class SplitNonMelodiesToGcdMapper(BaseMapper):
+class SplitToGcdMapper(BaseMapper):
     """Gets the GCD of chords duration and splits all chords longer to pieces."""
 
     @staticmethod
@@ -181,22 +181,28 @@ class SplitNonMelodiesToGcdMapper(BaseMapper):
             gcd = math.gcd(gcd, a)
         return int(gcd)
 
-    def __init__(self, min_gcd=16, **kwargs):
+    def __init__(self, what='non-melody', min_gcd=16, **kwargs):
         """
         :param min_gcd (in 1/128th): Minimal duration that can be considered as GCD.
         """
         super().__init__(**kwargs)
         self.stats['gcd'] = dict()
         self.min_gcd = min_gcd
+        self.what = what
+        if what not in ['non-melody', 'all']:
+            raise Exception('"What" must be "non-melody" or "all"')
 
     def process(self, song):
-        SplitNonMelodiesToGcdMapper.pad_tracks_to_same_duration(song)
+        SplitToGcdMapper.pad_tracks_to_same_duration(song)
 
-        melody, tracks = MelodyDetectionMapper.extract_melody(song.tracks)
+        if self.what == 'non-melody':
+            melody, tracks_to_split = MelodyDetectionMapper.extract_melody(song.tracks)
+        elif self.what == 'all':
+            tracks_to_split = song.tracks
 
         gcds = []
         new_tracks = []
-        for track in tracks:
+        for track in tracks_to_split:
             track_durations = np.array(list(map(lambda chord: chord.duration, track.chords)))
 
             assert track_durations.size != 0
@@ -206,13 +212,13 @@ class SplitNonMelodiesToGcdMapper(BaseMapper):
             if track_gcd >= self.min_gcd:
                 new_tracks.append(track)
                 gcds.append(track_gcd)
-        tracks = new_tracks
+        tracks_to_split = new_tracks
 
         if len(gcds) == 0:
             raise MapperError('not enough tracks')
 
         gcd = self.gcd(gcds)
-        for track in tracks:
+        for track in tracks_to_split:
             new_chords = []
             for chord in track.chords:
                 chord_duration = chord.duration
@@ -221,9 +227,10 @@ class SplitNonMelodiesToGcdMapper(BaseMapper):
                     new_chords.append(deepcopy(chord))
             track.chords = new_chords
 
-        assert tracks
+        assert tracks_to_split
 
-        song.tracks = [melody] + tracks
+        if self.what == 'non-melody':
+            song.tracks = [melody] + tracks_to_split
 
         assert song.melody_track.has_one_note_at_time()
 
@@ -440,3 +447,18 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
         songs = self.process_split(song, 0)
         res = sum([self.process_split(song, 1) for song in songs], [])
         return res
+
+
+class NameInfoFilterMapper(BaseMapper):
+    def __init__(self, to_find, **kwargs):
+        super().__init__(**kwargs)
+        if type(to_find) == str:
+            self.to_find = [to_find]
+        elif type(to_find) == list:
+            self.to_find = to_find
+
+    def process(self, song):
+        for substr in self.to_find:
+            if song.name.find(substr) != -1:
+                return song
+        return list()

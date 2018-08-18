@@ -21,7 +21,7 @@ corpus.pipeline.mappers = \
         PreToFinalConvertMapper(),
         # simplify
         MelodyDetectionMapper(strategy='most probable', fun=np.min, min_unique_notes=5),
-        SplitNonMelodiesToGcdMapper(min_gcd=16),
+        SplitToGcdMapper(min_gcd=16),
         MergeTracksMapper(),
         AdequateCutOutLongChordsMapper(min_big_chord_duration=256, min_track_duration=10 * 128 / 4),
         GetSongStatisticsMapper()

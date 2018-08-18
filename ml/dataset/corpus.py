@@ -21,11 +21,11 @@ def in_ipynb():
         return False  # Probably standard Python interpreter
 
 
-def get_progressbar(**kwargs):
+def get_progressbar(*args, **kwargs):
     if in_ipynb():
-        return tqdm.tqdm_notebook(**kwargs)
+        return tqdm.tqdm_notebook(*args, **kwargs)
     else:
-        return tqdm.tqdm(**kwargs)
+        return tqdm.tqdm(*args, **kwargs)
 
 
 class SongCorpus:
@@ -128,7 +128,8 @@ class SongCorpus:
 
                     track.track_name = get_item_or_default(mid_track, 'track_name', lambda x: x.name, '')
                     track.instrument_name = get_item_or_default(mid_track, 'instrument_name', lambda x: x.name, '')
-                    track.program = get_item_or_default(mid_track, 'program_change', lambda x: int(x.program), default=-1)
+                    track.program = get_item_or_default(mid_track, 'program_change', lambda x: int(x.program),
+                                                        default=-1)
                     track.key_signature = get_item_or_default(mid_track, 'key_signature', lambda x: x.key, '')
 
                     # Trick to detect drums
@@ -184,16 +185,16 @@ class SongCorpus:
                 with open(filename, 'rb') as input_file:
                     output_file.write(input_file.read())
 
-
     @staticmethod
-    def process_parallel_from_directory(dirname):
-        pool = Pool(None)
+    def process_parallel_from_directory(dirname, output_file_name):
         subdirs = [os.path.join(dirname, subdirname)
                    for subdirname in os.listdir(dirname) if os.path.isdir(os.path.join(dirname, subdirname))]
         print('Total:', len(subdirs))
+        pool = Pool(None)
         pool.map(SongCorpus.process_subdir, subdirs)
         pool.close()
         pool.join()
+        SongCorpus.collect_from_subdirs(dirname, output_file_name)
 
     def apply_pipeline(self, input_file_name, output_file_name, max_count=None):
 
@@ -217,6 +218,22 @@ class SongCorpus:
                     break
                 # except Exception as e:
                 #     log.warning(e)
+        return self.pipeline.get_stats()
+
+    def apply_pipeline_to_memory(self, max_count=None):
+        new_songs = list()
+        for song in get_progressbar(self.songs):
+            i = 0
+            try:
+                songs = self.pipeline.process([song])
+                if songs:
+                    new_songs += songs
+                i += 1
+                if max_count is not None and i >= max_count:
+                    break
+            except Exception as e:
+                log.warning(e)
+        self.songs = new_songs
         return self.pipeline.get_stats()
 
     def load_from_file(self, filename, max_count=None):
