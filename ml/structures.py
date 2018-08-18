@@ -1,6 +1,7 @@
 import pickle
 import numpy as np
 from functools import total_ordering
+import music21
 
 
 class TimeSignature:
@@ -30,6 +31,8 @@ class Note:
         number: MIDI number of note
     """
 
+    letters_list = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+
     def __init__(self, number):
         self.number = number
 
@@ -40,6 +43,9 @@ class Note:
     @staticmethod
     def freq_to_number(freq):
         return 12 * np.log2(freq / 440)
+
+    def letter(self):
+        return self.letters_list[(abs(self.number - 24)) % 12]
 
     def __str__(self):
         return "%s" % (self.number)
@@ -52,6 +58,14 @@ class Note:
 
     def __lt__(self, other):
         return self.number < other.number
+
+    def __hash__(self):
+        return self.number
+
+    def get_music21_pitch(self):
+        ret = music21.pitch.Pitch()
+        ret.midi = self.number
+        return ret
 
 
 class Chord:
@@ -78,8 +92,18 @@ class Chord:
     def __eq__(self, other):
         return self.duration == other.duration and self.velocity == other.velocity and self.notes == other.notes
 
+    def __hash__(self):
+        return hash(tuple(self.notes)) ^ hash(self.velocity) ^ hash(self.duration)
+
     def add_notes(self, notes_list):
         self.notes.extend(notes_list)
+
+    def get_music21_repr(self):
+        ret = music21.chord.Chord()
+        ret.add([note.get_music21_pitch() for note in self.notes])
+        ret.duration = music21.duration.Duration(self.duration * 4 / 128)
+        ret.volume = music21.volume.Volume(velocity=self.velocity)
+        return ret
 
 
 class Track:
@@ -146,6 +170,11 @@ class Track:
             cur_time += chord.duration
             i += 1
         return i, cur_time
+
+    def get_music21_repr(self):
+        ret = music21.stream.Stream()
+        ret.append([chord.get_music21_repr() for chord in self.chords])
+        return ret
 
 
 class Song:
@@ -214,3 +243,7 @@ class Song:
     @property
     def chord_track(self):
         return self.tracks[1]
+
+    def get_music21_repr(self):
+        return music21.stream.Stream([self.melody_track.get_music21_repr(),
+                                      self.chord_track.get_music21_repr()])

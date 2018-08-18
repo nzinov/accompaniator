@@ -6,6 +6,9 @@ python-rtmidi
 #madmom
 #cython
 
+# Music stuff
+music21
+
 # ML stuff
 sklearn
 tensorflow
