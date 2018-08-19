@@ -224,15 +224,15 @@ class SongCorpus:
         new_songs = list()
         for song in get_progressbar(self.songs):
             i = 0
-            try:
-                songs = self.pipeline.process([song])
-                if songs:
-                    new_songs += songs
-                i += 1
-                if max_count is not None and i >= max_count:
-                    break
-            except Exception as e:
-                log.warning(e)
+            # try:
+            songs = self.pipeline.process([song])
+            if songs:
+                new_songs += songs
+            i += 1
+            if max_count is not None and i >= max_count:
+                break
+            # except Exception as e:
+            #     log.warning(e)
         self.songs = new_songs
         return self.pipeline.get_stats()
 

@@ -231,6 +231,11 @@ class SplitToGcdMapper(BaseMapper):
 
         if self.what == 'non-melody':
             song.tracks = [melody] + tracks_to_split
+        elif self.what == 'all':
+            song.tracks = tracks_to_split
+
+        if len(song.tracks) < 2:
+            raise MapperError('not enough tracks')
 
         assert song.melody_track.has_one_note_at_time()
 
