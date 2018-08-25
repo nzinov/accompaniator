@@ -65,22 +65,29 @@ class BaseMapper:
         stats = self.get_stats()
 
         def plot_with_style(df, ax, kind):
-            df.plot(kind=kind, ax=ax, x='x', y='y', color=plt.get_cmap("tab10")(0))
+            if kind == 'hist':
+                df.plot(kind=kind, ax=ax, x='y', y='x', color=plt.get_cmap("tab10")(0))
+            else:
+                df.plot(kind=kind, ax=ax, x='x', y='y', color=plt.get_cmap("tab10")(0))
 
         for name, stat in stats.items():
             if type(stat) == dict:
                 if len(stat.items()) < many_items_border:
                     print(name, sorted(stat.items()))
                 df = pd.DataFrame.from_records(sorted(stat.items()), columns=['x', 'y'])
-                plt.figure(figsize=(10, 5))
+                fig = plt.figure(figsize=(10, 5))
+                fig.suptitle(name)
                 ax = plt.subplot(1, 2, 1)
+                ax.set_title('line')
                 plot_with_style(df, ax, 'line')
                 ax = plt.subplot(1, 2, 2)
                 if len(stat.items()) < many_items_border:
+                    ax.set_title('bar')
                     plot_with_style(df, ax, 'bar')
                 else:
+                    ax.set_title('hist')
                     plot_with_style(df, ax, 'hist')
-                plt.title(name)
+
                 plt.show()
             else:
                 print(name, stat)
