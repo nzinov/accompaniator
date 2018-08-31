@@ -186,7 +186,8 @@ class SplitToGcdMapper(BaseMapper):
         :param min_gcd (in 1/128th): Minimal duration that can be considered as GCD.
         """
         super().__init__(**kwargs)
-        self.stats['gcd'] = dict()
+        self.stats['track gcd'] = dict()
+        self.stats['song gcd'] = dict()
         self.min_gcd = min_gcd
         self.what = what
         if what not in ['non-melody', 'all']:
@@ -208,7 +209,7 @@ class SplitToGcdMapper(BaseMapper):
             assert track_durations.size != 0
 
             track_gcd = self.gcd(track_durations)
-            self.increment_stat(track_gcd, self.stats['gcd'])
+            self.increment_stat(track_gcd, self.stats['track gcd'])
             if track_gcd >= self.min_gcd:
                 new_tracks.append(track)
                 gcds.append(track_gcd)
@@ -218,13 +219,21 @@ class SplitToGcdMapper(BaseMapper):
             raise MapperError('not enough tracks')
 
         gcd = self.gcd(gcds)
+        self.increment_stat(gcd, self.stats['song gcd'])
+
         for track in tracks_to_split:
+            print(track)
             new_chords = []
             for chord in track.chords:
                 chord_duration = chord.duration
                 chord.duration = gcd
                 for i in range(0, int(chord_duration / gcd)):
                     new_chords.append(deepcopy(chord))
+                    if not hasattr(chord, 'is_repeat') or chord.is_repeat is False:
+                        if i != 0:
+                            new_chords[-1].is_repeat = True
+                        else:
+                            new_chords[-1].is_repeat = False
             track.chords = new_chords
 
         assert tracks_to_split
@@ -467,3 +476,20 @@ class NameInfoFilterMapper(BaseMapper):
             if song.name.find(substr) != -1:
                 return song
         return list()
+
+
+class MergeChordsTogetherMapper(BaseMapper):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def process(self, song):
+        new_chords = [song.chord_track.chords[0]]
+        for chord in song.chord_track.chords[1:]:
+            if chord.notes == new_chords[-1].notes:
+                new_chords[-1].duration += chord.duration
+            else:
+                new_chords.append(chord)
+
+        song.chord_track.chords = new_chords
+
+        return song

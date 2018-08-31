@@ -71,10 +71,11 @@ class Note:
 class Chord:
     """Stores a chord and its length in 1/128 beats"""
 
-    def __init__(self, notes_list, duration, velocity):
+    def __init__(self, notes_list, duration, velocity, is_repeat=False):
         self.notes = notes_list[:]
         self.velocity = velocity
         self.duration = duration
+        self.is_repeat = is_repeat
 
     def len(self):
         return self.duration
@@ -173,7 +174,16 @@ class Track:
 
     def get_music21_repr(self):
         ret = music21.stream.Stream()
-        ret.append([chord.get_music21_repr() for chord in self.chords])
+        try:
+            chords_without_repeats = [self.chords[0]]
+            for chord in self.chords[1:]:
+                if hasattr(chord, 'is_repeat') and chord.is_repeat:
+                    chords_without_repeats[-1].duration += chord.duration
+                else:
+                    chords_without_repeats.append(chord)
+            ret.append([chord.get_music21_repr() for chord in chords_without_repeats])
+        except IndexError:
+            pass
         return ret
 
 
@@ -245,5 +255,4 @@ class Song:
         return self.tracks[1]
 
     def get_music21_repr(self):
-        return music21.stream.Stream([self.melody_track.get_music21_repr(),
-                                      self.chord_track.get_music21_repr()])
+        return music21.stream.Stream([track.get_music21_repr() for track in self.tracks])
