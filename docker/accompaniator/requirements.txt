@@ -15,6 +15,7 @@ tensorflow
 numpy
 pandas
 matplotlib
+scipy
 
 # QA stuff
 flake8

@@ -255,6 +255,8 @@ class SplitToGcdMapper(BaseMapper):
 
         assert song.melody_track.has_one_note_at_time()
 
+        assert song.melody_track.has_one_note_at_time()
+
         return song
 
 
