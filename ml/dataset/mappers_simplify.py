@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+from ml.dataset.mappers_preprocess import round_up_to_base, round_down_to_base
 from ml.structures import *
 import numpy as np
 import math
@@ -181,7 +182,7 @@ class SplitToGcdMapper(BaseMapper):
             gcd = math.gcd(gcd, a)
         return int(gcd)
 
-    def __init__(self, what='non-melody', min_gcd=16, **kwargs):
+    def __init__(self, what='non-melody', min_gcd=16, force_gcd=None, **kwargs):
         """
         :param min_gcd (in 1/128th): Minimal duration that can be considered as GCD.
         """
@@ -189,6 +190,7 @@ class SplitToGcdMapper(BaseMapper):
         self.stats['track gcd'] = dict()
         self.stats['song gcd'] = dict()
         self.min_gcd = min_gcd
+        self.force_gcd = force_gcd
         self.what = what
         if what not in ['non-melody', 'all']:
             raise Exception('"What" must be "non-melody" or "all"')
@@ -221,8 +223,13 @@ class SplitToGcdMapper(BaseMapper):
         gcd = self.gcd(gcds)
         self.increment_stat(gcd, self.stats['song gcd'])
 
+        if self.force_gcd is not None:
+            if gcd % self.force_gcd != 0:
+                raise MapperError("Can't force GCD")
+            else:
+                gcd = self.force_gcd
+
         for track in tracks_to_split:
-            print(track)
             new_chords = []
             for chord in track.chords:
                 chord_duration = chord.duration
@@ -342,7 +349,7 @@ class GetSongStatisticsMapper(BaseMapper):
 
 
 class AdequateCutOutLongChordsMapper(BaseMapper):
-    """Detects long chords and removes it splitting the song. """
+    """Detects long chords and removes them splitting the song. """
 
     def cut_fragment_by_time_(self, track, time1, time2):
         i2, chord_beginning_2 = track.get_index_of_time(time2)
@@ -361,6 +368,10 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
                 track.chords[i1].duration = duration_before
                 i1 += 1
 
+        if self.respect_measure:
+            i1 = round_up_to_base(i1, self.measure_size)
+            i2 = round_down_to_base(i2, self.measure_size)
+
         return track.chords[:i1], track.chords[i2:]
 
     def cut_fragment_by_time_split(self, track, time1, time2):
@@ -374,7 +385,8 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
         return [track1, track2]
 
     def __init__(self, min_big_chord_duration=128,
-                 min_track_duration=10 * 128 / 4, **kwargs):
+                 min_track_duration=10 * 128 / 4,
+                 respect_measure=True, measure_size=8, **kwargs):
         """
         :param min_big_chord_duration (in 1/128th): chords from this duration are considered long
         :param min_track_duration (in 1/128th): tracks smaller than that are not considered after split
@@ -382,6 +394,8 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
         super().__init__(**kwargs)
         self.min_big_chord_duration = min_big_chord_duration
         self.min_duration = min_track_duration
+        self.respect_measure = respect_measure
+        self.measure_size = measure_size
         self.stats['melody pause duration'] = dict()
         self.stats['chord pause duration'] = dict()
 
@@ -406,6 +420,7 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
         return new_songs
 
     def get_times_melody(self, track):
+        """Cut chords with durations larger than min_big_chord_duration."""
         time = 0
         for i, chord in enumerate(track.chords):
             if chord.duration > self.min_big_chord_duration:
@@ -415,6 +430,7 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
         return None
 
     def get_times_chords(self, track):
+        """Cuts series of the same chords if total duration is larger than min_big_chord_duration."""
         time = 0
         cur_chord_duration = 0
         time_beginning = 0
@@ -433,10 +449,10 @@ class AdequateCutOutLongChordsMapper(BaseMapper):
         songs = []
         changing = True
         while changing:
-            if track_num == 0:
-                times = self.get_times_melody(song.tracks[track_num])
-            else:
-                times = self.get_times_chords(song.tracks[track_num])
+            # if track_num == 0:
+            #     times = self.get_times_melody(song.tracks[track_num])
+            # else:
+            times = self.get_times_chords(song.tracks[track_num])
 
             changing = False if times is None else True
             if changing:
@@ -479,13 +495,16 @@ class NameInfoFilterMapper(BaseMapper):
 
 
 class MergeChordsTogetherMapper(BaseMapper):
-    def __init__(self, **kwargs):
+    def __init__(self, max_len=64, **kwargs):
         super().__init__(**kwargs)
+
+        self.max_len = max_len
 
     def process(self, song):
         new_chords = [song.chord_track.chords[0]]
         for chord in song.chord_track.chords[1:]:
-            if chord.notes == new_chords[-1].notes:
+            if chord.notes == new_chords[-1].notes \
+                    and not new_chords[-1].duration + chord.duration > self.max_len:
                 new_chords[-1].duration += chord.duration
             else:
                 new_chords.append(chord)

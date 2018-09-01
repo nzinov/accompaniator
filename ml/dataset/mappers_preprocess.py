@@ -1,8 +1,21 @@
+import math
+
 from ml.dataset.corpus import *
-from ml.dataset.mappers_simplify import *
 from ml.dataset.base_mapper import *
 
 import numpy as np
+
+
+def round_to_base(x, base=4):
+    return int(base * round(float(x) / base))
+
+
+def round_up_to_base(x, base=4):
+    return int(base * math.ceil(float(x) / base))
+
+
+def round_down_to_base(x, base=4):
+    return int(base * math.floor(float(x) / base))
 
 
 class BadSongsRemoveMapper(BaseMapper):
@@ -42,23 +55,19 @@ class NoiseReductionMapper(BaseMapper):
         self.stats['divergence of duration from majority duration'] = dict()
 
     @staticmethod
-    def round_to_base(x, base=4):
-        return int(base * round(float(x) / base))
-
-    @staticmethod
     def get_divergence(x, base=4):
-        return abs(x - NoiseReductionMapper.round_to_base(x, base))
+        return abs(x - round_to_base(x, base))
 
     def process(self, song):
         for track in song.tracks:
             # Round notes durations.
             for chord in track.chords:
-                chord.delta = self.round_to_base(chord.delta, 4)
+                chord.delta = round_to_base(chord.delta, 4)
                 new_notes = []
                 for note in chord.notes:
-                    divergence = NoiseReductionMapper.get_divergence(note.duration, 4)
+                    divergence = self.get_divergence(note.duration, 4)
                     self.increment_stat(divergence, self.stats['divergence of duration from majority duration'])
-                    note.duration = self.round_to_base(note.duration, 4)
+                    note.duration = round_to_base(note.duration, 4)
                     new_notes.append(note)
                 chord.notes = new_notes
 

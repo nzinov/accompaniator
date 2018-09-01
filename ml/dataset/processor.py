@@ -1,10 +1,10 @@
-from ml.dataset.base_preparer import BasePreparer
+from ml.dataset.base_processor import BaseProcessor
 import numpy as np
 
 from ml.dataset.corpus import get_progressbar
 
 
-class ForestPreparer(BasePreparer):
+class ForestProcessor(BaseProcessor):
     @staticmethod
     def cut_song2(song, num_tacts, l_min_note, delay=4):  # 3 arrays: notes, chords, beat
         l_piece = num_tacts * l_min_note
@@ -29,7 +29,7 @@ class ForestPreparer(BasePreparer):
         for song in get_progressbar(songs):
             #     try:
             if len(song[0]) > 32:
-                X_, y_ = ForestPreparer.cut_song2(song, n_tacts, 16, with_chords=True)
+                X_, y_ = ForestProcessor.cut_song2(song, n_tacts, 16, with_chords=True)
                 X = np.vstack([X, X_])
                 y = np.hstack([y, y_])
         #     except ValueError as e:

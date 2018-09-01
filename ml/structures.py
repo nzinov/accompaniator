@@ -100,11 +100,15 @@ class Chord:
         self.notes.extend(notes_list)
 
     def get_music21_repr(self):
-        ret = music21.chord.Chord()
-        ret.add([note.get_music21_pitch() for note in self.notes])
-        ret.duration = music21.duration.Duration(self.duration * 4 / 128)
-        ret.volume = music21.volume.Volume(velocity=self.velocity)
-        return ret
+        if self.notes:
+            # Chord
+            return music21.chord.Chord(notes=[note.get_music21_pitch() for note in self.notes],
+                                       duration=music21.duration.Duration(self.duration * 4 / 128),
+                                       volume=music21.volume.Volume(velocity=self.velocity))
+        else:
+            # Rest
+            return music21.note.Rest(duration=music21.duration.Duration(self.duration * 4 / 128))
+
 
 
 class Track:
@@ -172,18 +176,22 @@ class Track:
             i += 1
         return i, cur_time
 
-    def get_music21_repr(self):
+    def get_music21_repr(self, with_repeats=False):
         ret = music21.stream.Stream()
-        try:
-            chords_without_repeats = [self.chords[0]]
-            for chord in self.chords[1:]:
-                if hasattr(chord, 'is_repeat') and chord.is_repeat:
-                    chords_without_repeats[-1].duration += chord.duration
-                else:
-                    chords_without_repeats.append(chord)
-            ret.append([chord.get_music21_repr() for chord in chords_without_repeats])
-        except IndexError:
-            pass
+        if with_repeats:
+            try:
+                chords_without_repeats = [self.chords[0]]
+                for chord in self.chords[1:]:
+                    if hasattr(chord, 'is_repeat') and chord.is_repeat:
+                        chords_without_repeats[-1].duration += chord.duration
+                    else:
+                        chords_without_repeats.append(chord)
+                ret.append([chord.get_music21_repr() for chord in chords_without_repeats])
+            except IndexError:
+                pass
+        else:
+            ret = [chord.get_music21_repr() for chord in self.chords]
+
         return ret
 
 
@@ -254,5 +262,5 @@ class Song:
     def chord_track(self):
         return self.tracks[1]
 
-    def get_music21_repr(self):
-        return music21.stream.Stream([track.get_music21_repr() for track in self.tracks])
+    def get_music21_repr(self, **kwargs):
+        return music21.stream.Stream([track.get_music21_repr(**kwargs) for track in self.tracks])
