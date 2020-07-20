@@ -1,0 +1,53 @@
+{% extends 'main_base.html' %}
+
+
+{% load static %}
+
+{% block idea %}
+
+    <script src="{% static 'js/timer.js' %}"></script>
+    <script src="{% static 'js/home.js' %}" onload="MyInit();"></script>
+    <script src="{% static 'js/recorder.js' %}"></script>
+
+    <!--========== SLIDER ==========-->
+    <div class="promo-block">
+        <div class="container">
+            <div class="row" style="text-align: center;">
+                {% if after_landing %}
+                <div class="col-sm-5 sm-margin-b-60">
+                    <div class="margin-b-30">
+                        <h2 class="promo-block-title">Нажмите <br> на кнопку </h2>
+                        <p class="promo-block-text">Начните петь, а мы вам подыграем</p>
+                    </div>
+                </div>
+                {%  endif %}
+                <div id="start_button" class="col-sm-6" style="display:inline-block;float:none;">
+                        <div class="promo-block-img-wrap">
+                            <a class="btn btn-secondary">
+                                <img class="promo-block-img img-responsive img-circle" src="{% static 'img/button.png' %}"
+                                     align="Avatar"
+                                     onclick="document.getElementById('start_button').style.display = 'none'; document.getElementById('stop_button').style.display = 'inline-block'; startTimer(); MyStart();">
+                            </a>
+                        </div>
+                </div>
+
+                <div id="stop_button" class="col-sm-6" style="display:none;float:none;">
+                        <div class="promo-block-img-wrap">
+                            <a class="btn btn-secondary" href="{% url 'results' %}">
+                                <img class="promo-block-img img-circle img-responsive" src="{% static 'img/button_stop.png' %}"
+                                     align="Avatar"
+                                     onclick="MyStop();">
+                                <p><span id="my_timer" style="font-size: 300%;">00:00</span></p>
+                            </a>
+                        </div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+    <!--========== SLIDER ==========-->
+
+
+
+{% endblock %}

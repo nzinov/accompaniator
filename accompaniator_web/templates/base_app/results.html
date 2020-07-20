@@ -1,0 +1,58 @@
+{% extends 'main_base.html' %}
+
+
+{% load static %}
+
+{% block idea %}
+    <script src="{% static 'js/result.js' %}"></script>
+
+    <!--========== SLIDER ==========-->
+    <div class="promo-block">
+        <div class="container">
+            <div class="col-sm-offset-3">
+                <div class="row">
+                    <div class="col-sm-4 col-sm-offset-3">
+                        <h1>Оцените нас</h1>
+                    </div>
+                </div>
+                <div class="row">
+                    <p><span id="mark" style="display: none">00:00</span></p>
+                </div>
+                <div class="row">
+
+
+                    <div class="col-sm-6 col-sm-offset-2">
+                      <ul class="myinline">
+                          {% for i in stars_range %}
+                                <li><a id="star{{ i }}" href="javascript:void(0);"
+                                       onclick="star({{ i }}, this)">
+                                    <img src="{% static 'img/star_dark.png' %}" width="70px" height="70px"></a></li>
+
+                            {% endfor %}
+
+                        </ul>
+                    <br/>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <p><span id="mark1" style="display: none">00:00</span></p>
+                </div>
+                <div class="row">
+                    <div class="col-sm-1 col-sm-offset-4">
+                        <a href="{% url 'home' %}">
+                            <button type="button" class="btn btn-primary">По новой</button>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+
+            <br><br><br><br><br>
+        </div>
+        <!--// end row -->
+    </div>
+    <!--========== SLIDER ==========-->
+
+
+{% endblock %}
