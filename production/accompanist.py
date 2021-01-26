@@ -17,16 +17,18 @@ deadline is the time in seconds since the beginning of the era, float
 
 class Accompanist:
     def __init__(self):
-        self.queue_in = Queue()
-        self.queue_out = Queue()
+        self.queue_into_listener = None
+        self.queue_from_listener_to_predictor = Queue()
+        self.queue_from_predictor_to_player = Queue()
         self.predictor_queue = Queue()
         self.running = Value('i', False)
         self.tempo = Value('f', default_tempo)
         self.deadline = Value('f', 0)
 
-        self.player = Player(self.queue_out, self.running, self.tempo, self.deadline)
-        self.predictor = ChordPredictor(self.queue_in, self.queue_out)
-        self.listener = Listener(self.queue_in, self.running, self.tempo, self.deadline)
+        self.player = Player(self.queue_from_predictor_to_player, self.running, self.tempo, self.deadline)
+        self.predictor = ChordPredictor(self.queue_from_listener_to_predictor, self.queue_from_predictor_to_player)
+        self.listener = Listener(self.queue_into_listener, self.queue_from_listener_to_predictor, self.running,
+                                 self.tempo, self.deadline)
 
     def run(self):
         self.running.value = True
@@ -47,6 +49,10 @@ class Accompanist:
 
     def set_deadline(self, deadline=0):
         self.deadline.value = deadline
+
+    def set_queue_into_listener(self, queue):
+        self.queue_into_listener = queue
+        self.listener.set_queue_in(queue)
 
     player = None
     listener = None

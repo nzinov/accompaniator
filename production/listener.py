@@ -27,15 +27,17 @@ def from_ms_to_our_time(time, bpm):
 
 
 def run_queue_in(listener):
-    p = pyaudio.PyAudio()
-    # open stream
-    pyaudio_format = pyaudio.paFloat32
-    n_channels = 1
-    stream = p.open(format=pyaudio_format,
-                    channels=n_channels,
-                    rate=sample_rate,
-                    input=True,
-                    frames_per_buffer=buffer_size)
+    stream = None
+    if not listener.input_from_queue:
+        p = pyaudio.PyAudio()
+        # open stream
+        pyaudio_format = pyaudio.paFloat32
+        n_channels = 1
+        stream = p.open(format=pyaudio_format,
+                        channels=n_channels,
+                        rate=sample_rate,
+                        input=True,
+                        frames_per_buffer=buffer_size)
     '''
     s = aubio.source('/home/nikolay/pahanini.mp3', sample_rate, buffer_size)
     '''
@@ -52,47 +54,59 @@ def run_queue_in(listener):
     # the stream is read until you call stop
     prev_time = 0
     start_time = time.monotonic()
-    while (listener.running.value):
+    while listener.running.value:
         # read data from audio input
-        audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
-        samples = np.fromstring(audiobuffer, dtype=np.float32)
+        if not listener.input_from_queue:
+            audiobuffer = stream.read(buffer_size, exception_on_overflow=False)
+            samples = np.fromstring(audiobuffer, dtype=np.float32)
+        else:
+            samples = listener.queue_in.get()
         # samples = audiobuffer
 
-        if (onset_o(samples)):
+        if onset_o(samples):
             last_onset = onset_o.get_last_ms()
-        if (temp_o(samples)):
+
+        if temp_o(samples):
             tmp = temp_o.get_last_ms()
             beats.append(tmp - last_beat)
             count_beat = (count_beat + 1) % 4
             last_beat = tmp
-            if (count_beat == 0):
+
+            if count_beat == 0:
                 last_downbeat = last_beat
                 bar_start = True
+
         new_note = notes_o(samples)
-        if (new_note[0] != 0):
-            if (len(beats) != 0):
+        if new_note[0] != 0:
+            if len(beats) != 0:
                 listener.set_tempo(60 * 1000.0 / np.median(beats))
             chord = Chord([Note(int(new_note[0]))], from_ms_to_our_time(last_onset - prev_time, listener.tempo.value),
                           int(new_note[1]), bar_start)
             # print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic())
             bar_start = False
-            listener.queue_in.put(chord)
+            listener.queue_from_listener_to_predictor.put(chord)
             KOLYA_time = start_time + (last_downbeat + (4 - count_beat) * 60 * 1000.0 / listener.tempo.value) / 1000.0
             print(bar_start, listener.tempo.value, listener.deadline.value, time.monotonic(), KOLYA_time)
             # print(count_beat, time.monotonic(), KOLYA_time, listener.deadline.value)
-            if (count_beat != 0):
+            if count_beat != 0:
                 listener.set_deadline(KOLYA_time)
             prev_time = last_onset
 
 
 class Listener:
-    def __init__(self, queue=Queue(), running=Value('i', False),
+    def __init__(self, input_queue, queue_from_listener_to_predictor, running=Value('i', False),
                  tempo=Value('i', default_tempo),
                  deadline=Value('f', 0)):
-        self.queue_in = queue
+        self.queue_in = input_queue
+        self.queue_from_listener_to_predictor = queue_from_listener_to_predictor
         self.running = running
         self.tempo = tempo
         self.deadline = deadline
+
+        if input_queue is not None:
+            self.input_from_queue = True
+        else:
+            self.input_from_queue = False
 
     def run(self):
         self.running.value = True
@@ -113,6 +127,9 @@ class Listener:
 
     def set_deadline(self, deadline=0):
         self.deadline.value = deadline
+
+    def set_queue_in(self, queue):
+        self.queue_in = queue
 
     queue_in = None
     running = None
